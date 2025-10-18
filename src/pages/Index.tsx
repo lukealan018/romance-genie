@@ -62,6 +62,15 @@ const Index = () => {
     }
   }, [navigate, userId]);
 
+  // Check if profile needs refresh (after edit)
+  useEffect(() => {
+    const needsRefresh = localStorage.getItem("profileNeedsRefresh");
+    if (needsRefresh === "true") {
+      localStorage.removeItem("profileNeedsRefresh");
+      fetchProfile();
+    }
+  }, []);
+
   const fetchProfile = async () => {
     try {
       const response = await fetch(
