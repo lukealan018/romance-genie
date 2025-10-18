@@ -35,10 +35,11 @@ const Profile = () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile?userId=${userId}`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`,
         {
           headers: {
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'X-User-Id': userId,
           },
         }
       );
@@ -118,9 +119,9 @@ const Profile = () => {
           headers: {
             "Content-Type": "application/json",
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'X-User-Id': userId,
           },
           body: JSON.stringify({
-            userId,
             nickname: nickname.trim(),
             home_zip: homeZip,
             default_radius_mi: defaultRadius,

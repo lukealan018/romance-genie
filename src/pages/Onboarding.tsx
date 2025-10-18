@@ -50,13 +50,15 @@ const Onboarding = () => {
     try {
       const { data, error } = await supabase.functions.invoke('profile', {
         body: {
-          userId,
           nickname: formData.nickname || "Friend",
           home_zip: formData.home_zip,
           default_radius_mi: formData.default_radius_mi,
           cuisines: formData.cuisines,
           activities: formData.activities,
           dietary: formData.dietary.length > 0 ? formData.dietary : null,
+        },
+        headers: {
+          'X-User-Id': userId,
         },
       });
 

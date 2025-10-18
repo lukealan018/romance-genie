@@ -74,10 +74,11 @@ const Index = () => {
   const fetchProfile = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile?userId=${userId}`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`,
         {
           headers: {
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'X-User-Id': userId,
           },
         }
       );

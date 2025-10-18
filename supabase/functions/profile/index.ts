@@ -3,8 +3,23 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id',
 };
+
+// UUID v4 validation regex
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function validateUserId(userId: string | null): { valid: boolean; error?: string } {
+  if (!userId) {
+    return { valid: false, error: 'X-User-Id header is required' };
+  }
+  
+  if (!UUID_V4_REGEX.test(userId)) {
+    return { valid: false, error: 'Invalid userId format. Must be a valid UUID v4' };
+  }
+  
+  return { valid: true };
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -25,13 +40,15 @@ serve(async (req) => {
 
     // GET: Fetch a profile
     if (req.method === 'GET') {
-      const url = new URL(req.url);
-      const userId = url.searchParams.get('userId');
-
-      if (!userId) {
-        console.error('Missing userId parameter');
+      // Read userId from X-User-Id header (trusted source)
+      const userId = req.headers.get('x-user-id');
+      
+      // Validate userId
+      const validation = validateUserId(userId);
+      if (!validation.valid) {
+        console.error('Invalid userId:', validation.error);
         return new Response(
-          JSON.stringify({ error: 'userId is required' }),
+          JSON.stringify({ error: validation.error }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -69,17 +86,21 @@ serve(async (req) => {
 
     // POST: Upsert a profile
     if (req.method === 'POST') {
-      const body = await req.json();
-      const { userId, nickname, home_zip, default_radius_mi, cuisines, activities, dietary } = body;
-
-      // Validate required fields
-      if (!userId) {
-        console.error('Missing userId in request body');
+      // Read userId from X-User-Id header (trusted source), ignore body
+      const userId = req.headers.get('x-user-id');
+      
+      // Validate userId
+      const validation = validateUserId(userId);
+      if (!validation.valid) {
+        console.error('Invalid userId:', validation.error);
         return new Response(
-          JSON.stringify({ error: 'userId is required' }),
+          JSON.stringify({ error: validation.error }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      const body = await req.json();
+      const { nickname, home_zip, default_radius_mi, cuisines, activities, dietary } = body;
 
       if (!nickname || !home_zip || !default_radius_mi) {
         console.error('Missing required fields:', { nickname, home_zip, default_radius_mi });
