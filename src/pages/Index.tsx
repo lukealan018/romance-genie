@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Heart, RefreshCw, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LocationToggle } from "@/components/LocationToggle";
@@ -22,7 +23,17 @@ const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {
 };
 
 const Index = () => {
+  const navigate = useNavigate();
   const [searchType, setSearchType] = useState<"restaurants" | "activities">("restaurants");
+  
+  // Check onboarding status on mount
+  useEffect(() => {
+    const hasOnboarded = localStorage.getItem("hasOnboarded");
+    if (!hasOnboarded) {
+      navigate("/onboarding");
+    }
+  }, [navigate]);
+
   const [locationMode, setLocationMode] = useState<"gps" | "zip">("gps");
   const [zipCode, setZipCode] = useState("");
   const [cuisine, setCuisine] = useState("Italian");
