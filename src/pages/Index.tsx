@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Heart, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,6 +40,7 @@ const Index = () => {
   const [plan, setPlan] = useState<any>(null);
   const [restaurantIndex, setRestaurantIndex] = useState(0);
   const [activityIndex, setActivityIndex] = useState(0);
+  const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -149,6 +150,11 @@ const Index = () => {
   };
 
   const handleSwapRestaurant = async () => {
+    // Debounce to prevent double-taps
+    if (swapDebounceRef.current.restaurant) return;
+    swapDebounceRef.current.restaurant = true;
+    setTimeout(() => { swapDebounceRef.current.restaurant = false; }, 300);
+
     // If next item exists, advance index
     if (restaurantIndex + 1 < restaurantResults.length) {
       const newIndex = restaurantIndex + 1;
@@ -229,13 +235,49 @@ const Index = () => {
         );
         setPlan(newPlan);
       }
+      toast({ description: "Showing earlier options" });
     }
   };
 
   const handleSwapActivity = async () => {
-    // If next item exists, advance index
-    if (activityIndex + 1 < activityResults.length) {
-      const newIndex = activityIndex + 1;
+    // Debounce to prevent double-taps
+    if (swapDebounceRef.current.activity) return;
+    swapDebounceRef.current.activity = true;
+    setTimeout(() => { swapDebounceRef.current.activity = false; }, 300);
+
+    // Calculate distance between two lat/lng points (Haversine formula simplified)
+    const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+      const R = 3959; // Earth radius in miles
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+
+    // Get current restaurant for proximity calculation
+    const currentRestaurant = restaurantResults[restaurantIndex];
+
+    // Sort activities by distance from current restaurant
+    const activitiesWithDistance = activityResults.map((activity, idx) => ({
+      activity,
+      originalIndex: idx,
+      distance: currentRestaurant 
+        ? getDistance(currentRestaurant.lat, currentRestaurant.lng, activity.lat, activity.lng)
+        : 0
+    })).sort((a, b) => a.distance - b.distance);
+
+    // Find current activity in sorted list
+    const currentSortedIndex = activitiesWithDistance.findIndex(
+      item => item.originalIndex === activityIndex
+    );
+
+    // Pick next closest activity
+    if (currentSortedIndex + 1 < activitiesWithDistance.length) {
+      const nextActivity = activitiesWithDistance[currentSortedIndex + 1];
+      const newIndex = nextActivity.originalIndex;
       setActivityIndex(newIndex);
       
       if (currentLocation) {
@@ -273,8 +315,21 @@ const Index = () => {
         setActivityResults(newActivities);
         setNextActivitiesToken(data.nextPageToken || null);
         
-        const newIndex = activityIndex + 1;
-        setActivityIndex(newIndex);
+        // Re-sort with new activities
+        const newActivitiesWithDistance = newActivities.map((act, idx) => ({
+          activity: act,
+          originalIndex: idx,
+          distance: currentRestaurant 
+            ? getDistance(currentRestaurant.lat, currentRestaurant.lng, act.lat, act.lng)
+            : 0
+        })).sort((a, b) => a.distance - b.distance);
+
+        const currentIdx = newActivitiesWithDistance.findIndex(
+          item => item.originalIndex === activityIndex
+        );
+        const nextIdx = newActivitiesWithDistance[currentIdx + 1]?.originalIndex || activityIndex + 1;
+        
+        setActivityIndex(nextIdx);
 
         const newPlan = buildPlanFromIndices(
           {
@@ -285,7 +340,7 @@ const Index = () => {
             activities: newActivities,
           },
           restaurantIndex,
-          newIndex
+          nextIdx
         );
         setPlan(newPlan);
         toast({ title: "Success", description: "Loaded more activities!" });
@@ -296,8 +351,9 @@ const Index = () => {
         setLoading(false);
       }
     } else {
-      // Fallback: wrap to start
-      setActivityIndex(0);
+      // Fallback: wrap to start (pick nearest overall)
+      const nearestActivity = activitiesWithDistance[0];
+      setActivityIndex(nearestActivity.originalIndex);
       
       if (currentLocation) {
         const newPlan = buildPlanFromIndices(
@@ -309,12 +365,14 @@ const Index = () => {
             activities: activityResults,
           },
           restaurantIndex,
-          0
+          nearestActivity.originalIndex
         );
         setPlan(newPlan);
       }
+      toast({ description: "Showing earlier options" });
     }
   };
+
 
   const handleRerollPlan = () => {
     handleFindPlaces();
