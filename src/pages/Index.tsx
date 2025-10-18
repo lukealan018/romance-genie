@@ -291,33 +291,59 @@ const Index = () => {
       const newIndex = restaurantIndex + 1;
       setRestaurantIndex(newIndex);
       
-      if (currentLocation) {
-        const newPlan = buildPlanFromIndices(
-          {
-            lat: currentLocation.lat,
-            lng: currentLocation.lng,
-            radius,
-            restaurants: restaurantResults,
-            activities: activityResults,
-            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-              ? userPreferences 
-              : undefined,
-          },
-          newIndex,
-          activityIndex
-        );
-        setPlan(newPlan);
+      // Get coordinates based on location mode
+      let lat: number, lng: number;
+      if (locationMode === "gps") {
+        if (!currentLocation) return;
+        lat = currentLocation.lat;
+        lng = currentLocation.lng;
+      } else {
+        const coords = ZIP_COORDS[zipCode];
+        if (!coords) return;
+        lat = coords.lat;
+        lng = coords.lng;
       }
+      
+      const newPlan = buildPlanFromIndices(
+        {
+          lat,
+          lng,
+          radius,
+          restaurants: restaurantResults,
+          activities: activityResults,
+          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+            ? userPreferences 
+            : undefined,
+        },
+        newIndex,
+        activityIndex
+      );
+      setPlan(newPlan);
       return;
     }
 
     // No next item: if we have a token, fetch next page and append
-    if (nextRestaurantsToken && currentLocation) {
+    if (nextRestaurantsToken) {
       setLoading(true);
       try {
-        const { lat, lng } = locationMode === "gps" 
-          ? currentLocation 
-          : ZIP_COORDS[zipCode] || currentLocation;
+        // Get coordinates based on location mode
+        let lat: number, lng: number;
+        if (locationMode === "gps") {
+          if (!currentLocation) {
+            setLoading(false);
+            return;
+          }
+          lat = currentLocation.lat;
+          lng = currentLocation.lng;
+        } else {
+          const coords = ZIP_COORDS[zipCode];
+          if (!coords) {
+            setLoading(false);
+            return;
+          }
+          lat = coords.lat;
+          lng = coords.lng;
+        }
 
         const { data, error } = await supabase.functions.invoke('places-search', {
           body: { lat, lng, radiusMiles: radius, cuisine, pagetoken: nextRestaurantsToken }
@@ -371,23 +397,34 @@ const Index = () => {
       // Fallback: wrap to start
       setRestaurantIndex(0);
       
-      if (currentLocation) {
-        const newPlan = buildPlanFromIndices(
-          {
-            lat: currentLocation.lat,
-            lng: currentLocation.lng,
-            radius,
-            restaurants: restaurantResults,
-            activities: activityResults,
-            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-              ? userPreferences 
-              : undefined,
-          },
-          0,
-          activityIndex
-        );
-        setPlan(newPlan);
+      // Get coordinates based on location mode
+      let lat: number, lng: number;
+      if (locationMode === "gps") {
+        if (!currentLocation) return;
+        lat = currentLocation.lat;
+        lng = currentLocation.lng;
+      } else {
+        const coords = ZIP_COORDS[zipCode];
+        if (!coords) return;
+        lat = coords.lat;
+        lng = coords.lng;
       }
+      
+      const newPlan = buildPlanFromIndices(
+        {
+          lat,
+          lng,
+          radius,
+          restaurants: restaurantResults,
+          activities: activityResults,
+          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+            ? userPreferences 
+            : undefined,
+        },
+        0,
+        activityIndex
+      );
+      setPlan(newPlan);
       toast({ description: "Showing earlier options" });
     }
   };
@@ -403,33 +440,59 @@ const Index = () => {
       const newIndex = activityIndex + 1;
       setActivityIndex(newIndex);
       
-      if (currentLocation) {
-        const newPlan = buildPlanFromIndices(
-          {
-            lat: currentLocation.lat,
-            lng: currentLocation.lng,
-            radius,
-            restaurants: restaurantResults,
-            activities: activityResults,
-            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-              ? userPreferences 
-              : undefined,
-          },
-          restaurantIndex,
-          newIndex
-        );
-        setPlan(newPlan);
+      // Get coordinates based on location mode
+      let lat: number, lng: number;
+      if (locationMode === "gps") {
+        if (!currentLocation) return;
+        lat = currentLocation.lat;
+        lng = currentLocation.lng;
+      } else {
+        const coords = ZIP_COORDS[zipCode];
+        if (!coords) return;
+        lat = coords.lat;
+        lng = coords.lng;
       }
+      
+      const newPlan = buildPlanFromIndices(
+        {
+          lat,
+          lng,
+          radius,
+          restaurants: restaurantResults,
+          activities: activityResults,
+          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+            ? userPreferences 
+            : undefined,
+        },
+        restaurantIndex,
+        newIndex
+      );
+      setPlan(newPlan);
       return;
     }
 
     // No next item: if we have a token, fetch next page and append
-    if (nextActivitiesToken && currentLocation) {
+    if (nextActivitiesToken) {
       setLoading(true);
       try {
-        const { lat, lng } = locationMode === "gps" 
-          ? currentLocation 
-          : ZIP_COORDS[zipCode] || currentLocation;
+        // Get coordinates based on location mode
+        let lat: number, lng: number;
+        if (locationMode === "gps") {
+          if (!currentLocation) {
+            setLoading(false);
+            return;
+          }
+          lat = currentLocation.lat;
+          lng = currentLocation.lng;
+        } else {
+          const coords = ZIP_COORDS[zipCode];
+          if (!coords) {
+            setLoading(false);
+            return;
+          }
+          lat = coords.lat;
+          lng = coords.lng;
+        }
 
         const { data, error } = await supabase.functions.invoke('activities-search', {
           body: { lat, lng, radiusMiles: radius, category: activity, pagetoken: nextActivitiesToken }
@@ -483,23 +546,34 @@ const Index = () => {
       // Fallback: wrap to start
       setActivityIndex(0);
       
-      if (currentLocation) {
-        const newPlan = buildPlanFromIndices(
-          {
-            lat: currentLocation.lat,
-            lng: currentLocation.lng,
-            radius,
-            restaurants: restaurantResults,
-            activities: activityResults,
-            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-              ? userPreferences 
-              : undefined,
-          },
-          restaurantIndex,
-          0
-        );
-        setPlan(newPlan);
+      // Get coordinates based on location mode
+      let lat: number, lng: number;
+      if (locationMode === "gps") {
+        if (!currentLocation) return;
+        lat = currentLocation.lat;
+        lng = currentLocation.lng;
+      } else {
+        const coords = ZIP_COORDS[zipCode];
+        if (!coords) return;
+        lat = coords.lat;
+        lng = coords.lng;
       }
+      
+      const newPlan = buildPlanFromIndices(
+        {
+          lat,
+          lng,
+          radius,
+          restaurants: restaurantResults,
+          activities: activityResults,
+          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+            ? userPreferences 
+            : undefined,
+        },
+        restaurantIndex,
+        0
+      );
+      setPlan(newPlan);
       toast({ description: "Showing earlier options" });
     }
   };
