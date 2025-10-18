@@ -38,6 +38,12 @@ export const RestaurantCard = ({
 
   const handlePhoneClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // If we already have the phone number, use it directly
+    if (phoneNumber) {
+      window.location.href = `tel:${phoneNumber}`;
+      return;
+    }
 
     console.log('Fetching phone number for place:', id);
     setLoadingPhone(true);
@@ -56,10 +62,8 @@ export const RestaurantCard = ({
       if (data?.phoneNumber) {
         console.log('Phone number received:', data.phoneNumber);
         setPhoneNumber(data.phoneNumber);
-        toast({
-          title: "Phone number found",
-          description: "Click the phone icon again to call",
-        });
+        // Immediately trigger the phone dialer
+        window.location.href = `tel:${data.phoneNumber}`;
       } else {
         console.log('No phone number in response');
         toast({
@@ -111,29 +115,19 @@ export const RestaurantCard = ({
             {priceLevel && (
               <span className="font-medium text-sm">{priceLevel}</span>
             )}
-            {phoneNumber ? (
-              <a
-                href={`tel:${phoneNumber}`}
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-              >
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-8 w-8"
+              onClick={handlePhoneClick}
+              disabled={loadingPhone}
+            >
+              {loadingPhone ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
                 <Phone className="h-4 w-4" />
-              </a>
-            ) : (
-              <Button
-                size="icon"
-                variant="outline"
-                className="h-8 w-8"
-                onClick={handlePhoneClick}
-                disabled={loadingPhone}
-              >
-                {loadingPhone ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Phone className="h-4 w-4" />
-                )}
-              </Button>
-            )}
+              )}
+            </Button>
           </div>
         </div>
       </CardContent>
