@@ -24,16 +24,8 @@ const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {
 
 const Index = () => {
   const navigate = useNavigate();
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
   const [searchType, setSearchType] = useState<"restaurants" | "activities">("restaurants");
-  
-  // Check onboarding status on mount
-  useEffect(() => {
-    const hasOnboarded = localStorage.getItem("hasOnboarded");
-    if (!hasOnboarded) {
-      navigate("/onboarding");
-    }
-  }, [navigate]);
-
   const [locationMode, setLocationMode] = useState<"gps" | "zip">("gps");
   const [zipCode, setZipCode] = useState("");
   const [cuisine, setCuisine] = useState("Italian");
@@ -52,6 +44,16 @@ const Index = () => {
   const [restaurantIndex, setRestaurantIndex] = useState(0);
   const [activityIndex, setActivityIndex] = useState(0);
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
+
+  // Check onboarding status on mount
+  useEffect(() => {
+    const hasOnboarded = localStorage.getItem("hasOnboarded");
+    if (!hasOnboarded) {
+      navigate("/onboarding");
+    } else {
+      setIsCheckingOnboarding(false);
+    }
+  }, [navigate]);
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -428,6 +430,15 @@ const Index = () => {
       setLoading(false);
     }
   };
+
+  // Show loading state while checking onboarding
+  if (isCheckingOnboarding) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const handleReroll = async () => {
     const relevantToken = searchType === "restaurants" ? nextRestaurantsToken : nextActivitiesToken;
