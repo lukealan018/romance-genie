@@ -84,16 +84,37 @@ const Index = () => {
 
     setLoading(true);
     try {
+      console.log('Calling places-search with:', { lat, lng, radiusMiles: radius, cuisine });
+      
       const { data, error } = await supabase.functions.invoke('places-search', {
         body: { lat, lng, radiusMiles: radius, cuisine }
       });
 
-      if (error) throw error;
+      console.log('Response from places-search:', { data, error });
 
-      setResults(data.items || []);
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error('No data returned from places-search');
+      }
+
+      const items = data.items || [];
+      console.log(`Setting ${items.length} results`);
+      
+      setResults(items);
       setNextPageToken(data.nextPageToken || null);
       setShowResults(true);
-      toast({ title: "Success", description: `Found ${data.items?.length || 0} great spots for your date night!` });
+      
+      toast({ 
+        title: items.length > 0 ? "Success" : "No Results", 
+        description: items.length > 0 
+          ? `Found ${items.length} great spots for your date night!` 
+          : `No ${cuisine} restaurants found within ${radius} miles. Try a different cuisine or larger radius.`,
+        variant: items.length > 0 ? "default" : "destructive"
+      });
     } catch (error) {
       console.error('Error fetching places:', error);
       toast({ title: "Error", description: "Failed to find restaurants. Please try again.", variant: "destructive" });
