@@ -18,15 +18,29 @@ serve(async (req) => {
       throw new Error('GOOGLE_MAPS_API_KEY is not configured');
     }
 
-    const url = new URL(req.url);
-    const lat = parseFloat(url.searchParams.get('lat') || '');
-    const lng = parseFloat(url.searchParams.get('lng') || '');
-    const radiusMiles = parseFloat(url.searchParams.get('radiusMiles') || '');
-    const cuisine = url.searchParams.get('cuisine') || '';
-    const pagetoken = url.searchParams.get('pagetoken');
+    // Parse request body for POST requests
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, pagetoken: string | undefined;
+
+    if (req.method === 'POST') {
+      const body = await req.json();
+      lat = body.lat;
+      lng = body.lng;
+      radiusMiles = body.radiusMiles;
+      cuisine = body.cuisine;
+      pagetoken = body.pagetoken;
+    } else {
+      // Fallback to query params for GET
+      const url = new URL(req.url);
+      lat = parseFloat(url.searchParams.get('lat') || '');
+      lng = parseFloat(url.searchParams.get('lng') || '');
+      radiusMiles = parseFloat(url.searchParams.get('radiusMiles') || '');
+      cuisine = url.searchParams.get('cuisine') || '';
+      pagetoken = url.searchParams.get('pagetoken') || undefined;
+    }
 
     // Validate required parameters
     if (isNaN(lat) || isNaN(lng) || isNaN(radiusMiles) || !cuisine) {
+      console.error('Invalid parameters:', { lat, lng, radiusMiles, cuisine });
       return new Response(
         JSON.stringify({ error: 'Missing or invalid required parameters: lat, lng, radiusMiles, cuisine' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
