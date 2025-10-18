@@ -1,21 +1,19 @@
 import { useState } from "react";
-import { Heart, RefreshCw } from "lucide-react";
+import { Heart, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LocationToggle } from "@/components/LocationToggle";
 import { CuisinePicker } from "@/components/CuisinePicker";
 import { RadiusSelector } from "@/components/RadiusSelector";
 import { RestaurantCard } from "@/components/RestaurantCard";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock data for demonstration
-const mockRestaurants = [
-  { name: "Bella Notte", cuisine: "Italian", rating: 4.7, distance: 2.3, priceLevel: "$$" },
-  { name: "Sakura Sushi", cuisine: "Japanese", rating: 4.8, distance: 1.8, priceLevel: "$$$" },
-  { name: "La Taqueria", cuisine: "Mexican", rating: 4.6, distance: 3.1, priceLevel: "$" },
-  { name: "Golden Wok", cuisine: "Chinese", rating: 4.5, distance: 2.7, priceLevel: "$$" },
-  { name: "Thai Basil", cuisine: "Thai", rating: 4.9, distance: 1.5, priceLevel: "$$" },
-  { name: "The Steakhouse", cuisine: "American", rating: 4.4, distance: 4.2, priceLevel: "$$$" },
-];
+// Temporary ZIP to lat/lng stub (will be replaced with server geocoding)
+const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {
+  "10001": { lat: 40.7506, lng: -73.9971 }, // NYC
+  "90210": { lat: 34.0901, lng: -118.4065 }, // Beverly Hills
+  "60601": { lat: 41.8857, lng: -87.6180 }, // Chicago
+};
 
 const Index = () => {
   const [locationMode, setLocationMode] = useState<"gps" | "zip">("gps");
@@ -23,32 +21,106 @@ const Index = () => {
   const [cuisine, setCuisine] = useState("Italian");
   const [radius, setRadius] = useState(5);
   const [showResults, setShowResults] = useState(false);
-  const [results, setResults] = useState(mockRestaurants);
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const handleUseCurrentLocation = () => {
-    toast.success("Location detected! Ready to find date spots near you.");
-  };
-
-  const handleFindPlaces = () => {
-    if (locationMode === "zip" && zipCode.length !== 5) {
-      toast.error("Please enter a valid 5-digit ZIP code");
+    if (!navigator.geolocation) {
+      toast({ title: "Error", description: "Geolocation is not supported by your browser", variant: "destructive" });
       return;
     }
-    
-    // Filter mock data by selected cuisine
-    const filtered = mockRestaurants
-      .filter((r) => r.cuisine === cuisine)
-      .filter((r) => r.distance <= radius);
-    
-    setResults(filtered);
-    setShowResults(true);
-    toast.success(`Found ${filtered.length} great spots for your date night!`);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCurrentLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        toast({ title: "Success", description: "Location detected! Ready to find date spots near you." });
+      },
+      (error) => {
+        toast({ title: "Error", description: "Could not get your location. Please try ZIP code instead.", variant: "destructive" });
+      }
+    );
   };
 
-  const handleReroll = () => {
-    const shuffled = [...results].sort(() => Math.random() - 0.5);
-    setResults(shuffled);
-    toast.success("Refreshed your options!");
+  const handleFindPlaces = async () => {
+    // Validate and get coordinates
+    let lat: number, lng: number;
+
+    if (locationMode === "gps") {
+      if (!currentLocation) {
+        toast({ title: "Error", description: "Please get your current location first", variant: "destructive" });
+        return;
+      }
+      lat = currentLocation.lat;
+      lng = currentLocation.lng;
+    } else {
+      if (zipCode.length !== 5) {
+        toast({ title: "Error", description: "Please enter a valid 5-digit ZIP code", variant: "destructive" });
+        return;
+      }
+      const coords = ZIP_COORDS[zipCode];
+      if (!coords) {
+        toast({ title: "Error", description: "ZIP code not found. Try: 10001, 90210, or 60601", variant: "destructive" });
+        return;
+      }
+      lat = coords.lat;
+      lng = coords.lng;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('places-search', {
+        body: { lat, lng, radiusMiles: radius, cuisine }
+      });
+
+      if (error) throw error;
+
+      setResults(data.items || []);
+      setNextPageToken(data.nextPageToken || null);
+      setShowResults(true);
+      toast({ title: "Success", description: `Found ${data.items?.length || 0} great spots for your date night!` });
+    } catch (error) {
+      console.error('Error fetching places:', error);
+      toast({ title: "Error", description: "Failed to find restaurants. Please try again.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReroll = async () => {
+    if (nextPageToken && currentLocation) {
+      // Fetch next page
+      setLoading(true);
+      try {
+        const { lat, lng } = locationMode === "gps" 
+          ? currentLocation 
+          : ZIP_COORDS[zipCode] || currentLocation;
+
+        const { data, error } = await supabase.functions.invoke('places-search', {
+          body: { lat, lng, radiusMiles: radius, cuisine, pagetoken: nextPageToken }
+        });
+
+        if (error) throw error;
+
+        setResults(data.items || []);
+        setNextPageToken(data.nextPageToken || null);
+        toast({ title: "Success", description: "Loaded more options!" });
+      } catch (error) {
+        console.error('Error fetching next page:', error);
+        toast({ title: "Error", description: "Failed to load more restaurants.", variant: "destructive" });
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Shuffle existing results
+      const shuffled = [...results].sort(() => Math.random() - 0.5);
+      setResults(shuffled);
+      toast({ title: "Success", description: "Refreshed your options!" });
+    }
   };
 
   if (showResults) {
@@ -65,8 +137,8 @@ const Index = () => {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleReroll} variant="outline" size="icon">
-                <RefreshCw className="w-4 h-4" />
+              <Button onClick={handleReroll} variant="outline" size="icon" disabled={loading}>
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               </Button>
               <Button onClick={() => setShowResults(false)} variant="outline">
                 Change Preferences
@@ -127,8 +199,15 @@ const Index = () => {
 
           <RadiusSelector value={radius} onChange={setRadius} />
 
-          <Button onClick={handleFindPlaces} size="lg" className="w-full">
-            Find Perfect Spots
+          <Button onClick={handleFindPlaces} size="lg" className="w-full" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Finding Spots...
+              </>
+            ) : (
+              "Find Perfect Spots"
+            )}
           </Button>
         </div>
       </div>
