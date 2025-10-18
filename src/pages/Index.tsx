@@ -241,24 +241,24 @@ const Index = () => {
       setNextRestaurantsToken(restaurantsResponse.data?.nextPageToken || null);
       setNextActivitiesToken(activitiesResponse.data?.nextPageToken || null);
 
-      // Build the initial plan to determine which items to show
+      // Build the initial plan using the sorted arrays
       const initialPlan = buildPlan({
         lat,
         lng,
         radius,
-        restaurants,
-        activities,
+        restaurants: sortedRestaurants,
+        activities: sortedActivities,
         preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
           ? userPreferences 
           : undefined,
       });
 
-      // Find the indices of the selected restaurant and activity
+      // Find the indices of the selected restaurant and activity in the sorted arrays
       const selectedRestaurantIndex = initialPlan.restaurant 
-        ? restaurants.findIndex(r => r.id === initialPlan.restaurant?.id)
+        ? sortedRestaurants.findIndex(r => r.id === initialPlan.restaurant?.id)
         : 0;
       const selectedActivityIndex = initialPlan.activity
-        ? activities.findIndex(a => a.id === initialPlan.activity?.id)
+        ? sortedActivities.findIndex(a => a.id === initialPlan.activity?.id)
         : 0;
 
       // Set indices to match what was actually selected
