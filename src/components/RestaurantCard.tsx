@@ -1,5 +1,9 @@
-import { Star, MapPin } from "lucide-react";
+import { useState } from "react";
+import { Star, MapPin, Phone, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface RestaurantCardProps {
   id: string;
@@ -24,9 +28,50 @@ export const RestaurantCard = ({
   lng,
   onClick,
 }: RestaurantCardProps) => {
+  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
+  const [loadingPhone, setLoadingPhone] = useState(false);
+
   const handleAddressClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+  };
+
+  const handlePhoneClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (phoneNumber) {
+      window.location.href = `tel:${phoneNumber}`;
+      return;
+    }
+
+    setLoadingPhone(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('place-details', {
+        body: { placeId: id }
+      });
+
+      if (error) throw error;
+      
+      if (data?.phoneNumber) {
+        setPhoneNumber(data.phoneNumber);
+        window.location.href = `tel:${data.phoneNumber}`;
+      } else {
+        toast({
+          title: "No phone number",
+          description: "This restaurant doesn't have a phone number listed",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching phone number:', error);
+      toast({
+        title: "Error",
+        description: "Failed to get phone number",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingPhone(false);
+    }
   };
   return (
     <Card 
@@ -49,7 +94,7 @@ export const RestaurantCard = ({
           <span className="line-clamp-1">{address}</span>
         </div>
         
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 fill-accent text-accent" />
             <span className="font-medium">{rating.toFixed(1)}</span>
@@ -57,9 +102,24 @@ export const RestaurantCard = ({
               <span className="text-xs text-muted-foreground">({totalRatings})</span>
             )}
           </div>
-          {priceLevel && (
-            <span className="font-medium text-sm">{priceLevel}</span>
-          )}
+          <div className="flex items-center gap-2">
+            {priceLevel && (
+              <span className="font-medium text-sm">{priceLevel}</span>
+            )}
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-8 w-8"
+              onClick={handlePhoneClick}
+              disabled={loadingPhone}
+            >
+              {loadingPhone ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Phone className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
