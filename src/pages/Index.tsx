@@ -71,6 +71,25 @@ const Index = () => {
     }
   }, []);
 
+  // Show onboarding complete toast and auto-search
+  useEffect(() => {
+    const showToast = localStorage.getItem("showOnboardingCompleteToast");
+    if (showToast === "true") {
+      localStorage.removeItem("showOnboardingCompleteToast");
+      toast({
+        title: "Profile saved",
+        description: "Picks tailored to you — finding your perfect spots!",
+      });
+      
+      // Auto-search if we have a ZIP and location is set to zip mode
+      if (zipCode && locationMode === "zip") {
+        setTimeout(() => {
+          handleFindPlaces();
+        }, 1000);
+      }
+    }
+  }, [zipCode, locationMode]);
+
   const fetchProfile = async () => {
     try {
       const response = await fetch(

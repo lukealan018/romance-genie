@@ -70,7 +70,7 @@ const Onboarding = () => {
 
       console.log('Profile saved successfully:', data);
       localStorage.setItem("hasOnboarded", "true");
-      toast.success("Profile saved! Let's find your perfect date night.");
+      localStorage.setItem("showOnboardingCompleteToast", "true");
       navigate("/");
     } catch (error) {
       console.error('Error during save:', error);
