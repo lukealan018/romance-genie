@@ -41,10 +41,7 @@ export const RestaurantCard = ({
     
     if (phoneNumber) {
       console.log('Calling phone number:', phoneNumber);
-      // Create a temporary anchor element to trigger the tel: link
-      const link = document.createElement('a');
-      link.href = `tel:${phoneNumber}`;
-      link.click();
+      window.location.href = `tel:${phoneNumber}`;
       return;
     }
 
@@ -65,11 +62,7 @@ export const RestaurantCard = ({
       if (data?.phoneNumber) {
         console.log('Phone number received:', data.phoneNumber);
         setPhoneNumber(data.phoneNumber);
-        
-        // Create a temporary anchor element to trigger the tel: link
-        const link = document.createElement('a');
-        link.href = `tel:${data.phoneNumber}`;
-        link.click();
+        window.location.href = `tel:${data.phoneNumber}`;
       } else {
         console.log('No phone number in response');
         toast({
