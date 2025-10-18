@@ -114,6 +114,8 @@ function scorePlaces(
   const scoredPlaces = places.map(place => {
     const distance = calculateDistance(userLat, userLng, place.lat, place.lng);
     
+    // Note: Google Places API doesn't return cuisine/category fields directly
+    // so personalFit will be neutral (0.5) until we enhance the API responses
     const personalFit = calculatePersonalFit(place, preferences, type);
     const ratingNorm = normalizeRating(place.rating);
     const proximityNorm = normalizeProximity(distance, radius);
@@ -126,11 +128,17 @@ function scorePlaces(
       0.2 * proximityNorm +
       0.1 * popularityNorm;
     
-    return { place, score };
+    return { place, score, distance };
   });
   
-  // Sort by score descending
-  scoredPlaces.sort((a, b) => b.score - a.score);
+  // Sort by score descending, then by distance ascending (tiebreaker)
+  scoredPlaces.sort((a, b) => {
+    if (Math.abs(a.score - b.score) < 0.01) {
+      // If scores are very close, prefer closer places
+      return a.distance - b.distance;
+    }
+    return b.score - a.score;
+  });
   
   return scoredPlaces.map(sp => sp.place);
 }
