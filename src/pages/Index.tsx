@@ -516,8 +516,40 @@ const Index = () => {
             </Button>
           </div>
 
+          {/* Empty State Warning */}
+          {(restaurantResults.length === 0 || activityResults.length === 0) && (
+            <div className="bg-card border border-border rounded-xl p-6 mb-6">
+              <div className="text-center space-y-4">
+                <div className="text-xl font-semibold text-foreground">
+                  {restaurantResults.length === 0 && activityResults.length === 0 
+                    ? "No restaurants or activities found"
+                    : restaurantResults.length === 0 
+                    ? "No restaurants found"
+                    : "No activities found"}
+                </div>
+                <p className="text-muted-foreground">
+                  Try these options to find more results:
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button 
+                    onClick={() => {
+                      setRadius(radius + 5);
+                      handleRerollPlan();
+                    }}
+                    variant="outline"
+                  >
+                    Widen radius to {radius + 5} miles
+                  </Button>
+                  <Button onClick={() => setShowResults(false)} variant="outline">
+                    Try different {restaurantResults.length === 0 ? "cuisine" : "activity"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Tonight's Plan Card */}
-          {plan && (
+          {plan && restaurantResults.length > 0 && activityResults.length > 0 && (
             <PlanCard
               restaurant={plan.restaurant}
               activity={plan.activity}
@@ -526,6 +558,8 @@ const Index = () => {
               onSwapActivity={handleSwapActivity}
               onReroll={handleRerollPlan}
               loading={loading}
+              canSwapRestaurant={restaurantResults.length > 1}
+              canSwapActivity={activityResults.length > 1}
             />
           )}
 

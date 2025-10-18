@@ -28,6 +28,8 @@ interface PlanCardProps {
   onSwapActivity: () => void;
   onReroll: () => void;
   loading?: boolean;
+  canSwapRestaurant?: boolean;
+  canSwapActivity?: boolean;
 }
 
 export const PlanCard = ({
@@ -38,6 +40,8 @@ export const PlanCard = ({
   onSwapActivity,
   onReroll,
   loading = false,
+  canSwapRestaurant = true,
+  canSwapActivity = true,
 }: PlanCardProps) => {
   const [restaurantPhone, setRestaurantPhone] = useState<string | null>(null);
   const [activityPhone, setActivityPhone] = useState<string | null>(null);
@@ -125,7 +129,7 @@ export const PlanCard = ({
                   )}
                 </div>
               </div>
-              <Button onClick={onSwapRestaurant} variant="ghost" size="sm" disabled={loading}>
+              <Button onClick={onSwapRestaurant} variant="ghost" size="sm" disabled={loading || !canSwapRestaurant}>
                 Swap
               </Button>
             </div>
@@ -193,7 +197,7 @@ export const PlanCard = ({
                   <span className="text-xs text-muted-foreground">({activity.totalRatings})</span>
                 </div>
               </div>
-              <Button onClick={onSwapActivity} variant="ghost" size="sm" disabled={loading}>
+              <Button onClick={onSwapActivity} variant="ghost" size="sm" disabled={loading || !canSwapActivity}>
                 Swap
               </Button>
             </div>
