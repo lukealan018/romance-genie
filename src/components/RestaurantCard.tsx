@@ -2,22 +2,29 @@ import { Star, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface RestaurantCardProps {
+  id: string;
   name: string;
   rating: number;
   address: string;
   priceLevel: string;
   totalRatings?: number;
+  onClick?: () => void;
 }
 
 export const RestaurantCard = ({
+  id,
   name,
   rating,
   address,
   priceLevel,
   totalRatings = 0,
+  onClick,
 }: RestaurantCardProps) => {
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+    <Card 
+      className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+      onClick={onClick}
+    >
       <div className="h-48 bg-gradient-to-br from-primary/20 to-accent/20 relative overflow-hidden flex items-center justify-center">
         <div className="text-5xl font-bold text-primary/40">
           {name.charAt(0)}

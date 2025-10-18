@@ -5,6 +5,7 @@ import { LocationToggle } from "@/components/LocationToggle";
 import { CuisinePicker } from "@/components/CuisinePicker";
 import { RadiusSelector } from "@/components/RadiusSelector";
 import { RestaurantCard } from "@/components/RestaurantCard";
+import { RestaurantDetailsDrawer } from "@/components/RestaurantDetailsDrawer";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,6 +27,7 @@ const Index = () => {
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [gettingLocation, setGettingLocation] = useState(false);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<{ id: string; name: string } | null>(null);
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -181,7 +183,11 @@ const Index = () => {
           {results.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {results.map((restaurant, idx) => (
-                <RestaurantCard key={idx} {...restaurant} />
+                <RestaurantCard 
+                  key={idx} 
+                  {...restaurant}
+                  onClick={() => setSelectedRestaurant({ id: restaurant.id, name: restaurant.name })}
+                />
               ))}
             </div>
           ) : (
@@ -193,6 +199,15 @@ const Index = () => {
                 Try Different Options
               </Button>
             </div>
+          )}
+
+          {selectedRestaurant && (
+            <RestaurantDetailsDrawer
+              isOpen={!!selectedRestaurant}
+              onClose={() => setSelectedRestaurant(null)}
+              placeId={selectedRestaurant.id}
+              initialName={selectedRestaurant.name}
+            />
           )}
         </div>
       </div>

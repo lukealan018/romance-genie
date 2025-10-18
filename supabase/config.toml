@@ -1,1 +1,7 @@
 project_id = "tcciipxgeomysyvwyzyi"
+
+[functions.places-search]
+verify_jwt = false
+
+[functions.place-details]
+verify_jwt = false
