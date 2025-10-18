@@ -32,7 +32,8 @@ const Index = () => {
   const [restaurantResults, setRestaurantResults] = useState<any[]>([]);
   const [activityResults, setActivityResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  const [nextRestaurantsToken, setNextRestaurantsToken] = useState<string | null>(null);
+  const [nextActivitiesToken, setNextActivitiesToken] = useState<string | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<{ id: string; name: string } | null>(null);
@@ -120,6 +121,8 @@ const Index = () => {
       setActivityResults(activities);
       setRestaurantIndex(0);
       setActivityIndex(0);
+      setNextRestaurantsToken(restaurantsResponse.data?.nextPageToken || null);
+      setNextActivitiesToken(activitiesResponse.data?.nextPageToken || null);
 
       // Build the initial plan
       const initialPlan = buildPlan({
@@ -190,7 +193,9 @@ const Index = () => {
   };
 
   const handleReroll = async () => {
-    if (nextPageToken && currentLocation) {
+    const relevantToken = searchType === "restaurants" ? nextRestaurantsToken : nextActivitiesToken;
+    
+    if (relevantToken && currentLocation) {
       // Fetch next page
       setLoading(true);
       try {
@@ -200,8 +205,8 @@ const Index = () => {
 
         const functionName = searchType === "restaurants" ? "places-search" : "activities-search";
         const params = searchType === "restaurants" 
-          ? { lat, lng, radiusMiles: radius, cuisine, pagetoken: nextPageToken }
-          : { lat, lng, radiusMiles: radius, category: activity, pagetoken: nextPageToken };
+          ? { lat, lng, radiusMiles: radius, cuisine, pagetoken: relevantToken }
+          : { lat, lng, radiusMiles: radius, category: activity, pagetoken: relevantToken };
 
         const { data, error } = await supabase.functions.invoke(functionName, {
           body: params
@@ -211,10 +216,13 @@ const Index = () => {
 
         if (searchType === "restaurants") {
           setRestaurantResults(data.items || []);
+          setRestaurantIndex(0);
+          setNextRestaurantsToken(data.nextPageToken || null);
         } else {
           setActivityResults(data.items || []);
+          setActivityIndex(0);
+          setNextActivitiesToken(data.nextPageToken || null);
         }
-        setNextPageToken(data.nextPageToken || null);
         toast({ title: "Success", description: "Loaded more options!" });
       } catch (error) {
         console.error('Error fetching next page:', error);
@@ -227,9 +235,11 @@ const Index = () => {
       if (searchType === "restaurants") {
         const shuffled = [...restaurantResults].sort(() => Math.random() - 0.5);
         setRestaurantResults(shuffled);
+        setRestaurantIndex(0);
       } else {
         const shuffled = [...activityResults].sort(() => Math.random() - 0.5);
         setActivityResults(shuffled);
+        setActivityIndex(0);
       }
       toast({ title: "Success", description: "Refreshed your options!" });
     }
