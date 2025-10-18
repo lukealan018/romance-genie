@@ -374,8 +374,72 @@ const Index = () => {
   };
 
 
-  const handleRerollPlan = () => {
-    handleFindPlaces();
+  const handleRerollPlan = async () => {
+    // Full refresh: re-fetch both from page 1, reset tokens and indices
+    let lat: number, lng: number;
+
+    if (locationMode === "gps") {
+      if (!currentLocation) {
+        toast({ title: "Error", description: "Location not available", variant: "destructive" });
+        return;
+      }
+      lat = currentLocation.lat;
+      lng = currentLocation.lng;
+    } else {
+      const coords = ZIP_COORDS[zipCode];
+      if (!coords) {
+        toast({ title: "Error", description: "Invalid ZIP code", variant: "destructive" });
+        return;
+      }
+      lat = coords.lat;
+      lng = coords.lng;
+    }
+
+    setLoading(true);
+    try {
+      // Fetch both from page 1 (no pagetoken)
+      const [restaurantsResponse, activitiesResponse] = await Promise.all([
+        supabase.functions.invoke('places-search', {
+          body: { lat, lng, radiusMiles: radius, cuisine }
+        }),
+        supabase.functions.invoke('activities-search', {
+          body: { lat, lng, radiusMiles: radius, category: activity }
+        })
+      ]);
+
+      if (restaurantsResponse.error) throw restaurantsResponse.error;
+      if (activitiesResponse.error) throw activitiesResponse.error;
+
+      const restaurants = restaurantsResponse.data?.items || [];
+      const activities = activitiesResponse.data?.items || [];
+      
+      setRestaurantResults(restaurants);
+      setActivityResults(activities);
+      setRestaurantIndex(0);
+      setActivityIndex(0);
+      setNextRestaurantsToken(restaurantsResponse.data?.nextPageToken || null);
+      setNextActivitiesToken(activitiesResponse.data?.nextPageToken || null);
+
+      // Build fresh plan
+      const freshPlan = buildPlan({
+        lat,
+        lng,
+        radius,
+        restaurants,
+        activities,
+      });
+      
+      setPlan(freshPlan);
+      toast({ 
+        title: "New Plan!", 
+        description: "Found fresh options for your date night!",
+      });
+    } catch (error) {
+      console.error('Error rerolling plan:', error);
+      toast({ title: "Error", description: "Failed to refresh plan. Please try again.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleReroll = async () => {
