@@ -120,12 +120,10 @@ const Index = () => {
       
       setRestaurantResults(restaurants);
       setActivityResults(activities);
-      setRestaurantIndex(0);
-      setActivityIndex(0);
       setNextRestaurantsToken(restaurantsResponse.data?.nextPageToken || null);
       setNextActivitiesToken(activitiesResponse.data?.nextPageToken || null);
 
-      // Build the initial plan
+      // Build the initial plan to determine which items to show
       const initialPlan = buildPlan({
         lat,
         lng,
@@ -133,6 +131,18 @@ const Index = () => {
         restaurants,
         activities,
       });
+
+      // Find the indices of the selected restaurant and activity
+      const selectedRestaurantIndex = initialPlan.restaurant 
+        ? restaurants.findIndex(r => r.id === initialPlan.restaurant?.id)
+        : 0;
+      const selectedActivityIndex = initialPlan.activity
+        ? activities.findIndex(a => a.id === initialPlan.activity?.id)
+        : 0;
+
+      // Set indices to match what was actually selected
+      setRestaurantIndex(selectedRestaurantIndex >= 0 ? selectedRestaurantIndex : 0);
+      setActivityIndex(selectedActivityIndex >= 0 ? selectedActivityIndex : 0);
       
       setPlan(initialPlan);
       setShowResults(true);
@@ -415,12 +425,10 @@ const Index = () => {
       
       setRestaurantResults(restaurants);
       setActivityResults(activities);
-      setRestaurantIndex(0);
-      setActivityIndex(0);
       setNextRestaurantsToken(restaurantsResponse.data?.nextPageToken || null);
       setNextActivitiesToken(activitiesResponse.data?.nextPageToken || null);
 
-      // Build fresh plan
+      // Build fresh plan to determine which items to show
       const freshPlan = buildPlan({
         lat,
         lng,
@@ -428,6 +436,18 @@ const Index = () => {
         restaurants,
         activities,
       });
+
+      // Find the indices of the selected restaurant and activity
+      const selectedRestaurantIndex = freshPlan.restaurant 
+        ? restaurants.findIndex(r => r.id === freshPlan.restaurant?.id)
+        : 0;
+      const selectedActivityIndex = freshPlan.activity
+        ? activities.findIndex(a => a.id === freshPlan.activity?.id)
+        : 0;
+
+      // Set indices to match what was actually selected
+      setRestaurantIndex(selectedRestaurantIndex >= 0 ? selectedRestaurantIndex : 0);
+      setActivityIndex(selectedActivityIndex >= 0 ? selectedActivityIndex : 0);
       
       setPlan(freshPlan);
       toast({ 
