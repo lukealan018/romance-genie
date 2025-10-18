@@ -148,43 +148,171 @@ const Index = () => {
     }
   };
 
-  const handleSwapRestaurant = () => {
-    const newIndex = (restaurantIndex + 1) % restaurantResults.length;
-    setRestaurantIndex(newIndex);
-    
-    if (currentLocation) {
-      const newPlan = buildPlanFromIndices(
-        {
-          lat: currentLocation.lat,
-          lng: currentLocation.lng,
-          radius,
-          restaurants: restaurantResults,
-          activities: activityResults,
-        },
-        newIndex,
-        activityIndex
-      );
-      setPlan(newPlan);
+  const handleSwapRestaurant = async () => {
+    // If next item exists, advance index
+    if (restaurantIndex + 1 < restaurantResults.length) {
+      const newIndex = restaurantIndex + 1;
+      setRestaurantIndex(newIndex);
+      
+      if (currentLocation) {
+        const newPlan = buildPlanFromIndices(
+          {
+            lat: currentLocation.lat,
+            lng: currentLocation.lng,
+            radius,
+            restaurants: restaurantResults,
+            activities: activityResults,
+          },
+          newIndex,
+          activityIndex
+        );
+        setPlan(newPlan);
+      }
+      return;
+    }
+
+    // No next item: if we have a token, fetch next page and append
+    if (nextRestaurantsToken && currentLocation) {
+      setLoading(true);
+      try {
+        const { lat, lng } = locationMode === "gps" 
+          ? currentLocation 
+          : ZIP_COORDS[zipCode] || currentLocation;
+
+        const { data, error } = await supabase.functions.invoke('places-search', {
+          body: { lat, lng, radiusMiles: radius, cuisine, pagetoken: nextRestaurantsToken }
+        });
+
+        if (error) throw error;
+
+        const newRestaurants = [...restaurantResults, ...(data.items || [])];
+        setRestaurantResults(newRestaurants);
+        setNextRestaurantsToken(data.nextPageToken || null);
+        
+        const newIndex = restaurantIndex + 1;
+        setRestaurantIndex(newIndex);
+
+        const newPlan = buildPlanFromIndices(
+          {
+            lat,
+            lng,
+            radius,
+            restaurants: newRestaurants,
+            activities: activityResults,
+          },
+          newIndex,
+          activityIndex
+        );
+        setPlan(newPlan);
+        toast({ title: "Success", description: "Loaded more restaurants!" });
+      } catch (error) {
+        console.error('Error fetching more restaurants:', error);
+        toast({ title: "Error", description: "Failed to load more restaurants.", variant: "destructive" });
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Fallback: wrap to start
+      setRestaurantIndex(0);
+      
+      if (currentLocation) {
+        const newPlan = buildPlanFromIndices(
+          {
+            lat: currentLocation.lat,
+            lng: currentLocation.lng,
+            radius,
+            restaurants: restaurantResults,
+            activities: activityResults,
+          },
+          0,
+          activityIndex
+        );
+        setPlan(newPlan);
+      }
     }
   };
 
-  const handleSwapActivity = () => {
-    const newIndex = (activityIndex + 1) % activityResults.length;
-    setActivityIndex(newIndex);
-    
-    if (currentLocation) {
-      const newPlan = buildPlanFromIndices(
-        {
-          lat: currentLocation.lat,
-          lng: currentLocation.lng,
-          radius,
-          restaurants: restaurantResults,
-          activities: activityResults,
-        },
-        restaurantIndex,
-        newIndex
-      );
-      setPlan(newPlan);
+  const handleSwapActivity = async () => {
+    // If next item exists, advance index
+    if (activityIndex + 1 < activityResults.length) {
+      const newIndex = activityIndex + 1;
+      setActivityIndex(newIndex);
+      
+      if (currentLocation) {
+        const newPlan = buildPlanFromIndices(
+          {
+            lat: currentLocation.lat,
+            lng: currentLocation.lng,
+            radius,
+            restaurants: restaurantResults,
+            activities: activityResults,
+          },
+          restaurantIndex,
+          newIndex
+        );
+        setPlan(newPlan);
+      }
+      return;
+    }
+
+    // No next item: if we have a token, fetch next page and append
+    if (nextActivitiesToken && currentLocation) {
+      setLoading(true);
+      try {
+        const { lat, lng } = locationMode === "gps" 
+          ? currentLocation 
+          : ZIP_COORDS[zipCode] || currentLocation;
+
+        const { data, error } = await supabase.functions.invoke('activities-search', {
+          body: { lat, lng, radiusMiles: radius, category: activity, pagetoken: nextActivitiesToken }
+        });
+
+        if (error) throw error;
+
+        const newActivities = [...activityResults, ...(data.items || [])];
+        setActivityResults(newActivities);
+        setNextActivitiesToken(data.nextPageToken || null);
+        
+        const newIndex = activityIndex + 1;
+        setActivityIndex(newIndex);
+
+        const newPlan = buildPlanFromIndices(
+          {
+            lat,
+            lng,
+            radius,
+            restaurants: restaurantResults,
+            activities: newActivities,
+          },
+          restaurantIndex,
+          newIndex
+        );
+        setPlan(newPlan);
+        toast({ title: "Success", description: "Loaded more activities!" });
+      } catch (error) {
+        console.error('Error fetching more activities:', error);
+        toast({ title: "Error", description: "Failed to load more activities.", variant: "destructive" });
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Fallback: wrap to start
+      setActivityIndex(0);
+      
+      if (currentLocation) {
+        const newPlan = buildPlanFromIndices(
+          {
+            lat: currentLocation.lat,
+            lng: currentLocation.lng,
+            radius,
+            restaurants: restaurantResults,
+            activities: activityResults,
+          },
+          restaurantIndex,
+          0
+        );
+        setPlan(newPlan);
+      }
     }
   };
 
