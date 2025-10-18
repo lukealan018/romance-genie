@@ -8,9 +8,11 @@ import { ActivityPicker } from "@/components/ActivityPicker";
 import { RadiusSelector } from "@/components/RadiusSelector";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { ActivityCard } from "@/components/ActivityCard";
+import { PlanCard } from "@/components/PlanCard";
 import { RestaurantDetailsDrawer } from "@/components/RestaurantDetailsDrawer";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { buildPlan, buildPlanFromIndices } from "@/lib/planner";
 
 // Temporary ZIP to lat/lng stub (will be replaced with server geocoding)
 const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -27,12 +29,16 @@ const Index = () => {
   const [activity, setActivity] = useState("live_music");
   const [radius, setRadius] = useState(5);
   const [showResults, setShowResults] = useState(false);
-  const [results, setResults] = useState<any[]>([]);
+  const [restaurantResults, setRestaurantResults] = useState<any[]>([]);
+  const [activityResults, setActivityResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<{ id: string; name: string } | null>(null);
+  const [plan, setPlan] = useState<any>(null);
+  const [restaurantIndex, setRestaurantIndex] = useState(0);
+  const [activityIndex, setActivityIndex] = useState(0);
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -91,49 +97,96 @@ const Index = () => {
 
     setLoading(true);
     try {
-      const functionName = searchType === "restaurants" ? "places-search" : "activities-search";
-      const params = searchType === "restaurants" 
-        ? { lat, lng, radiusMiles: radius, cuisine }
-        : { lat, lng, radiusMiles: radius, category: activity };
+      // Fetch both restaurants and activities in parallel
+      const [restaurantsResponse, activitiesResponse] = await Promise.all([
+        supabase.functions.invoke('places-search', {
+          body: { lat, lng, radiusMiles: radius, cuisine }
+        }),
+        supabase.functions.invoke('activities-search', {
+          body: { lat, lng, radiusMiles: radius, category: activity }
+        })
+      ]);
+
+      console.log('Restaurants response:', restaurantsResponse);
+      console.log('Activities response:', activitiesResponse);
+
+      if (restaurantsResponse.error) throw restaurantsResponse.error;
+      if (activitiesResponse.error) throw activitiesResponse.error;
+
+      const restaurants = restaurantsResponse.data?.items || [];
+      const activities = activitiesResponse.data?.items || [];
       
-      console.log(`Calling ${functionName} with:`, params);
-      
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body: params
+      setRestaurantResults(restaurants);
+      setActivityResults(activities);
+      setRestaurantIndex(0);
+      setActivityIndex(0);
+
+      // Build the initial plan
+      const initialPlan = buildPlan({
+        lat,
+        lng,
+        radius,
+        restaurants,
+        activities,
       });
-
-      console.log(`Response from ${functionName}:`, { data, error });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
-
-      if (!data) {
-        throw new Error(`No data returned from ${functionName}`);
-      }
-
-      const items = data.items || [];
-      console.log(`Setting ${items.length} results`);
       
-      setResults(items);
-      setNextPageToken(data.nextPageToken || null);
+      setPlan(initialPlan);
       setShowResults(true);
       
-      const itemType = searchType === "restaurants" ? "restaurants" : "activities";
       toast({ 
-        title: items.length > 0 ? "Success" : "No Results", 
-        description: items.length > 0 
-          ? `Found ${items.length} great ${itemType} for your date night!` 
-          : `No ${itemType} found within ${radius} miles. Try different options or a larger radius.`,
-        variant: items.length > 0 ? "default" : "destructive"
+        title: "Success", 
+        description: `Found ${restaurants.length} restaurants and ${activities.length} activities for your date night!`,
       });
     } catch (error) {
       console.error('Error fetching places:', error);
-      toast({ title: "Error", description: `Failed to find ${searchType}. Please try again.`, variant: "destructive" });
+      toast({ title: "Error", description: "Failed to find places. Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSwapRestaurant = () => {
+    const newIndex = (restaurantIndex + 1) % restaurantResults.length;
+    setRestaurantIndex(newIndex);
+    
+    if (currentLocation) {
+      const newPlan = buildPlanFromIndices(
+        {
+          lat: currentLocation.lat,
+          lng: currentLocation.lng,
+          radius,
+          restaurants: restaurantResults,
+          activities: activityResults,
+        },
+        newIndex,
+        activityIndex
+      );
+      setPlan(newPlan);
+    }
+  };
+
+  const handleSwapActivity = () => {
+    const newIndex = (activityIndex + 1) % activityResults.length;
+    setActivityIndex(newIndex);
+    
+    if (currentLocation) {
+      const newPlan = buildPlanFromIndices(
+        {
+          lat: currentLocation.lat,
+          lng: currentLocation.lng,
+          radius,
+          restaurants: restaurantResults,
+          activities: activityResults,
+        },
+        restaurantIndex,
+        newIndex
+      );
+      setPlan(newPlan);
+    }
+  };
+
+  const handleRerollPlan = () => {
+    handleFindPlaces();
   };
 
   const handleReroll = async () => {
@@ -156,7 +209,11 @@ const Index = () => {
 
         if (error) throw error;
 
-        setResults(data.items || []);
+        if (searchType === "restaurants") {
+          setRestaurantResults(data.items || []);
+        } else {
+          setActivityResults(data.items || []);
+        }
         setNextPageToken(data.nextPageToken || null);
         toast({ title: "Success", description: "Loaded more options!" });
       } catch (error) {
@@ -167,15 +224,20 @@ const Index = () => {
       }
     } else {
       // Shuffle existing results
-      const shuffled = [...results].sort(() => Math.random() - 0.5);
-      setResults(shuffled);
+      if (searchType === "restaurants") {
+        const shuffled = [...restaurantResults].sort(() => Math.random() - 0.5);
+        setRestaurantResults(shuffled);
+      } else {
+        const shuffled = [...activityResults].sort(() => Math.random() - 0.5);
+        setActivityResults(shuffled);
+      }
       toast({ title: "Success", description: "Refreshed your options!" });
     }
   };
 
   if (showResults) {
+    const results = searchType === "restaurants" ? restaurantResults : activityResults;
     const itemType = searchType === "restaurants" ? "restaurants" : "activities";
-    const selectedCategory = searchType === "restaurants" ? cuisine : activity;
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -183,21 +245,42 @@ const Index = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Perfect Spots for Tonight
+                Your Date Night Options
               </h1>
               <p className="text-muted-foreground mt-1">
-                {searchType === "restaurants" ? cuisine : activity.replace('_', ' ')} {itemType} within {radius} miles
+                {cuisine} & {activity.replace('_', ' ')} within {radius} miles
               </p>
             </div>
-            <div className="flex gap-2">
+            <Button onClick={() => setShowResults(false)} variant="outline">
+              Change Preferences
+            </Button>
+          </div>
+
+          {/* Tonight's Plan Card */}
+          {plan && (
+            <PlanCard
+              restaurant={plan.restaurant}
+              activity={plan.activity}
+              distances={plan.distances}
+              onSwapRestaurant={handleSwapRestaurant}
+              onSwapActivity={handleSwapActivity}
+              onReroll={handleRerollPlan}
+              loading={loading}
+            />
+          )}
+
+          {/* Tab navigation for browsing all options */}
+          <Tabs value={searchType} onValueChange={(v) => setSearchType(v as "restaurants" | "activities")} className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <TabsList>
+                <TabsTrigger value="restaurants">All Restaurants ({restaurantResults.length})</TabsTrigger>
+                <TabsTrigger value="activities">All Activities ({activityResults.length})</TabsTrigger>
+              </TabsList>
               <Button onClick={handleReroll} variant="outline" size="icon" disabled={loading}>
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               </Button>
-              <Button onClick={() => setShowResults(false)} variant="outline">
-                Change Preferences
-              </Button>
             </div>
-          </div>
+          </Tabs>
 
           {results.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
