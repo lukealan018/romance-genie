@@ -1,4 +1,4 @@
-import { MapPin, Hash } from "lucide-react";
+import { MapPin, Hash, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,8 @@ interface LocationToggleProps {
   onModeChange: (mode: "gps" | "zip") => void;
   onZipCodeChange: (zip: string) => void;
   onUseCurrentLocation: () => void;
+  locationDetected?: boolean;
+  gettingLocation?: boolean;
 }
 
 export const LocationToggle = ({
@@ -17,6 +19,8 @@ export const LocationToggle = ({
   onModeChange,
   onZipCodeChange,
   onUseCurrentLocation,
+  locationDetected = false,
+  gettingLocation = false,
 }: LocationToggleProps) => {
   return (
     <div className="space-y-4">
@@ -41,8 +45,28 @@ export const LocationToggle = ({
       </div>
 
       {mode === "gps" ? (
-        <Button onClick={onUseCurrentLocation} variant="secondary" className="w-full">
-          Get Current Location
+        <Button 
+          onClick={onUseCurrentLocation} 
+          variant={locationDetected ? "outline" : "secondary"} 
+          className="w-full"
+          disabled={gettingLocation}
+        >
+          {gettingLocation ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Getting Location...
+            </>
+          ) : locationDetected ? (
+            <>
+              <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />
+              Location Detected
+            </>
+          ) : (
+            <>
+              <MapPin className="w-4 h-4 mr-2" />
+              Get Current Location
+            </>
+          )}
         </Button>
       ) : (
         <Input

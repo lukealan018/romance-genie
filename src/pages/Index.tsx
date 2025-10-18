@@ -25,6 +25,7 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [gettingLocation, setGettingLocation] = useState(false);
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -32,16 +33,26 @@ const Index = () => {
       return;
     }
 
+    setGettingLocation(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setCurrentLocation({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         });
+        setGettingLocation(false);
         toast({ title: "Success", description: "Location detected! Ready to find date spots near you." });
       },
       (error) => {
-        toast({ title: "Error", description: "Could not get your location. Please try ZIP code instead.", variant: "destructive" });
+        setGettingLocation(false);
+        console.error('Geolocation error:', error);
+        toast({ 
+          title: "Location Error", 
+          description: error.code === 1 
+            ? "Location permission denied. Please enable location access or use ZIP code." 
+            : "Could not get your location. Please try ZIP code instead.", 
+          variant: "destructive" 
+        });
       }
     );
   };
@@ -189,6 +200,8 @@ const Index = () => {
             onModeChange={setLocationMode}
             onZipCodeChange={setZipCode}
             onUseCurrentLocation={handleUseCurrentLocation}
+            locationDetected={!!currentLocation}
+            gettingLocation={gettingLocation}
           />
 
           <div className="h-px bg-border" />
