@@ -238,7 +238,16 @@ const Profile = () => {
         <Card>
           <CardHeader>
             <CardTitle>Favorite Cuisines</CardTitle>
-            <CardDescription>Select at least one cuisine you enjoy</CardDescription>
+            <CardDescription>
+              <div className="flex items-center justify-between">
+                <span>Select at least one cuisine you enjoy</span>
+                {selectedCuisines.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedCuisines.length} selected
+                  </Badge>
+                )}
+              </div>
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -259,7 +268,16 @@ const Profile = () => {
         <Card>
           <CardHeader>
             <CardTitle>Favorite Activities</CardTitle>
-            <CardDescription>Select at least one activity you enjoy</CardDescription>
+            <CardDescription>
+              <div className="flex items-center justify-between">
+                <span>Select at least one activity you enjoy</span>
+                {selectedActivities.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedActivities.length} selected
+                  </Badge>
+                )}
+              </div>
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -280,7 +298,16 @@ const Profile = () => {
         <Card>
           <CardHeader>
             <CardTitle>Dietary Restrictions</CardTitle>
-            <CardDescription>Optional: Select any dietary restrictions</CardDescription>
+            <CardDescription>
+              <div className="flex items-center justify-between">
+                <span>Optional: Select any dietary restrictions</span>
+                {selectedDietary.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedDietary.length} selected
+                  </Badge>
+                )}
+              </div>
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">

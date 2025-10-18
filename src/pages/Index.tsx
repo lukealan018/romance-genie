@@ -699,20 +699,31 @@ const Index = () => {
         <div className="text-center mb-12 space-y-4">
           <div className="flex items-center justify-between mb-4 max-w-md mx-auto">
             {nickname ? (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full">
-                <span className="text-sm font-medium">Hi, {nickname}</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full">
+                  <span className="text-sm font-medium">Hi, {nickname}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/profile')}
+                  className="text-xs"
+                >
+                  Edit profile
+                </Button>
               </div>
             ) : (
               <div />
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/profile')}
-              className="ml-auto"
-            >
-              <User className="w-5 h-5" />
-            </Button>
+            {nickname && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/profile')}
+              >
+                <User className="w-5 h-5" />
+              </Button>
+            )}
           </div>
           
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mb-4">

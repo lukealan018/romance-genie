@@ -81,9 +81,16 @@ const PreferencesStep = ({ data, onUpdate, onNext, onBack }: PreferencesStepProp
       <CardContent className="space-y-6">
         {/* Cuisines */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Utensils className="w-4 h-4" />
-            <Label className="text-sm font-semibold">Favorite Cuisines *</Label>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Utensils className="w-4 h-4" />
+              <Label className="text-sm font-semibold">Favorite Cuisines *</Label>
+            </div>
+            {data.cuisines.length > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {data.cuisines.length} selected
+              </Badge>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {cuisineOptions.map((cuisine) => (
@@ -104,7 +111,14 @@ const PreferencesStep = ({ data, onUpdate, onNext, onBack }: PreferencesStepProp
 
         {/* Activities */}
         <div className="space-y-3">
-          <Label className="text-sm font-semibold">Activities You Enjoy *</Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-semibold">Activities You Enjoy *</Label>
+            {data.activities.length > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {data.activities.length} selected
+              </Badge>
+            )}
+          </div>
           <div className="flex flex-wrap gap-2">
             {activityOptions.map((activity) => (
               <Badge
@@ -124,7 +138,14 @@ const PreferencesStep = ({ data, onUpdate, onNext, onBack }: PreferencesStepProp
 
         {/* Dietary */}
         <div className="space-y-3">
-          <Label className="text-sm font-semibold">Dietary Restrictions (optional)</Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-semibold">Dietary Restrictions (optional)</Label>
+            {data.dietary.length > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {data.dietary.length} selected
+              </Badge>
+            )}
+          </div>
           <div className="flex flex-wrap gap-2">
             {dietaryOptions.map((diet) => (
               <Badge
