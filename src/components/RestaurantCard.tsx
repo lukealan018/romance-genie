@@ -110,7 +110,12 @@ export const RestaurantCard = ({
             {phoneNumber ? (
               <a
                 href={`tel:${phoneNumber}`}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  console.log('Clicking call button with number:', phoneNumber);
+                  window.location.href = `tel:${phoneNumber}`;
+                }}
                 className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors"
               >
                 <Phone className="h-4 w-4" />
