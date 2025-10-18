@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Heart, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LocationToggle } from "@/components/LocationToggle";
 import { CuisinePicker } from "@/components/CuisinePicker";
+import { ActivityPicker } from "@/components/ActivityPicker";
 import { RadiusSelector } from "@/components/RadiusSelector";
 import { RestaurantCard } from "@/components/RestaurantCard";
+import { ActivityCard } from "@/components/ActivityCard";
 import { RestaurantDetailsDrawer } from "@/components/RestaurantDetailsDrawer";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,9 +20,11 @@ const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {
 };
 
 const Index = () => {
+  const [searchType, setSearchType] = useState<"restaurants" | "activities">("restaurants");
   const [locationMode, setLocationMode] = useState<"gps" | "zip">("gps");
   const [zipCode, setZipCode] = useState("");
   const [cuisine, setCuisine] = useState("Italian");
+  const [activity, setActivity] = useState("live_music");
   const [radius, setRadius] = useState(5);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<any[]>([]);
@@ -27,7 +32,7 @@ const Index = () => {
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [gettingLocation, setGettingLocation] = useState(false);
-  const [selectedRestaurant, setSelectedRestaurant] = useState<{ id: string; name: string } | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<{ id: string; name: string } | null>(null);
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -86,13 +91,18 @@ const Index = () => {
 
     setLoading(true);
     try {
-      console.log('Calling places-search with:', { lat, lng, radiusMiles: radius, cuisine });
+      const functionName = searchType === "restaurants" ? "places-search" : "activities-search";
+      const params = searchType === "restaurants" 
+        ? { lat, lng, radiusMiles: radius, cuisine }
+        : { lat, lng, radiusMiles: radius, category: activity };
       
-      const { data, error } = await supabase.functions.invoke('places-search', {
-        body: { lat, lng, radiusMiles: radius, cuisine }
+      console.log(`Calling ${functionName} with:`, params);
+      
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: params
       });
 
-      console.log('Response from places-search:', { data, error });
+      console.log(`Response from ${functionName}:`, { data, error });
 
       if (error) {
         console.error('Supabase function error:', error);
@@ -100,7 +110,7 @@ const Index = () => {
       }
 
       if (!data) {
-        throw new Error('No data returned from places-search');
+        throw new Error(`No data returned from ${functionName}`);
       }
 
       const items = data.items || [];
@@ -110,16 +120,17 @@ const Index = () => {
       setNextPageToken(data.nextPageToken || null);
       setShowResults(true);
       
+      const itemType = searchType === "restaurants" ? "restaurants" : "activities";
       toast({ 
         title: items.length > 0 ? "Success" : "No Results", 
         description: items.length > 0 
-          ? `Found ${items.length} great spots for your date night!` 
-          : `No ${cuisine} restaurants found within ${radius} miles. Try a different cuisine or larger radius.`,
+          ? `Found ${items.length} great ${itemType} for your date night!` 
+          : `No ${itemType} found within ${radius} miles. Try different options or a larger radius.`,
         variant: items.length > 0 ? "default" : "destructive"
       });
     } catch (error) {
       console.error('Error fetching places:', error);
-      toast({ title: "Error", description: "Failed to find restaurants. Please try again.", variant: "destructive" });
+      toast({ title: "Error", description: `Failed to find ${searchType}. Please try again.`, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -134,8 +145,13 @@ const Index = () => {
           ? currentLocation 
           : ZIP_COORDS[zipCode] || currentLocation;
 
-        const { data, error } = await supabase.functions.invoke('places-search', {
-          body: { lat, lng, radiusMiles: radius, cuisine, pagetoken: nextPageToken }
+        const functionName = searchType === "restaurants" ? "places-search" : "activities-search";
+        const params = searchType === "restaurants" 
+          ? { lat, lng, radiusMiles: radius, cuisine, pagetoken: nextPageToken }
+          : { lat, lng, radiusMiles: radius, category: activity, pagetoken: nextPageToken };
+
+        const { data, error } = await supabase.functions.invoke(functionName, {
+          body: params
         });
 
         if (error) throw error;
@@ -145,7 +161,7 @@ const Index = () => {
         toast({ title: "Success", description: "Loaded more options!" });
       } catch (error) {
         console.error('Error fetching next page:', error);
-        toast({ title: "Error", description: "Failed to load more restaurants.", variant: "destructive" });
+        toast({ title: "Error", description: "Failed to load more results.", variant: "destructive" });
       } finally {
         setLoading(false);
       }
@@ -158,6 +174,9 @@ const Index = () => {
   };
 
   if (showResults) {
+    const itemType = searchType === "restaurants" ? "restaurants" : "activities";
+    const selectedCategory = searchType === "restaurants" ? cuisine : activity;
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
         <div className="container max-w-4xl mx-auto px-4 py-8">
@@ -167,7 +186,7 @@ const Index = () => {
                 Perfect Spots for Tonight
               </h1>
               <p className="text-muted-foreground mt-1">
-                {cuisine} restaurants within {radius} miles
+                {searchType === "restaurants" ? cuisine : activity.replace('_', ' ')} {itemType} within {radius} miles
               </p>
             </div>
             <div className="flex gap-2">
@@ -182,18 +201,26 @@ const Index = () => {
 
           {results.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {results.map((restaurant, idx) => (
-                <RestaurantCard 
-                  key={idx} 
-                  {...restaurant}
-                  onClick={() => setSelectedRestaurant({ id: restaurant.id, name: restaurant.name })}
-                />
+              {results.map((item, idx) => (
+                searchType === "restaurants" ? (
+                  <RestaurantCard 
+                    key={idx} 
+                    {...item}
+                    onClick={() => setSelectedPlace({ id: item.id, name: item.name })}
+                  />
+                ) : (
+                  <ActivityCard 
+                    key={idx} 
+                    {...item}
+                    onClick={() => setSelectedPlace({ id: item.id, name: item.name })}
+                  />
+                )
               ))}
             </div>
           ) : (
             <div className="text-center py-12">
               <p className="text-lg text-muted-foreground">
-                No {cuisine} restaurants found within {radius} miles.
+                No {itemType} found within {radius} miles.
               </p>
               <Button onClick={() => setShowResults(false)} className="mt-4">
                 Try Different Options
@@ -201,12 +228,12 @@ const Index = () => {
             </div>
           )}
 
-          {selectedRestaurant && (
+          {selectedPlace && (
             <RestaurantDetailsDrawer
-              isOpen={!!selectedRestaurant}
-              onClose={() => setSelectedRestaurant(null)}
-              placeId={selectedRestaurant.id}
-              initialName={selectedRestaurant.name}
+              isOpen={!!selectedPlace}
+              onClose={() => setSelectedPlace(null)}
+              placeId={selectedPlace.id}
+              initialName={selectedPlace.name}
             />
           )}
         </div>
@@ -230,23 +257,52 @@ const Index = () => {
         </div>
 
         <div className="bg-card rounded-2xl shadow-lg border p-6 md:p-8 space-y-8">
-          <LocationToggle
-            mode={locationMode}
-            zipCode={zipCode}
-            onModeChange={setLocationMode}
-            onZipCodeChange={setZipCode}
-            onUseCurrentLocation={handleUseCurrentLocation}
-            locationDetected={!!currentLocation}
-            gettingLocation={gettingLocation}
-          />
+          <Tabs value={searchType} onValueChange={(v) => setSearchType(v as "restaurants" | "activities")}>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="restaurants">Restaurants</TabsTrigger>
+              <TabsTrigger value="activities">Activities</TabsTrigger>
+            </TabsList>
 
-          <div className="h-px bg-border" />
+            <TabsContent value="restaurants" className="space-y-8 mt-0">
+              <LocationToggle
+                mode={locationMode}
+                zipCode={zipCode}
+                onModeChange={setLocationMode}
+                onZipCodeChange={setZipCode}
+                onUseCurrentLocation={handleUseCurrentLocation}
+                locationDetected={!!currentLocation}
+                gettingLocation={gettingLocation}
+              />
 
-          <CuisinePicker selected={cuisine} onSelect={setCuisine} />
+              <div className="h-px bg-border" />
 
-          <div className="h-px bg-border" />
+              <CuisinePicker selected={cuisine} onSelect={setCuisine} />
 
-          <RadiusSelector value={radius} onChange={setRadius} />
+              <div className="h-px bg-border" />
+
+              <RadiusSelector value={radius} onChange={setRadius} />
+            </TabsContent>
+
+            <TabsContent value="activities" className="space-y-8 mt-0">
+              <LocationToggle
+                mode={locationMode}
+                zipCode={zipCode}
+                onModeChange={setLocationMode}
+                onZipCodeChange={setZipCode}
+                onUseCurrentLocation={handleUseCurrentLocation}
+                locationDetected={!!currentLocation}
+                gettingLocation={gettingLocation}
+              />
+
+              <div className="h-px bg-border" />
+
+              <ActivityPicker selected={activity} onSelect={setActivity} />
+
+              <div className="h-px bg-border" />
+
+              <RadiusSelector value={radius} onChange={setRadius} />
+            </TabsContent>
+          </Tabs>
 
           <Button onClick={handleFindPlaces} size="lg" className="w-full" disabled={loading}>
             {loading ? (
