@@ -40,26 +40,41 @@ export const RestaurantCard = ({
     e.stopPropagation();
     
     if (phoneNumber) {
-      window.location.href = `tel:${phoneNumber}`;
+      console.log('Calling phone number:', phoneNumber);
+      // Create a temporary anchor element to trigger the tel: link
+      const link = document.createElement('a');
+      link.href = `tel:${phoneNumber}`;
+      link.click();
       return;
     }
 
+    console.log('Fetching phone number for place:', id);
     setLoadingPhone(true);
     try {
       const { data, error } = await supabase.functions.invoke('place-details', {
         body: { placeId: id }
       });
 
-      if (error) throw error;
+      console.log('Phone fetch response:', { data, error });
+
+      if (error) {
+        console.error('Error from place-details:', error);
+        throw error;
+      }
       
       if (data?.phoneNumber) {
+        console.log('Phone number received:', data.phoneNumber);
         setPhoneNumber(data.phoneNumber);
-        window.location.href = `tel:${data.phoneNumber}`;
+        
+        // Create a temporary anchor element to trigger the tel: link
+        const link = document.createElement('a');
+        link.href = `tel:${data.phoneNumber}`;
+        link.click();
       } else {
+        console.log('No phone number in response');
         toast({
           title: "No phone number",
           description: "This restaurant doesn't have a phone number listed",
-          variant: "destructive"
         });
       }
     } catch (error) {
