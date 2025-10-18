@@ -45,13 +45,24 @@ export const RestaurantDetailsDrawer = ({
   const fetchDetails = async () => {
     if (details) return; // Already fetched
     
+    console.log('Fetching details for place:', placeId);
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('place-details', {
         body: { placeId }
       });
 
-      if (error) throw error;
+      console.log('Place details response:', { data, error });
+
+      if (error) {
+        console.error('Error from place-details function:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error('No data returned from place-details');
+      }
+      
       setDetails(data);
     } catch (error) {
       console.error('Error fetching place details:', error);
@@ -133,7 +144,7 @@ export const RestaurantDetailsDrawer = ({
                     <p className="font-medium">Phone</p>
                     <a 
                       href={`tel:${details.phoneNumber}`}
-                      className="text-sm text-primary hover:underline"
+                      className="text-sm text-primary hover:underline font-medium"
                     >
                       {details.phoneNumber}
                     </a>

@@ -8,6 +8,8 @@ interface RestaurantCardProps {
   address: string;
   priceLevel: string;
   totalRatings?: number;
+  lat: number;
+  lng: number;
   onClick?: () => void;
 }
 
@@ -18,8 +20,14 @@ export const RestaurantCard = ({
   address,
   priceLevel,
   totalRatings = 0,
+  lat,
+  lng,
   onClick,
 }: RestaurantCardProps) => {
+  const handleAddressClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+  };
   return (
     <Card 
       className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer"
@@ -33,7 +41,10 @@ export const RestaurantCard = ({
       <CardContent className="p-4 space-y-3">
         <h3 className="font-semibold text-lg line-clamp-1">{name}</h3>
         
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+        <div 
+          className="flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer"
+          onClick={handleAddressClick}
+        >
           <MapPin className="w-4 h-4" />
           <span className="line-clamp-1">{address}</span>
         </div>
