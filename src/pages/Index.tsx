@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Heart, RefreshCw, Loader2 } from "lucide-react";
+import { Heart, RefreshCw, Loader2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useUserId } from "@/hooks/use-user-id";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LocationToggle } from "@/components/LocationToggle";
 import { CuisinePicker } from "@/components/CuisinePicker";
@@ -24,8 +26,11 @@ const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {
 
 const Index = () => {
   const navigate = useNavigate();
+  const userId = useUserId();
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
   const [searchType, setSearchType] = useState<"restaurants" | "activities">("restaurants");
+  const [nickname, setNickname] = useState<string>("");
+  const [showProfileBanner, setShowProfileBanner] = useState(false);
   const [locationMode, setLocationMode] = useState<"gps" | "zip">("gps");
   const [zipCode, setZipCode] = useState("");
   const [cuisine, setCuisine] = useState("Italian");
@@ -45,15 +50,58 @@ const Index = () => {
   const [activityIndex, setActivityIndex] = useState(0);
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
 
-  // Check onboarding status on mount
+  // Check onboarding status and fetch profile on mount
   useEffect(() => {
     const hasOnboarded = localStorage.getItem("hasOnboarded");
     if (!hasOnboarded) {
       navigate("/onboarding");
     } else {
       setIsCheckingOnboarding(false);
+      // Fetch profile
+      fetchProfile();
     }
-  }, [navigate]);
+  }, [navigate, userId]);
+
+  const fetchProfile = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile?userId=${userId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        const profile = await response.json();
+        console.log('Profile loaded:', profile);
+        
+        // Prefill controls
+        if (profile.home_zip) {
+          setZipCode(profile.home_zip);
+          setLocationMode("zip");
+        }
+        if (profile.default_radius_mi !== null && profile.default_radius_mi !== undefined) {
+          setRadius(profile.default_radius_mi);
+        }
+        if (profile.cuisines && Array.isArray(profile.cuisines) && profile.cuisines.length > 0) {
+          setCuisine(profile.cuisines[0]);
+        }
+        if (profile.activities && Array.isArray(profile.activities) && profile.activities.length > 0) {
+          setActivity(profile.activities[0]);
+        }
+        if (profile.nickname) {
+          setNickname(profile.nickname);
+        }
+      } else if (response.status === 404) {
+        console.log('Profile not found');
+        setShowProfileBanner(true);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -620,6 +668,24 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       <div className="container max-w-2xl mx-auto px-4 py-12">
         <div className="text-center mb-12 space-y-4">
+          <div className="flex items-center justify-between mb-4 max-w-md mx-auto">
+            {nickname ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full">
+                <span className="text-sm font-medium">Hi, {nickname}</span>
+              </div>
+            ) : (
+              <div />
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/profile')}
+              className="ml-auto"
+            >
+              <User className="w-5 h-5" />
+            </Button>
+          </div>
+          
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mb-4">
             <Heart className="w-8 h-8 text-primary-foreground fill-current" />
           </div>
@@ -630,6 +696,27 @@ const Index = () => {
             Discover the perfect spot for your next date. Let us help you create memorable moments.
           </p>
         </div>
+
+        {showProfileBanner && (
+          <Card className="bg-primary/5 border-primary/20 mb-8 max-w-md mx-auto">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="font-semibold">Personalize your picks</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Set your preferences for better recommendations
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => navigate('/onboarding')}
+                >
+                  Set Up
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="bg-card rounded-2xl shadow-lg border p-6 md:p-8 space-y-8">
           <Tabs value={searchType} onValueChange={(v) => setSearchType(v as "restaurants" | "activities")}>
