@@ -15,7 +15,7 @@ import { PlanCard } from "@/components/PlanCard";
 import { RestaurantDetailsDrawer } from "@/components/RestaurantDetailsDrawer";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { buildPlan, buildPlanFromIndices } from "@/lib/planner";
+import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
 
 // Temporary ZIP to lat/lng stub (will be replaced with server geocoding)
 const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -31,6 +31,10 @@ const Index = () => {
   const [searchType, setSearchType] = useState<"restaurants" | "activities">("restaurants");
   const [nickname, setNickname] = useState<string>("");
   const [showProfileBanner, setShowProfileBanner] = useState(false);
+  const [userPreferences, setUserPreferences] = useState<{ cuisines: string[]; activities: string[] }>({ 
+    cuisines: [], 
+    activities: [] 
+  });
   const [locationMode, setLocationMode] = useState<"gps" | "zip">("gps");
   const [zipCode, setZipCode] = useState("");
   const [cuisine, setCuisine] = useState("Italian");
@@ -116,9 +120,11 @@ const Index = () => {
         }
         if (profile.cuisines && Array.isArray(profile.cuisines) && profile.cuisines.length > 0) {
           setCuisine(profile.cuisines[0]);
+          setUserPreferences(prev => ({ ...prev, cuisines: profile.cuisines }));
         }
         if (profile.activities && Array.isArray(profile.activities) && profile.activities.length > 0) {
           setActivity(profile.activities[0]);
+          setUserPreferences(prev => ({ ...prev, activities: profile.activities }));
         }
         if (profile.nickname) {
           setNickname(profile.nickname);
@@ -208,8 +214,30 @@ const Index = () => {
       const restaurants = restaurantsResponse.data?.items || [];
       const activities = activitiesResponse.data?.items || [];
       
-      setRestaurantResults(restaurants);
-      setActivityResults(activities);
+      // Sort results by preference-based scoring before storing
+      const sortedRestaurants = scorePlaces(
+        restaurants, 
+        lat, 
+        lng, 
+        radius, 
+        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+          ? userPreferences 
+          : undefined,
+        'restaurant'
+      );
+      const sortedActivities = scorePlaces(
+        activities, 
+        lat, 
+        lng, 
+        radius, 
+        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+          ? userPreferences 
+          : undefined,
+        'activity'
+      );
+      
+      setRestaurantResults(sortedRestaurants);
+      setActivityResults(sortedActivities);
       setNextRestaurantsToken(restaurantsResponse.data?.nextPageToken || null);
       setNextActivitiesToken(activitiesResponse.data?.nextPageToken || null);
 
@@ -220,6 +248,9 @@ const Index = () => {
         radius,
         restaurants,
         activities,
+        preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+          ? userPreferences 
+          : undefined,
       });
 
       // Find the indices of the selected restaurant and activity
@@ -268,6 +299,9 @@ const Index = () => {
             radius,
             restaurants: restaurantResults,
             activities: activityResults,
+            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+              ? userPreferences 
+              : undefined,
           },
           newIndex,
           activityIndex
@@ -292,7 +326,20 @@ const Index = () => {
         if (error) throw error;
 
         const newRestaurants = [...restaurantResults, ...(data.items || [])];
-        setRestaurantResults(newRestaurants);
+        
+        // Re-sort the combined list
+        const sortedRestaurants = scorePlaces(
+          newRestaurants,
+          lat,
+          lng,
+          radius,
+          userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+            ? userPreferences 
+            : undefined,
+          'restaurant'
+        );
+        
+        setRestaurantResults(sortedRestaurants);
         setNextRestaurantsToken(data.nextPageToken || null);
         
         const newIndex = restaurantIndex + 1;
@@ -305,6 +352,9 @@ const Index = () => {
             radius,
             restaurants: newRestaurants,
             activities: activityResults,
+            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+              ? userPreferences 
+              : undefined,
           },
           newIndex,
           activityIndex
@@ -329,6 +379,9 @@ const Index = () => {
             radius,
             restaurants: restaurantResults,
             activities: activityResults,
+            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+              ? userPreferences 
+              : undefined,
           },
           0,
           activityIndex
@@ -358,6 +411,9 @@ const Index = () => {
             radius,
             restaurants: restaurantResults,
             activities: activityResults,
+            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+              ? userPreferences 
+              : undefined,
           },
           restaurantIndex,
           newIndex
@@ -382,7 +438,20 @@ const Index = () => {
         if (error) throw error;
 
         const newActivities = [...activityResults, ...(data.items || [])];
-        setActivityResults(newActivities);
+        
+        // Re-sort the combined list
+        const sortedActivities = scorePlaces(
+          newActivities,
+          lat,
+          lng,
+          radius,
+          userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+            ? userPreferences 
+            : undefined,
+          'activity'
+        );
+        
+        setActivityResults(sortedActivities);
         setNextActivitiesToken(data.nextPageToken || null);
         
         const newIndex = activityIndex + 1;
@@ -395,6 +464,9 @@ const Index = () => {
             radius,
             restaurants: restaurantResults,
             activities: newActivities,
+            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+              ? userPreferences 
+              : undefined,
           },
           restaurantIndex,
           newIndex
@@ -419,6 +491,9 @@ const Index = () => {
             radius,
             restaurants: restaurantResults,
             activities: activityResults,
+            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+              ? userPreferences 
+              : undefined,
           },
           restaurantIndex,
           0
@@ -469,8 +544,30 @@ const Index = () => {
       const restaurants = restaurantsResponse.data?.items || [];
       const activities = activitiesResponse.data?.items || [];
       
-      setRestaurantResults(restaurants);
-      setActivityResults(activities);
+      // Sort results by preference-based scoring before storing
+      const sortedRestaurants = scorePlaces(
+        restaurants,
+        lat,
+        lng,
+        radius,
+        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+          ? userPreferences 
+          : undefined,
+        'restaurant'
+      );
+      const sortedActivities = scorePlaces(
+        activities,
+        lat,
+        lng,
+        radius,
+        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+          ? userPreferences 
+          : undefined,
+        'activity'
+      );
+      
+      setRestaurantResults(sortedRestaurants);
+      setActivityResults(sortedActivities);
       setNextRestaurantsToken(restaurantsResponse.data?.nextPageToken || null);
       setNextActivitiesToken(activitiesResponse.data?.nextPageToken || null);
 
@@ -481,6 +578,9 @@ const Index = () => {
         radius,
         restaurants,
         activities,
+        preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+          ? userPreferences 
+          : undefined,
       });
 
       // Find the indices of the selected restaurant and activity

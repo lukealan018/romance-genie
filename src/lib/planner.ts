@@ -7,6 +7,8 @@ interface Place {
   lat: number;
   lng: number;
   priceLevel?: string;
+  cuisine?: string;
+  category?: string;
 }
 
 interface PlanResult {
@@ -19,12 +21,18 @@ interface PlanResult {
   };
 }
 
+interface UserPreferences {
+  cuisines: string[];
+  activities: string[];
+}
+
 interface BuildPlanParams {
   lat: number;
   lng: number;
   radius: number;
   restaurants: Place[];
   activities: Place[];
+  preferences?: UserPreferences;
 }
 
 // Calculate distance between two points in miles using Haversine formula
@@ -42,35 +50,106 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * c;
 }
 
+// Normalize rating from 3.5-5.0 scale to 0-1
+function normalizeRating(rating: number): number {
+  const min = 3.5;
+  const max = 5.0;
+  return Math.max(0, Math.min(1, (rating - min) / (max - min)));
+}
+
+// Normalize proximity (closer = higher score)
+function normalizeProximity(distanceMiles: number, maxRadius: number): number {
+  // Invert so closer is better, cap at maxRadius
+  const cappedDistance = Math.min(distanceMiles, maxRadius);
+  return 1 - (cappedDistance / maxRadius);
+}
+
+// Normalize popularity based on total ratings
+function normalizePopularity(totalRatings: number, maxRatings: number): number {
+  if (maxRatings === 0) return 0;
+  return Math.min(1, totalRatings / maxRatings);
+}
+
+// Calculate personal fit based on profile preferences
+function calculatePersonalFit(
+  place: Place,
+  preferences: UserPreferences | undefined,
+  type: 'restaurant' | 'activity'
+): number {
+  if (!preferences) return 0.5; // Neutral if no preferences
+  
+  if (type === 'restaurant' && place.cuisine) {
+    const cuisineMatch = preferences.cuisines.some(c => 
+      place.cuisine?.toLowerCase().includes(c.toLowerCase())
+    );
+    return cuisineMatch ? 1 : 0;
+  }
+  
+  if (type === 'activity' && place.category) {
+    const activityMatch = preferences.activities.some(a => 
+      place.category?.toLowerCase().includes(a.toLowerCase()) ||
+      a.toLowerCase().includes(place.category?.toLowerCase() || '')
+    );
+    return activityMatch ? 1 : 0;
+  }
+  
+  return 0.5; // Neutral if no match data available
+}
+
+// Score a place based on multiple factors
+function scorePlaces(
+  places: Place[],
+  userLat: number,
+  userLng: number,
+  radius: number,
+  preferences: UserPreferences | undefined,
+  type: 'restaurant' | 'activity'
+): Place[] {
+  if (places.length === 0) return [];
+  
+  // Find max values for normalization
+  const maxRatings = Math.max(...places.map(p => p.totalRatings), 1);
+  
+  // Score each place
+  const scoredPlaces = places.map(place => {
+    const distance = calculateDistance(userLat, userLng, place.lat, place.lng);
+    
+    const personalFit = calculatePersonalFit(place, preferences, type);
+    const ratingNorm = normalizeRating(place.rating);
+    const proximityNorm = normalizeProximity(distance, radius);
+    const popularityNorm = normalizePopularity(place.totalRatings, maxRatings);
+    
+    // Weighted score: 50% personal fit, 20% rating, 20% proximity, 10% popularity
+    const score = 
+      0.5 * personalFit +
+      0.2 * ratingNorm +
+      0.2 * proximityNorm +
+      0.1 * popularityNorm;
+    
+    return { place, score };
+  });
+  
+  // Sort by score descending
+  scoredPlaces.sort((a, b) => b.score - a.score);
+  
+  return scoredPlaces.map(sp => sp.place);
+}
+
 export function buildPlan({
   lat,
   lng,
   radius,
   restaurants,
   activities,
+  preferences,
 }: BuildPlanParams): PlanResult {
-  // Pick top restaurant (highest rated with most reviews)
-  const restaurant = restaurants.length > 0
-    ? [...restaurants].sort((a, b) => {
-        // Prioritize rating first, then total ratings
-        if (Math.abs(a.rating - b.rating) > 0.2) {
-          return b.rating - a.rating;
-        }
-        return b.totalRatings - a.totalRatings;
-      })[0]
-    : null;
+  // Score and sort restaurants by preference fit, rating, proximity, and popularity
+  const scoredRestaurants = scorePlaces(restaurants, lat, lng, radius, preferences, 'restaurant');
+  const restaurant = scoredRestaurants.length > 0 ? scoredRestaurants[0] : null;
 
-  // Find nearest activity within radius
-  let activity: Place | null = null;
-  let minDistance = Infinity;
-
-  for (const act of activities) {
-    const distance = calculateDistance(lat, lng, act.lat, act.lng);
-    if (distance <= radius && distance < minDistance) {
-      minDistance = distance;
-      activity = act;
-    }
-  }
+  // Score and sort activities by preference fit, rating, proximity, and popularity
+  const scoredActivities = scorePlaces(activities, lat, lng, radius, preferences, 'activity');
+  const activity = scoredActivities.length > 0 ? scoredActivities[0] : null;
 
   // Calculate distances
   const distances = {
@@ -110,3 +189,6 @@ export function buildPlanFromIndices(
     distances,
   };
 }
+
+// Export scorePlaces for use in Index.tsx
+export { scorePlaces };
