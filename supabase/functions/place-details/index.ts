@@ -8,18 +8,24 @@ const corsHeaders = {
 const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('place-details function called');
+    
     if (!GOOGLE_MAPS_API_KEY) {
+      console.error('GOOGLE_MAPS_API_KEY is not configured');
       throw new Error('GOOGLE_MAPS_API_KEY is not configured');
     }
 
     const { placeId } = await req.json();
+    console.log('Received placeId:', placeId);
 
     if (!placeId) {
+      console.error('Missing placeId parameter');
       return new Response(
         JSON.stringify({ error: 'Missing required parameter: placeId' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -28,13 +34,15 @@ serve(async (req) => {
 
     const detailsUrl = new URL('https://maps.googleapis.com/maps/api/place/details/json');
     detailsUrl.searchParams.set('place_id', placeId);
-    detailsUrl.searchParams.set('fields', 'name,formatted_address,formatted_phone_number,opening_hours,website,url,rating,user_ratings_total,price_level,geometry');
+    detailsUrl.searchParams.set('fields', 'name,formatted_address,formatted_phone_number,international_phone_number,opening_hours,website,url,rating,user_ratings_total,price_level,geometry');
     detailsUrl.searchParams.set('key', GOOGLE_MAPS_API_KEY);
 
-    console.log('Fetching place details for:', placeId);
+    console.log('Fetching from Google Places API...');
 
     const response = await fetch(detailsUrl.toString());
     const data = await response.json();
+
+    console.log('Google API response status:', data.status);
 
     if (data.status !== 'OK') {
       console.error('Google Place Details API error:', data);
@@ -45,10 +53,14 @@ serve(async (req) => {
     }
 
     const place = data.result;
+    const phoneNumber = place.formatted_phone_number || place.international_phone_number || null;
+    
+    console.log('Phone number found:', phoneNumber ? 'Yes' : 'No');
+    
     const details = {
       name: place.name,
       address: place.formatted_address,
-      phoneNumber: place.formatted_phone_number || null,
+      phoneNumber: phoneNumber,
       website: place.website || null,
       googleMapsUrl: place.url || null,
       rating: place.rating || 0,
@@ -60,7 +72,7 @@ serve(async (req) => {
       lng: place.geometry?.location?.lng || 0,
     };
 
-    console.log('Place details fetched successfully');
+    console.log('Returning details with phone:', details.phoneNumber);
 
     return new Response(
       JSON.stringify(details),
