@@ -8,11 +8,6 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --bg: #F7F8FA;
-    --surface: #FFFFFF;
-    --text: #0F172A;
-    --muted: #64748B;
-
     --background: 210 20% 97%;
     --foreground: 222 47% 11%;
 
@@ -123,8 +118,6 @@ All colors MUST be HSL.
 
   html, body, #root {
     height: 100%;
-    background: var(--bg);
-    color: var(--text);
   }
 
   body {
@@ -145,7 +138,7 @@ All colors MUST be HSL.
   }
 
   .muted {
-    color: var(--muted);
+    color: hsl(var(--muted-foreground));
     font-size: var(--text-sm);
   }
 
@@ -154,13 +147,14 @@ All colors MUST be HSL.
   }
 
   .chip {
-    border: 1px solid #E2E8F0;
-    background: var(--surface);
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
     border-radius: var(--radius-sm);
     padding: 6px 10px;
     font-size: var(--text-sm);
-    color: var(--text);
+    color: hsl(var(--foreground));
     cursor: pointer;
+    transition: var(--transition-smooth);
   }
 
   .chip + .chip {
@@ -168,16 +162,16 @@ All colors MUST be HSL.
   }
 
   .chip.selected {
-    background: var(--teal);
-    border-color: transparent;
-    color: #fff;
+    background: hsl(var(--teal));
+    border-color: hsl(var(--teal));
+    color: hsl(var(--secondary-foreground));
   }
 
   .card {
-    background: var(--surface);
+    background: hsl(var(--card));
     border-radius: var(--radius-lg);
     padding: var(--space-3);
-    box-shadow: 0 6px 24px rgba(15,23,42,0.06);
+    box-shadow: var(--shadow-card);
   }
 
   .card + .card {
