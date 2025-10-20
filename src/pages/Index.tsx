@@ -245,6 +245,9 @@ const Index = () => {
       
       setRestaurants(sortedRestaurants, restaurantsResponse.data?.nextPageToken || null);
       setActivities(sortedActivities, activitiesResponse.data?.nextPageToken || null);
+      
+      // Update location in store
+      setLocation(searchLat, searchLng);
 
       // Build the initial plan using the sorted arrays
       const initialPlan = buildPlan({
