@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Star, MapPin, Phone, Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -74,16 +73,16 @@ export const ActivityCard = ({
   };
 
   return (
-    <Card 
-      className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+    <div 
+      className="card hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer overflow-hidden"
       onClick={onClick}
     >
-      <div className="h-48 bg-gradient-to-br from-accent/20 to-primary/20 relative overflow-hidden flex items-center justify-center">
+      <div className="h-48 bg-gradient-to-br from-accent/20 to-primary/20 relative overflow-hidden flex items-center justify-center -mx-[var(--space-3)] -mt-[var(--space-3)] mb-[var(--space-3)]">
         <div className="text-5xl font-bold text-accent/40">
           {name.charAt(0)}
         </div>
       </div>
-      <CardContent className="p-4 space-y-3">
+      <div className="space-y-3">
         <h3 className="font-semibold text-lg line-clamp-1">{name}</h3>
         
         <div 
@@ -134,7 +133,7 @@ export const ActivityCard = ({
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
