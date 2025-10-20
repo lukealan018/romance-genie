@@ -40,7 +40,6 @@ const Index = () => {
   const [cuisine, setCuisine] = useState("Italian");
   const [activity, setActivity] = useState("live_music");
   const [radius, setRadius] = useState(5);
-  const [showResults, setShowResults] = useState(false);
   const [restaurantResults, setRestaurantResults] = useState<any[]>([]);
   const [activityResults, setActivityResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -266,7 +265,6 @@ const Index = () => {
       setActivityIndex(selectedActivityIndex >= 0 ? selectedActivityIndex : 0);
       
       setPlan(initialPlan);
-      setShowResults(true);
       
       toast({ 
         title: "Success", 
@@ -744,61 +742,24 @@ const Index = () => {
     }
   };
 
-  if (showResults) {
-    const results = searchType === "restaurants" ? restaurantResults : activityResults;
-    const itemType = searchType === "restaurants" ? "restaurants" : "activities";
-    
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
-        <div className="container max-w-4xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Your Date Night Options
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                {cuisine} & {activity.replace('_', ' ')} within {radius} miles
-              </p>
-            </div>
-            <Button onClick={() => setShowResults(false)} variant="outline">
-              Change Preferences
-            </Button>
-          </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+      <div className="container max-w-2xl mx-auto px-4 py-8">
+        {/* 1. Header with small title + Profile icon (top-right) */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">Date Night Planner</h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/profile')}
+          >
+            <User className="w-5 h-5" />
+          </Button>
+        </div>
 
-          {/* Empty State Warning */}
-          {(restaurantResults.length === 0 || activityResults.length === 0) && (
-            <div className="bg-card border border-border rounded-xl p-6 mb-6">
-              <div className="text-center space-y-4">
-                <div className="text-xl font-semibold text-foreground">
-                  {restaurantResults.length === 0 && activityResults.length === 0 
-                    ? "No restaurants or activities found"
-                    : restaurantResults.length === 0 
-                    ? "No restaurants found"
-                    : "No activities found"}
-                </div>
-                <p className="text-muted-foreground">
-                  Try these options to find more results:
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button 
-                    onClick={() => {
-                      setRadius(radius + 5);
-                      handleRerollPlan();
-                    }}
-                    variant="outline"
-                  >
-                    Widen radius to {radius + 5} miles
-                  </Button>
-                  <Button onClick={() => setShowResults(false)} variant="outline">
-                    Try different {restaurantResults.length === 0 ? "cuisine" : "activity"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tonight's Plan Card */}
-          {plan && restaurantResults.length > 0 && activityResults.length > 0 && (
+        {/* 2. PlanCard (only if a plan exists) */}
+        {plan && (
+          <div className="mb-6">
             <PlanCard
               restaurant={plan.restaurant}
               activity={plan.activity}
@@ -810,187 +771,121 @@ const Index = () => {
               canSwapRestaurant={restaurantResults.length > 1}
               canSwapActivity={activityResults.length > 1}
             />
-          )}
+          </div>
+        )}
 
-          {/* Tab navigation for browsing all options */}
-          <Tabs value={searchType} onValueChange={(v) => setSearchType(v as "restaurants" | "activities")} className="mb-6">
+        {/* 3. Swap row: [Swap Food] [Swap Activity] (centered, equal size buttons) */}
+        {plan && (
+          <div className="flex gap-3 justify-center mb-6">
+            <Button
+              onClick={handleSwapRestaurant}
+              disabled={loading || restaurantResults.length <= 1}
+              className="flex-1 max-w-[200px]"
+              variant="outline"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Swap Food"}
+            </Button>
+            <Button
+              onClick={handleSwapActivity}
+              disabled={loading || activityResults.length <= 1}
+              className="flex-1 max-w-[200px]"
+              variant="outline"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Swap Activity"}
+            </Button>
+          </div>
+        )}
+
+        {/* 4. CuisinePicker (section title: "Choose cuisine") */}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-4">Choose cuisine</h2>
+          <CuisinePicker selected={cuisine} onSelect={setCuisine} />
+        </div>
+
+        {/* 5. ActivityPicker (section title: "Choose activity") */}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-4">Choose activity</h2>
+          <ActivityPicker selected={activity} onSelect={setActivity} />
+        </div>
+
+        {/* Location and Radius controls */}
+        <div className="bg-card rounded-xl border p-6 mb-6 space-y-6">
+          <LocationToggle
+            mode={locationMode}
+            zipCode={zipCode}
+            onModeChange={setLocationMode}
+            onZipCodeChange={setZipCode}
+            onUseCurrentLocation={handleUseCurrentLocation}
+            locationDetected={!!currentLocation}
+            gettingLocation={gettingLocation}
+          />
+          <div className="h-px bg-border" />
+          <RadiusSelector value={radius} onChange={setRadius} />
+        </div>
+
+        {/* Search Button */}
+        <Button onClick={handleFindPlaces} size="lg" className="w-full mb-6" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Finding Spots...
+            </>
+          ) : (
+            "Find Perfect Spots"
+          )}
+        </Button>
+
+        {/* 6. ResultsList (section title: "More options") */}
+        {(restaurantResults.length > 0 || activityResults.length > 0) && (
+          <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
-              <TabsList>
-                <TabsTrigger value="restaurants">All Restaurants ({restaurantResults.length})</TabsTrigger>
-                <TabsTrigger value="activities">All Activities ({activityResults.length})</TabsTrigger>
-              </TabsList>
-              <Button onClick={handleReroll} variant="outline" size="icon" disabled={loading}>
+              <h2 className="text-lg font-semibold">More options</h2>
+              <Button onClick={handleRerollPlan} variant="outline" size="sm" disabled={loading}>
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               </Button>
             </div>
-          </Tabs>
 
-          {results.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {results.map((item, idx) => (
-                searchType === "restaurants" ? (
+            <Tabs value={searchType} onValueChange={(v) => setSearchType(v as "restaurants" | "activities")} className="mb-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="restaurants">Restaurants ({restaurantResults.length})</TabsTrigger>
+                <TabsTrigger value="activities">Activities ({activityResults.length})</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {searchType === "restaurants" && restaurantResults.length > 0 && (
+              <div className="grid grid-cols-1 gap-4">
+                {restaurantResults.map((item, idx) => (
                   <RestaurantCard 
                     key={idx} 
                     {...item}
                     onClick={() => setSelectedPlace({ id: item.id, name: item.name })}
                   />
-                ) : (
+                ))}
+              </div>
+            )}
+
+            {searchType === "activities" && activityResults.length > 0 && (
+              <div className="grid grid-cols-1 gap-4">
+                {activityResults.map((item, idx) => (
                   <ActivityCard 
                     key={idx} 
                     {...item}
                     onClick={() => setSelectedPlace({ id: item.id, name: item.name })}
                   />
-                )
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-lg text-muted-foreground">
-                No {itemType} found within {radius} miles.
-              </p>
-              <Button onClick={() => setShowResults(false)} className="mt-4">
-                Try Different Options
-              </Button>
-            </div>
-          )}
-
-          {selectedPlace && (
-            <RestaurantDetailsDrawer
-              isOpen={!!selectedPlace}
-              onClose={() => setSelectedPlace(null)}
-              placeId={selectedPlace.id}
-              initialName={selectedPlace.name}
-            />
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
-      <div className="container max-w-2xl mx-auto px-4 py-12">
-        <div className="text-center mb-12 space-y-4">
-          <div className="flex items-center justify-between mb-4 max-w-md mx-auto">
-            {nickname ? (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full">
-                  <span className="text-sm font-medium">Hi, {nickname}</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate('/profile')}
-                  className="text-xs"
-                >
-                  Edit profile
-                </Button>
+                ))}
               </div>
-            ) : (
-              <div />
-            )}
-            {nickname && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/profile')}
-              >
-                <User className="w-5 h-5" />
-              </Button>
             )}
           </div>
-          
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mb-4">
-            <Heart className="w-8 h-8 text-primary-foreground fill-current" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-            Date Night Planner
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            Discover the perfect spot for your next date. Let us help you create memorable moments.
-          </p>
-        </div>
-
-        {showProfileBanner && (
-          <Card className="bg-primary/5 border-primary/20 mb-8 max-w-md mx-auto">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold">Personalize your picks</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Set your preferences for better recommendations
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => navigate('/onboarding')}
-                >
-                  Set Up
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         )}
 
-        <div className="bg-card rounded-2xl shadow-lg border p-6 md:p-8 space-y-8">
-          <Tabs value={searchType} onValueChange={(v) => setSearchType(v as "restaurants" | "activities")}>
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="restaurants">Restaurants</TabsTrigger>
-              <TabsTrigger value="activities">Activities</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="restaurants" className="space-y-8 mt-0">
-              <LocationToggle
-                mode={locationMode}
-                zipCode={zipCode}
-                onModeChange={setLocationMode}
-                onZipCodeChange={setZipCode}
-                onUseCurrentLocation={handleUseCurrentLocation}
-                locationDetected={!!currentLocation}
-                gettingLocation={gettingLocation}
-              />
-
-              <div className="h-px bg-border" />
-
-              <CuisinePicker selected={cuisine} onSelect={setCuisine} />
-
-              <div className="h-px bg-border" />
-
-              <RadiusSelector value={radius} onChange={setRadius} />
-            </TabsContent>
-
-            <TabsContent value="activities" className="space-y-8 mt-0">
-              <LocationToggle
-                mode={locationMode}
-                zipCode={zipCode}
-                onModeChange={setLocationMode}
-                onZipCodeChange={setZipCode}
-                onUseCurrentLocation={handleUseCurrentLocation}
-                locationDetected={!!currentLocation}
-                gettingLocation={gettingLocation}
-              />
-
-              <div className="h-px bg-border" />
-
-              <ActivityPicker selected={activity} onSelect={setActivity} />
-
-              <div className="h-px bg-border" />
-
-              <RadiusSelector value={radius} onChange={setRadius} />
-            </TabsContent>
-          </Tabs>
-
-          <Button onClick={handleFindPlaces} size="lg" className="w-full" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Finding Spots...
-              </>
-            ) : (
-              "Find Perfect Spots"
-            )}
-          </Button>
-        </div>
+        {selectedPlace && (
+          <RestaurantDetailsDrawer
+            isOpen={!!selectedPlace}
+            onClose={() => setSelectedPlace(null)}
+            placeId={selectedPlace.id}
+            initialName={selectedPlace.name}
+          />
+        )}
       </div>
     </div>
   );
