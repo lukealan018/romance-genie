@@ -678,6 +678,39 @@ const Index = () => {
     }
   };
 
+  const handleSeePlan = async () => {
+    // Validation
+    if (radius <= 0) {
+      toast({ title: "Error", description: "Please set a valid search radius", variant: "destructive" });
+      return;
+    }
+    if (!cuisine) {
+      toast({ title: "Error", description: "Please select a cuisine", variant: "destructive" });
+      return;
+    }
+    if (!activityCategory) {
+      toast({ title: "Error", description: "Please select an activity", variant: "destructive" });
+      return;
+    }
+
+    // If no results yet, fetch them first
+    if (restaurantResults.length === 0 || activityResults.length === 0) {
+      await handleFindPlaces();
+      // Wait a moment for the state to update
+      setTimeout(() => {
+        // Ensure indices are set
+        if (restaurantIndex === null || restaurantIndex === undefined) setRestaurantIndex(0);
+        if (activityIndex === null || activityIndex === undefined) setActivityIndex(0);
+        navigate("/plan");
+      }, 500);
+    } else {
+      // Ensure indices are set
+      if (restaurantIndex === null || restaurantIndex === undefined) setRestaurantIndex(0);
+      if (activityIndex === null || activityIndex === undefined) setActivityIndex(0);
+      navigate("/plan");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       <div className="container max-w-2xl mx-auto px-4 py-8">
@@ -730,6 +763,30 @@ const Index = () => {
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Swap Activity"}
             </Button>
           </div>
+        )}
+
+        {/* See Tonight's Plan Button - shown when plan exists */}
+        {plan && (
+          <Button 
+            onClick={handleSeePlan} 
+            size="lg" 
+            className="w-full mb-6"
+            disabled={loading}
+          >
+            See Tonight's Plan
+          </Button>
+        )}
+
+        {/* If no plan yet, show button after Search */}
+        {!plan && restaurantResults.length > 0 && activityResults.length > 0 && (
+          <Button 
+            onClick={handleSeePlan} 
+            size="lg" 
+            className="w-full mb-6"
+            disabled={loading}
+          >
+            See Tonight's Plan
+          </Button>
         )}
 
         {/* 4. CuisinePicker (section title: "Choose cuisine") */}

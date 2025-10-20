@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlanCard } from "@/components/PlanCard";
 import { toast } from "@/hooks/use-toast";
@@ -62,8 +62,16 @@ const PlanPage = () => {
         activityIndex
       );
       setPlan(newPlan);
+    } else if (restaurantResults.length === 0 || activityResults.length === 0) {
+      // No results yet, redirect back to home
+      toast({ 
+        title: "No plan found", 
+        description: "Please create a plan first",
+        variant: "destructive" 
+      });
+      navigate("/");
     }
-  }, [restaurantResults, activityResults, restaurantIndex, activityIndex, lat, lng, radius, userPreferences]);
+  }, [restaurantResults, activityResults, restaurantIndex, activityIndex, lat, lng, radius, userPreferences, navigate]);
 
   // Redirect if no plan data
   useEffect(() => {
@@ -222,7 +230,14 @@ const PlanPage = () => {
   };
 
   if (!plan) {
-    return null;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading your plan...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
