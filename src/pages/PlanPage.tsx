@@ -73,18 +73,6 @@ const PlanPage = () => {
     }
   }, [restaurantResults, activityResults, restaurantIndex, activityIndex, lat, lng, radius, userPreferences, navigate]);
 
-  // Redirect if no plan data
-  useEffect(() => {
-    if (!plan) {
-      toast({ 
-        title: "No plan found", 
-        description: "Please create a plan first",
-        variant: "destructive" 
-      });
-      navigate("/");
-    }
-  }, [plan, navigate]);
-
   const handleSwapRestaurant = async () => {
     if (swapDebounceRef.current.restaurant) return;
     swapDebounceRef.current.restaurant = true;
