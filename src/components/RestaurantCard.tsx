@@ -75,7 +75,7 @@ export const RestaurantCard = ({
   };
   return (
     <div 
-      className="card hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer overflow-hidden"
+      className="card fade-slide-in hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer overflow-hidden"
       onClick={onClick}
     >
       <div className="h-48 bg-gradient-to-br from-primary/20 to-accent/20 relative overflow-hidden flex items-center justify-center -mx-[var(--space-3)] -mt-[var(--space-3)] mb-[var(--space-3)]">
