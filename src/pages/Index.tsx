@@ -19,13 +19,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
 import { usePlanStore } from "@/store/planStore";
 
-// Temporary ZIP to lat/lng stub (will be replaced with server geocoding)
-const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {
-  "10001": { lat: 40.7506, lng: -73.9971 }, // NYC
-  "90210": { lat: 34.0901, lng: -118.4065 }, // Beverly Hills
-  "60601": { lat: 41.8857, lng: -87.6180 }, // Chicago
-};
-
 const Index = () => {
   const navigate = useNavigate();
   const userId = useUserId();
@@ -213,13 +206,26 @@ const Index = () => {
         toast({ title: "Error", description: "Please enter a valid 5-digit ZIP code", variant: "destructive" });
         return;
       }
-      const coords = ZIP_COORDS[zipCode];
-      if (!coords) {
-        toast({ title: "Error", description: "ZIP code not found. Try: 10001, 90210, or 60601", variant: "destructive" });
+      
+      // Geocode the ZIP code using edge function
+      try {
+        const { data: geocodeData, error: geocodeError } = await supabase.functions.invoke('geocode', {
+          body: { zipCode }
+        });
+        
+        if (geocodeError || !geocodeData) {
+          toast({ title: "Error", description: "Invalid ZIP code. Please try again.", variant: "destructive" });
+          return;
+        }
+        
+        searchLat = geocodeData.lat;
+        searchLng = geocodeData.lng;
+        console.log(`Geocoded ${zipCode} to ${geocodeData.city}:`, searchLat, searchLng);
+      } catch (error) {
+        console.error('Geocoding error:', error);
+        toast({ title: "Error", description: "Could not find location for this ZIP code", variant: "destructive" });
         return;
       }
-      searchLat = coords.lat;
-      searchLng = coords.lng;
     }
 
     setLoading(true);
@@ -316,17 +322,10 @@ const Index = () => {
     setTimeout(() => { swapDebounceRef.current.restaurant = false; }, 300);
 
     // Get coordinates based on location mode
-    let searchLat: number, searchLng: number;
-    if (locationMode === "gps") {
-      if (lat === null || lng === null) return;
-      searchLat = lat;
-      searchLng = lng;
-    } else {
-      const coords = ZIP_COORDS[zipCode];
-      if (!coords) return;
-      searchLat = coords.lat;
-      searchLng = coords.lng;
-    }
+    // Get coordinates from store (already geocoded during initial search)
+    if (lat === null || lng === null) return;
+    const searchLat = lat;
+    const searchLng = lng;
 
     // If next item exists, advance index
     if (restaurantIndex + 1 < restaurantResults.length) {
@@ -431,18 +430,10 @@ const Index = () => {
     swapDebounceRef.current.activity = true;
     setTimeout(() => { swapDebounceRef.current.activity = false; }, 300);
 
-    // Get coordinates based on location mode
-    let searchLat: number, searchLng: number;
-    if (locationMode === "gps") {
-      if (lat === null || lng === null) return;
-      searchLat = lat;
-      searchLng = lng;
-    } else {
-      const coords = ZIP_COORDS[zipCode];
-      if (!coords) return;
-      searchLat = coords.lat;
-      searchLng = coords.lng;
-    }
+    // Get coordinates from store (already geocoded during initial search)
+    if (lat === null || lng === null) return;
+    const searchLat = lat;
+    const searchLng = lng;
 
     // Simple linear progression through the activity list
     if (activityIndex + 1 < activityResults.length) {
@@ -544,24 +535,14 @@ const Index = () => {
 
   const handleRerollPlan = async () => {
     // Full refresh: re-fetch both from page 1, reset tokens and indices
-    let searchLat: number, searchLng: number;
-
-    if (locationMode === "gps") {
-      if (lat === null || lng === null) {
-        toast({ title: "Error", description: "Location not available", variant: "destructive" });
-        return;
-      }
-      searchLat = lat;
-      searchLng = lng;
-    } else {
-      const coords = ZIP_COORDS[zipCode];
-      if (!coords) {
-        toast({ title: "Error", description: "Invalid ZIP code", variant: "destructive" });
-        return;
-      }
-      searchLat = coords.lat;
-      searchLng = coords.lng;
+    
+    // Get coordinates from store (already geocoded during initial search)
+    if (lat === null || lng === null) {
+      toast({ title: "Error", description: "Location not available", variant: "destructive" });
+      return;
     }
+    const searchLat = lat;
+    const searchLng = lng;
 
     setLoading(true);
     try {
@@ -653,15 +634,11 @@ const Index = () => {
     const relevantToken = searchType === "restaurants" ? nextRestaurantsToken : nextActivitiesToken;
     
     if (relevantToken && lat !== null && lng !== null) {
-      // Fetch next page
+      // Fetch next page using stored coordinates
       setLoading(true);
       try {
-        const searchLat = locationMode === "gps" && lat !== null && lng !== null
-          ? lat 
-          : ZIP_COORDS[zipCode]?.lat || lat;
-        const searchLng = locationMode === "gps" && lat !== null && lng !== null
-          ? lng 
-          : ZIP_COORDS[zipCode]?.lng || lng;
+        const searchLat = lat;
+        const searchLng = lng;
 
         const functionName = searchType === "restaurants" ? "places-search" : "activities-search";
         const params = searchType === "restaurants" 

@@ -9,13 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { buildPlanFromIndices, scorePlaces } from "@/lib/planner";
 import { usePlanStore } from "@/store/planStore";
 
-// Temporary ZIP to lat/lng stub
-const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {
-  "10001": { lat: 40.7506, lng: -73.9971 },
-  "90210": { lat: 34.0901, lng: -118.4065 },
-  "60601": { lat: 41.8857, lng: -87.6180 },
-};
-
 const PlanPage = () => {
   const navigate = useNavigate();
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
@@ -88,17 +81,10 @@ const PlanPage = () => {
     swapDebounceRef.current.restaurant = true;
     setTimeout(() => { swapDebounceRef.current.restaurant = false; }, 300);
 
-    let searchLat: number, searchLng: number;
-    if (locationMode === "gps") {
-      if (lat === null || lng === null) return;
-      searchLat = lat;
-      searchLng = lng;
-    } else {
-      const coords = ZIP_COORDS[zipCode];
-      if (!coords) return;
-      searchLat = coords.lat;
-      searchLng = coords.lng;
-    }
+    // Use coordinates from store (already geocoded during initial search)
+    if (lat === null || lng === null) return;
+    const searchLat = lat;
+    const searchLng = lng;
 
     if (restaurantIndex + 1 < restaurantResults.length) {
       const newIndex = restaurantIndex + 1;
@@ -157,17 +143,10 @@ const PlanPage = () => {
     swapDebounceRef.current.activity = true;
     setTimeout(() => { swapDebounceRef.current.activity = false; }, 300);
 
-    let searchLat: number, searchLng: number;
-    if (locationMode === "gps") {
-      if (lat === null || lng === null) return;
-      searchLat = lat;
-      searchLng = lng;
-    } else {
-      const coords = ZIP_COORDS[zipCode];
-      if (!coords) return;
-      searchLat = coords.lat;
-      searchLng = coords.lng;
-    }
+    // Use coordinates from store (already geocoded during initial search)
+    if (lat === null || lng === null) return;
+    const searchLat = lat;
+    const searchLng = lng;
 
     if (activityIndex + 1 < activityResults.length) {
       const newIndex = activityIndex + 1;
