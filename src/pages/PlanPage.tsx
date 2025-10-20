@@ -44,9 +44,16 @@ const PlanPage = () => {
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<any>(null);
 
-  // Build plan from current indices
+  // Build plan from current indices whenever data changes
   useEffect(() => {
     if (restaurantResults.length > 0 && activityResults.length > 0 && lat !== null && lng !== null) {
+      console.log('Building plan with:', { 
+        restaurantCount: restaurantResults.length, 
+        activityCount: activityResults.length,
+        restaurantIndex,
+        activityIndex 
+      });
+      
       const newPlan = buildPlanFromIndices(
         {
           lat,
@@ -61,25 +68,11 @@ const PlanPage = () => {
         restaurantIndex,
         activityIndex
       );
+      
+      console.log('Plan built:', newPlan);
       setPlan(newPlan);
     }
   }, [restaurantResults, activityResults, restaurantIndex, activityIndex, lat, lng, radius, userPreferences]);
-
-  // Redirect if no data after initial mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (restaurantResults.length === 0 || activityResults.length === 0) {
-        toast({ 
-          title: "No plan found", 
-          description: "Please create a plan first",
-          variant: "destructive" 
-        });
-        navigate("/");
-      }
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []); // Only run once on mount
 
   const handleSwapRestaurant = async () => {
     if (swapDebounceRef.current.restaurant) return;

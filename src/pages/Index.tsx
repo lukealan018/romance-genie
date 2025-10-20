@@ -678,7 +678,7 @@ const Index = () => {
     }
   };
 
-  const handleSeePlan = async () => {
+  const handleSeePlan = () => {
     // Validation
     if (radius <= 0) {
       toast({ title: "Error", description: "Please set a valid search radius", variant: "destructive" });
@@ -697,16 +697,24 @@ const Index = () => {
     if (restaurantIndex === null || restaurantIndex === undefined) setRestaurantIndex(0);
     if (activityIndex === null || activityIndex === undefined) setActivityIndex(0);
 
-    // If no results yet, fetch them first
-    if (restaurantResults.length === 0 || activityResults.length === 0) {
-      await handleFindPlaces();
-      // Wait for store to update before navigating
-      setTimeout(() => {
-        navigate("/plan");
-      }, 1000);
-    } else {
+    // If we have results, navigate immediately
+    if (restaurantResults.length > 0 && activityResults.length > 0) {
+      console.log('Navigating to plan with existing data');
       navigate("/plan");
+      return;
     }
+
+    // Otherwise, fetch data first then navigate
+    console.log('Fetching data before navigation');
+    const fetchData = async () => {
+      await handleFindPlaces();
+      // Give the store time to update
+      setTimeout(() => {
+        console.log('Navigation delayed, store should be updated');
+        navigate("/plan");
+      }, 1500);
+    };
+    fetchData();
   };
 
   return (
