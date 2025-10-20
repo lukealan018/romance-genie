@@ -201,9 +201,25 @@ const PlanPage = () => {
   };
 
   const handleReroll = () => {
-    // For now, just cycle through both
-    handleSwapRestaurant();
-    setTimeout(() => handleSwapActivity(), 100);
+    // Reset to original plan (first restaurant and first activity)
+    setRestaurantIndex(0);
+    setActivityIndex(0);
+    
+    if (lat !== null && lng !== null) {
+      const newPlan = buildPlanFromIndices(
+        { 
+          lat, 
+          lng, 
+          radius, 
+          restaurants: restaurantResults, 
+          activities: activityResults,
+          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 ? userPreferences : undefined 
+        },
+        0, 
+        0
+      );
+      setPlan(newPlan);
+    }
   };
 
   if (!plan) {
