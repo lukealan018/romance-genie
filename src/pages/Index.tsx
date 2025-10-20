@@ -726,18 +726,6 @@ const Index = () => {
           </Button>
         </div>
 
-        {/* 2. "See Tonight's Plan" Button - shown when plan exists OR results exist */}
-        {(plan || (restaurantResults.length > 0 && activityResults.length > 0)) && (
-          <Button 
-            onClick={handleSeePlan} 
-            size="lg" 
-            className="w-full mb-6"
-            disabled={loading}
-          >
-            See Tonight's Plan
-          </Button>
-        )}
-
         {/* 4. CuisinePicker (section title: "Choose cuisine") */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold mb-4">Choose cuisine</h2>
@@ -765,15 +753,15 @@ const Index = () => {
           <RadiusSelector value={radius} onChange={(value) => setFilters({ radius: value })} />
         </div>
 
-        {/* Search Button */}
-        <Button onClick={handleFindPlaces} size="lg" className="w-full mb-6" disabled={loading}>
+        {/* See Tonight's Plan Button */}
+        <Button onClick={handleSeePlan} size="lg" className="w-full mb-6" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Finding Spots...
             </>
           ) : (
-            "Find Perfect Spots"
+            "See Tonight's Plan"
           )}
         </Button>
 
