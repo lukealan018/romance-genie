@@ -726,59 +726,8 @@ const Index = () => {
           </Button>
         </div>
 
-        {/* 2. PlanCard (only if a plan exists) */}
-        {plan && (
-          <div className="mb-6">
-            <PlanCard
-              restaurant={plan.restaurant}
-              activity={plan.activity}
-              distances={plan.distances}
-              onSwapRestaurant={handleSwapRestaurant}
-              onSwapActivity={handleSwapActivity}
-              onReroll={handleRerollPlan}
-              loading={loading}
-              canSwapRestaurant={restaurantResults.length > 1}
-              canSwapActivity={activityResults.length > 1}
-            />
-          </div>
-        )}
-
-        {/* 3. Swap row: [Swap Food] [Swap Activity] (centered, equal size buttons) */}
-        {plan && (
-          <div className="flex gap-3 justify-center mb-6">
-            <Button
-              onClick={handleSwapRestaurant}
-              disabled={loading || restaurantResults.length <= 1}
-              className="flex-1 max-w-[200px]"
-              variant="outline"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Swap Food"}
-            </Button>
-            <Button
-              onClick={handleSwapActivity}
-              disabled={loading || activityResults.length <= 1}
-              className="flex-1 max-w-[200px]"
-              variant="outline"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Swap Activity"}
-            </Button>
-          </div>
-        )}
-
-        {/* See Tonight's Plan Button - shown when plan exists */}
-        {plan && (
-          <Button 
-            onClick={handleSeePlan} 
-            size="lg" 
-            className="w-full mb-6"
-            disabled={loading}
-          >
-            See Tonight's Plan
-          </Button>
-        )}
-
-        {/* If no plan yet, show button after Search */}
-        {!plan && restaurantResults.length > 0 && activityResults.length > 0 && (
+        {/* 2. "See Tonight's Plan" Button - shown when plan exists OR results exist */}
+        {(plan || (restaurantResults.length > 0 && activityResults.length > 0)) && (
           <Button 
             onClick={handleSeePlan} 
             size="lg" 
