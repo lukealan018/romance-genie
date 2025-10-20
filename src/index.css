@@ -152,4 +152,24 @@ All colors MUST be HSL.
   .section {
     margin-block: var(--space-4);
   }
+
+  .chip {
+    border: 1px solid #E2E8F0;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    font-size: var(--text-sm);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .chip + .chip {
+    margin-left: var(--space-1);
+  }
+
+  .chip.selected {
+    background: var(--teal);
+    border-color: transparent;
+    color: #fff;
+  }
 }
