@@ -241,18 +241,9 @@ const PlanPage = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/")}
-            className="mr-2"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-lg font-semibold">Your Plan</h1>
-        </div>
+      <header style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px'}}>
+        <div className="h1">Lovable</div>
+        <Button variant="secondary" size="sm" onClick={() => navigate('/profile')}>Profile</Button>
       </header>
 
       {/* Content */}
