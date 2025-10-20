@@ -172,4 +172,15 @@ All colors MUST be HSL.
     border-color: transparent;
     color: #fff;
   }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+    box-shadow: 0 6px 24px rgba(15,23,42,0.06);
+  }
+
+  .card + .card {
+    margin-top: var(--space-3);
+  }
 }
