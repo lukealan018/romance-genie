@@ -130,15 +130,31 @@ const Index = () => {
           setFilters({ radius: profile.default_radius_mi });
         }
         
-        // Set user preferences first
+        // Valid options in the UI
+        const validCuisines = ["Italian", "Mexican", "Japanese", "Chinese", "Thai", "American", "Indian", "French", "Mediterranean"];
+        const validActivities = ["live_music", "comedy", "movies", "bowling", "arcade", "museum", "escape_room", "mini_golf", "hike", "wine"];
+        
+        // Set user preferences and find matching cuisine
         const newPreferences = { ...userPreferences };
         if (profile.cuisines && Array.isArray(profile.cuisines) && profile.cuisines.length > 0) {
           newPreferences.cuisines = profile.cuisines;
-          setFilters({ cuisine: profile.cuisines[0] });
+          // Find first matching cuisine (case-insensitive)
+          const matchingCuisine = validCuisines.find(valid => 
+            profile.cuisines.some(pref => pref.toLowerCase() === valid.toLowerCase())
+          );
+          if (matchingCuisine) {
+            setFilters({ cuisine: matchingCuisine });
+          }
         }
         if (profile.activities && Array.isArray(profile.activities) && profile.activities.length > 0) {
           newPreferences.activities = profile.activities;
-          setFilters({ activityCategory: profile.activities[0] });
+          // Find first matching activity
+          const matchingActivity = validActivities.find(valid => 
+            profile.activities.includes(valid)
+          );
+          if (matchingActivity) {
+            setFilters({ activityCategory: matchingActivity });
+          }
         }
         setUserPreferences(newPreferences);
         
