@@ -183,4 +183,19 @@ All colors MUST be HSL.
   .card + .card {
     margin-top: var(--space-3);
   }
+
+  @keyframes fadeSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .fade-slide-in {
+    animation: fadeSlideIn 180ms ease-out;
+  }
 }
