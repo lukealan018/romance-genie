@@ -55,8 +55,8 @@ export const usePlanStore = create<PlanState>((set) => ({
   lat: null,
   lng: null,
   radius: 5,
-  cuisine: "Italian",
-  activityCategory: "live_music",
+  cuisine: "",
+  activityCategory: "",
   locationMode: "gps",
   zipCode: "",
   

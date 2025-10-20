@@ -129,14 +129,19 @@ const Index = () => {
         if (profile.default_radius_mi !== null && profile.default_radius_mi !== undefined) {
           setFilters({ radius: profile.default_radius_mi });
         }
+        
+        // Set user preferences first
+        const newPreferences = { ...userPreferences };
         if (profile.cuisines && Array.isArray(profile.cuisines) && profile.cuisines.length > 0) {
+          newPreferences.cuisines = profile.cuisines;
           setFilters({ cuisine: profile.cuisines[0] });
-          setUserPreferences({ ...userPreferences, cuisines: profile.cuisines });
         }
         if (profile.activities && Array.isArray(profile.activities) && profile.activities.length > 0) {
+          newPreferences.activities = profile.activities;
           setFilters({ activityCategory: profile.activities[0] });
-          setUserPreferences({ ...userPreferences, activities: profile.activities });
         }
+        setUserPreferences(newPreferences);
+        
         if (profile.nickname) {
           setNickname(profile.nickname);
         }
