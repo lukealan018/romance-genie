@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const CUISINES = ["italian", "mexican", "japanese", "thai", "sushi", "steakhouse", "vegan", "bbq", "burgers"];
 const ACTIVITIES = ["comedy", "live_music", "movies", "bowling", "arcade", "museum", "escape_room", "mini_golf", "hike", "wine"];
@@ -175,18 +176,21 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
       <div className="max-w-2xl mx-auto space-y-6 py-8">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/")}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Profile Settings</h1>
-            <p className="text-muted-foreground">Update your preferences</p>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold">Profile Settings</h1>
+              <p className="text-muted-foreground">Update your preferences</p>
+            </div>
           </div>
+          <ThemeToggle />
         </div>
 
         <Card>
