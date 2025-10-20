@@ -252,11 +252,7 @@ const PlanPage = () => {
         <PlanCard
           restaurant={plan.restaurant}
           activity={plan.activity}
-          distances={{
-            toRestaurant: plan.distanceToRestaurant || 0,
-            toActivity: plan.distanceToActivity || 0,
-            betweenPlaces: plan.distanceBetween || 0,
-          }}
+          distances={plan.distances}
           onSwapRestaurant={handleSwapRestaurant}
           onSwapActivity={handleSwapActivity}
           onReroll={handleReroll}
