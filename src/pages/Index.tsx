@@ -3,6 +3,7 @@ import { Heart, RefreshCw, Loader2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserId } from "@/hooks/use-user-id";
 import { Button } from "@/components/ui/button";
+import CustomButton from "@/components/CustomButton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LocationToggle } from "@/components/LocationToggle";
@@ -754,16 +755,18 @@ const Index = () => {
         </div>
 
         {/* See Tonight's Plan Button */}
-        <Button onClick={handleSeePlan} size="lg" className="w-full mb-6" disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Finding Spots...
-            </>
-          ) : (
-            "See Tonight's Plan"
-          )}
-        </Button>
+        <div className="mb-6">
+          <CustomButton full onClick={handleSeePlan} disabled={loading} size="lg">
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Finding Spots...
+              </>
+            ) : (
+              "See Tonight's Plan"
+            )}
+          </CustomButton>
+        </div>
 
         {/* 6. ResultsList (section title: "More options") */}
         {(restaurantResults.length > 0 || activityResults.length > 0) && (

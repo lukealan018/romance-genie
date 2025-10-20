@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import CustomButton from "@/components/CustomButton";
 import { PlanCard } from "@/components/PlanCard";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -270,23 +271,21 @@ const PlanPage = () => {
         />
 
         {/* Swap Buttons */}
-        <div className="flex gap-4">
-          <Button
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+          <CustomButton
+            variant="secondary"
             onClick={handleSwapRestaurant}
             disabled={loading || (!restaurantResults[restaurantIndex + 1] && !nextRestaurantsToken)}
-            className="flex-1"
-            variant="outline"
           >
             {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Swap Food"}
-          </Button>
-          <Button
+          </CustomButton>
+          <CustomButton
+            variant="secondary"
             onClick={handleSwapActivity}
             disabled={loading || (!activityResults[activityIndex + 1] && !nextActivitiesToken)}
-            className="flex-1"
-            variant="outline"
           >
             {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Swap Activity"}
-          </Button>
+          </CustomButton>
         </div>
       </div>
     </div>
