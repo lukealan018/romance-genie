@@ -62,16 +62,24 @@ const PlanPage = () => {
         activityIndex
       );
       setPlan(newPlan);
-    } else if (restaurantResults.length === 0 || activityResults.length === 0) {
-      // No results yet, redirect back to home
-      toast({ 
-        title: "No plan found", 
-        description: "Please create a plan first",
-        variant: "destructive" 
-      });
-      navigate("/");
     }
-  }, [restaurantResults, activityResults, restaurantIndex, activityIndex, lat, lng, radius, userPreferences, navigate]);
+  }, [restaurantResults, activityResults, restaurantIndex, activityIndex, lat, lng, radius, userPreferences]);
+
+  // Redirect if no data after initial mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (restaurantResults.length === 0 || activityResults.length === 0) {
+        toast({ 
+          title: "No plan found", 
+          description: "Please create a plan first",
+          variant: "destructive" 
+        });
+        navigate("/");
+      }
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []); // Only run once on mount
 
   const handleSwapRestaurant = async () => {
     if (swapDebounceRef.current.restaurant) return;

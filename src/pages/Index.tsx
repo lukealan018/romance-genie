@@ -693,20 +693,18 @@ const Index = () => {
       return;
     }
 
+    // Ensure indices are set
+    if (restaurantIndex === null || restaurantIndex === undefined) setRestaurantIndex(0);
+    if (activityIndex === null || activityIndex === undefined) setActivityIndex(0);
+
     // If no results yet, fetch them first
     if (restaurantResults.length === 0 || activityResults.length === 0) {
       await handleFindPlaces();
-      // Wait a moment for the state to update
+      // Wait for store to update before navigating
       setTimeout(() => {
-        // Ensure indices are set
-        if (restaurantIndex === null || restaurantIndex === undefined) setRestaurantIndex(0);
-        if (activityIndex === null || activityIndex === undefined) setActivityIndex(0);
         navigate("/plan");
-      }, 500);
+      }, 1000);
     } else {
-      // Ensure indices are set
-      if (restaurantIndex === null || restaurantIndex === undefined) setRestaurantIndex(0);
-      if (activityIndex === null || activityIndex === undefined) setActivityIndex(0);
       navigate("/plan");
     }
   };
