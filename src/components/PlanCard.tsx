@@ -1,7 +1,7 @@
-import { RefreshCw, ArrowRight, MapPin, Star, Phone, Loader2 } from "lucide-react";
+import { RefreshCw, ArrowRight, MapPin, Star, Phone, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -45,6 +45,8 @@ export const PlanCard = ({
 }: PlanCardProps) => {
   const [restaurantPhone, setRestaurantPhone] = useState<string | null>(null);
   const [activityPhone, setActivityPhone] = useState<string | null>(null);
+  const [restaurantWebsite, setRestaurantWebsite] = useState<string | null>(null);
+  const [activityWebsite, setActivityWebsite] = useState<string | null>(null);
   const [loadingRestaurantPhone, setLoadingRestaurantPhone] = useState(false);
   const [loadingActivityPhone, setLoadingActivityPhone] = useState(false);
 
@@ -80,9 +82,44 @@ export const PlanCard = ({
     }
   };
 
+  const fetchWebsite = async (placeId: string, type: 'restaurant' | 'activity') => {
+    try {
+      const { data, error } = await supabase.functions.invoke('place-details', {
+        body: { placeId }
+      });
+
+      if (error) throw error;
+      
+      if (data?.website) {
+        if (type === 'restaurant') {
+          setRestaurantWebsite(data.website);
+        } else {
+          setActivityWebsite(data.website);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching website:', error);
+    }
+  };
+
   const handleNavigate = (lat: number, lng: number) => {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
   };
+
+  // Fetch websites when places change
+  useEffect(() => {
+    if (restaurant?.id) {
+      setRestaurantWebsite(null);
+      fetchWebsite(restaurant.id, 'restaurant');
+    }
+  }, [restaurant?.id]);
+
+  useEffect(() => {
+    if (activity?.id) {
+      setActivityWebsite(null);
+      fetchWebsite(activity.id, 'activity');
+    }
+  }, [activity?.id]);
 
   if (!restaurant && !activity) {
     return null;
@@ -117,7 +154,19 @@ export const PlanCard = ({
                   <span className="text-xs font-medium text-muted-foreground uppercase">Dinner</span>
                   <span className="text-xs text-muted-foreground">• {distances.toRestaurant.toFixed(1)} mi away</span>
                 </div>
-                <h3 className="font-semibold text-lg line-clamp-1">{restaurant.name}</h3>
+                {restaurantWebsite ? (
+                  <a
+                    href={restaurantWebsite}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-lg line-clamp-1 hover:text-primary transition-colors inline-flex items-center gap-1 group"
+                  >
+                    {restaurant.name}
+                    <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                ) : (
+                  <h3 className="font-semibold text-lg line-clamp-1">{restaurant.name}</h3>
+                )}
                 <div className="flex items-center gap-2 mt-1">
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 fill-accent text-accent" />
@@ -190,7 +239,19 @@ export const PlanCard = ({
                   <span className="text-xs font-medium text-muted-foreground uppercase">Activity</span>
                   <span className="text-xs text-muted-foreground">• {distances.toActivity.toFixed(1)} mi away</span>
                 </div>
-                <h3 className="font-semibold text-lg line-clamp-1">{activity.name}</h3>
+                {activityWebsite ? (
+                  <a
+                    href={activityWebsite}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-lg line-clamp-1 hover:text-primary transition-colors inline-flex items-center gap-1 group"
+                  >
+                    {activity.name}
+                    <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                ) : (
+                  <h3 className="font-semibold text-lg line-clamp-1">{activity.name}</h3>
+                )}
                 <div className="flex items-center gap-1 mt-1">
                   <Star className="w-4 h-4 fill-accent text-accent" />
                   <span className="text-sm font-medium">{activity.rating.toFixed(1)}</span>
