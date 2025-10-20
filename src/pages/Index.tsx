@@ -769,7 +769,7 @@ const Index = () => {
         </div>
 
         {/* 6. ResultsList (section title: "More options") */}
-        {(restaurantResults.length > 0 || activityResults.length > 0) && (
+        {(loading || restaurantResults.length > 0 || activityResults.length > 0) && (
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">More options</h2>
@@ -785,7 +785,60 @@ const Index = () => {
               </TabsList>
             </Tabs>
 
-            {searchType === "restaurants" && restaurantResults.length > 0 && (
+            {loading && (
+              <div className="muted text-center py-8">Finding great spots…</div>
+            )}
+
+            {!loading && searchType === "restaurants" && restaurantResults.length === 0 && (
+              <div className="muted text-center py-8">
+                <div>No matches nearby. Try widening your radius or switching cuisines.</div>
+                <div style={{marginTop:'12px', display:'flex', gap:'8px', justifyContent:'center'}}>
+                  <CustomButton 
+                    variant="secondary" 
+                    size="sm" 
+                    onClick={() => {
+                      const newRadius = Math.min(radius + 5, 25);
+                      setFilters({ radius: newRadius });
+                      toast({ title: "Radius updated", description: `Searching within ${newRadius} miles` });
+                    }}
+                  >
+                    Widen radius +5
+                  </CustomButton>
+                  <CustomButton 
+                    variant="quiet" 
+                    size="sm" 
+                    onClick={() => {
+                      const currentIndex = ["Italian", "Mexican", "Japanese", "Chinese", "Thai", "American", "Indian", "French", "Mediterranean"].indexOf(cuisine);
+                      const nextCuisine = ["Italian", "Mexican", "Japanese", "Chinese", "Thai", "American", "Indian", "French", "Mediterranean"][(currentIndex + 1) % 9];
+                      setFilters({ cuisine: nextCuisine });
+                    }}
+                  >
+                    Switch cuisine
+                  </CustomButton>
+                </div>
+              </div>
+            )}
+
+            {!loading && searchType === "activities" && activityResults.length === 0 && (
+              <div className="muted text-center py-8">
+                <div>No matches nearby. Try widening your radius or switching activities.</div>
+                <div style={{marginTop:'12px', display:'flex', gap:'8px', justifyContent:'center'}}>
+                  <CustomButton 
+                    variant="secondary" 
+                    size="sm" 
+                    onClick={() => {
+                      const newRadius = Math.min(radius + 5, 25);
+                      setFilters({ radius: newRadius });
+                      toast({ title: "Radius updated", description: `Searching within ${newRadius} miles` });
+                    }}
+                  >
+                    Widen radius +5
+                  </CustomButton>
+                </div>
+              </div>
+            )}
+
+            {!loading && searchType === "restaurants" && restaurantResults.length > 0 && (
               <div className="grid grid-cols-1 gap-4">
                 {restaurantResults.map((item, idx) => (
                   <RestaurantCard 
@@ -798,7 +851,7 @@ const Index = () => {
               </div>
             )}
 
-            {searchType === "activities" && activityResults.length > 0 && (
+            {!loading && searchType === "activities" && activityResults.length > 0 && (
               <div className="grid grid-cols-1 gap-4">
                 {activityResults.map((item, idx) => (
                   <ActivityCard 
