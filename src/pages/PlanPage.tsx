@@ -44,6 +44,14 @@ const PlanPage = () => {
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<any>(null);
 
+  // Redirect to home if no data available
+  useEffect(() => {
+    if (restaurantResults.length === 0 || activityResults.length === 0) {
+      console.log('No plan data available, redirecting to home');
+      navigate('/');
+    }
+  }, [restaurantResults, activityResults, navigate]);
+
   // Build plan from current indices whenever data changes
   useEffect(() => {
     if (restaurantResults.length > 0 && activityResults.length > 0 && lat !== null && lng !== null) {
