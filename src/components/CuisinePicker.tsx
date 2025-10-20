@@ -1,5 +1,4 @@
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 
 interface CuisinePickerProps {
   selected: string;
@@ -22,16 +21,15 @@ export const CuisinePicker = ({ selected, onSelect }: CuisinePickerProps) => {
   return (
     <div className="space-y-4">
       <Label className="text-base font-medium">Cuisine Type</Label>
-      <div className="grid grid-cols-3 gap-2">
+      <div style={{display:'flex', flexWrap:'wrap', gap:'8px'}}>
         {cuisines.map((cuisine) => (
-          <Button
+          <button
             key={cuisine}
-            variant={selected === cuisine ? "default" : "outline"}
+            className={`chip ${selected === cuisine ? 'selected' : ''}`}
             onClick={() => onSelect(cuisine)}
-            className="h-auto py-3"
           >
             {cuisine}
-          </Button>
+          </button>
         ))}
       </div>
     </div>

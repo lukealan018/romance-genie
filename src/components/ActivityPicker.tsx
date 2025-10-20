@@ -22,21 +22,18 @@ export const ActivityPicker = ({ selected, onSelect }: ActivityPickerProps) => {
   return (
     <div>
       <label className="block text-sm font-medium mb-3">What type of activity?</label>
-      <div className="grid grid-cols-2 gap-2">
+      <div style={{display:'flex', flexWrap:'wrap', gap:'8px'}}>
         {activities.map((activity) => {
           const Icon = activity.icon;
           return (
             <button
               key={activity.id}
               onClick={() => onSelect(activity.id)}
-              className={`p-3 rounded-lg border transition-all flex items-center gap-2 ${
-                selected === activity.id
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-background hover:bg-accent hover:border-accent-foreground/20"
-              }`}
+              className={`chip ${selected === activity.id ? 'selected' : ''}`}
+              style={{display:'inline-flex', alignItems:'center', gap:'6px'}}
             >
               <Icon className="w-4 h-4" />
-              <span className="text-sm font-medium">{activity.label}</span>
+              <span>{activity.label}</span>
             </button>
           );
         })}
