@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlanCard } from "@/components/PlanCard";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { buildPlanFromIndices, scorePlaces } from "@/lib/planner";
+import { usePlanStore } from "@/store/planStore";
 
 // Temporary ZIP to lat/lng stub
 const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -16,29 +17,53 @@ const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {
 
 const PlanPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
 
-  // Get initial state from navigation
-  const initialState = location.state as any;
+  // Get state from global store
+  const {
+    lat,
+    lng,
+    radius,
+    cuisine,
+    activityCategory,
+    locationMode,
+    zipCode,
+    restaurants: restaurantResults,
+    activities: activityResults,
+    restaurantIdx: restaurantIndex,
+    activityIdx: activityIndex,
+    nextRestaurantsToken,
+    nextActivitiesToken,
+    userPreferences,
+    setRestaurants,
+    setActivities,
+    setRestaurantIdx: setRestaurantIndex,
+    setActivityIdx: setActivityIndex,
+  } = usePlanStore();
 
-  const [plan, setPlan] = useState<any>(initialState?.plan || null);
-  const [restaurantResults, setRestaurantResults] = useState<any[]>(initialState?.restaurantResults || []);
-  const [activityResults, setActivityResults] = useState<any[]>(initialState?.activityResults || []);
-  const [restaurantIndex, setRestaurantIndex] = useState(initialState?.restaurantIndex || 0);
-  const [activityIndex, setActivityIndex] = useState(initialState?.activityIndex || 0);
-  const [nextRestaurantsToken, setNextRestaurantsToken] = useState<string | null>(initialState?.nextRestaurantsToken || null);
-  const [nextActivitiesToken, setNextActivitiesToken] = useState<string | null>(initialState?.nextActivitiesToken || null);
   const [loading, setLoading] = useState(false);
-  
-  // Location data
-  const [currentLocation] = useState<{ lat: number; lng: number } | null>(initialState?.currentLocation || null);
-  const [locationMode] = useState<"gps" | "zip">(initialState?.locationMode || "gps");
-  const [zipCode] = useState(initialState?.zipCode || "");
-  const [radius] = useState(initialState?.radius || 5);
-  const [cuisine] = useState(initialState?.cuisine || "Italian");
-  const [activity] = useState(initialState?.activity || "live_music");
-  const [userPreferences] = useState(initialState?.userPreferences || { cuisines: [], activities: [] });
+  const [plan, setPlan] = useState<any>(null);
+
+  // Build plan from current indices
+  useEffect(() => {
+    if (restaurantResults.length > 0 && activityResults.length > 0 && lat !== null && lng !== null) {
+      const newPlan = buildPlanFromIndices(
+        {
+          lat,
+          lng,
+          radius,
+          restaurants: restaurantResults,
+          activities: activityResults,
+          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+            ? userPreferences 
+            : undefined,
+        },
+        restaurantIndex,
+        activityIndex
+      );
+      setPlan(newPlan);
+    }
+  }, [restaurantResults, activityResults, restaurantIndex, activityIndex, lat, lng, radius, userPreferences]);
 
   // Redirect if no plan data
   useEffect(() => {
@@ -57,35 +82,26 @@ const PlanPage = () => {
     swapDebounceRef.current.restaurant = true;
     setTimeout(() => { swapDebounceRef.current.restaurant = false; }, 300);
 
+    let searchLat: number, searchLng: number;
+    if (locationMode === "gps") {
+      if (lat === null || lng === null) return;
+      searchLat = lat;
+      searchLng = lng;
+    } else {
+      const coords = ZIP_COORDS[zipCode];
+      if (!coords) return;
+      searchLat = coords.lat;
+      searchLng = coords.lng;
+    }
+
     if (restaurantIndex + 1 < restaurantResults.length) {
       const newIndex = restaurantIndex + 1;
       setRestaurantIndex(newIndex);
       
-      let lat: number, lng: number;
-      if (locationMode === "gps") {
-        if (!currentLocation) return;
-        lat = currentLocation.lat;
-        lng = currentLocation.lng;
-      } else {
-        const coords = ZIP_COORDS[zipCode];
-        if (!coords) return;
-        lat = coords.lat;
-        lng = coords.lng;
-      }
-      
       const newPlan = buildPlanFromIndices(
-        {
-          lat,
-          lng,
-          radius,
-          restaurants: restaurantResults,
-          activities: activityResults,
-          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-            ? userPreferences 
-            : undefined,
-        },
-        newIndex,
-        activityIndex
+        { lat: searchLat, lng: searchLng, radius, restaurants: restaurantResults, activities: activityResults,
+          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 ? userPreferences : undefined },
+        newIndex, activityIndex
       );
       setPlan(newPlan);
       return;
@@ -94,101 +110,39 @@ const PlanPage = () => {
     if (nextRestaurantsToken) {
       setLoading(true);
       try {
-        let lat: number, lng: number;
-        if (locationMode === "gps") {
-          if (!currentLocation) {
-            setLoading(false);
-            return;
-          }
-          lat = currentLocation.lat;
-          lng = currentLocation.lng;
-        } else {
-          const coords = ZIP_COORDS[zipCode];
-          if (!coords) {
-            setLoading(false);
-            return;
-          }
-          lat = coords.lat;
-          lng = coords.lng;
-        }
-
         const { data, error } = await supabase.functions.invoke('places-search', {
-          body: { lat, lng, radiusMiles: radius, cuisine, pagetoken: nextRestaurantsToken }
+          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine, pagetoken: nextRestaurantsToken }
         });
-
         if (error) throw error;
 
         const newRestaurants = [...restaurantResults, ...(data.items || [])];
-        const sortedRestaurants = scorePlaces(
-          newRestaurants,
-          lat,
-          lng,
-          radius,
-          userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-            ? userPreferences 
-            : undefined,
-          'restaurant'
-        );
+        const sortedRestaurants = scorePlaces(newRestaurants, searchLat, searchLng, radius,
+          userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 ? userPreferences : undefined, 'restaurant');
         
-        setRestaurantResults(sortedRestaurants);
-        setNextRestaurantsToken(data.nextPageToken || null);
-        
+        setRestaurants(sortedRestaurants, data.nextPageToken || null);
         const newIndex = restaurantIndex + 1;
         setRestaurantIndex(newIndex);
 
         const newPlan = buildPlanFromIndices(
-          {
-            lat,
-            lng,
-            radius,
-            restaurants: newRestaurants,
-            activities: activityResults,
-            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-              ? userPreferences 
-              : undefined,
-          },
-          newIndex,
-          activityIndex
+          { lat: searchLat, lng: searchLng, radius, restaurants: newRestaurants, activities: activityResults,
+            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 ? userPreferences : undefined },
+          newIndex, activityIndex
         );
         setPlan(newPlan);
         toast({ title: "Success", description: "Loaded more restaurants!" });
       } catch (error) {
-        console.error('Error fetching more restaurants:', error);
         toast({ title: "Error", description: "Failed to load more restaurants.", variant: "destructive" });
       } finally {
         setLoading(false);
       }
     } else {
       setRestaurantIndex(0);
-      
-      let lat: number, lng: number;
-      if (locationMode === "gps") {
-        if (!currentLocation) return;
-        lat = currentLocation.lat;
-        lng = currentLocation.lng;
-      } else {
-        const coords = ZIP_COORDS[zipCode];
-        if (!coords) return;
-        lat = coords.lat;
-        lng = coords.lng;
-      }
-      
       const newPlan = buildPlanFromIndices(
-        {
-          lat,
-          lng,
-          radius,
-          restaurants: restaurantResults,
-          activities: activityResults,
-          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-            ? userPreferences 
-            : undefined,
-        },
-        0,
-        activityIndex
+        { lat: searchLat, lng: searchLng, radius, restaurants: restaurantResults, activities: activityResults,
+          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 ? userPreferences : undefined },
+        0, activityIndex
       );
       setPlan(newPlan);
-      toast({ description: "Showing earlier options" });
     }
   };
 
@@ -197,35 +151,26 @@ const PlanPage = () => {
     swapDebounceRef.current.activity = true;
     setTimeout(() => { swapDebounceRef.current.activity = false; }, 300);
 
+    let searchLat: number, searchLng: number;
+    if (locationMode === "gps") {
+      if (lat === null || lng === null) return;
+      searchLat = lat;
+      searchLng = lng;
+    } else {
+      const coords = ZIP_COORDS[zipCode];
+      if (!coords) return;
+      searchLat = coords.lat;
+      searchLng = coords.lng;
+    }
+
     if (activityIndex + 1 < activityResults.length) {
       const newIndex = activityIndex + 1;
       setActivityIndex(newIndex);
       
-      let lat: number, lng: number;
-      if (locationMode === "gps") {
-        if (!currentLocation) return;
-        lat = currentLocation.lat;
-        lng = currentLocation.lng;
-      } else {
-        const coords = ZIP_COORDS[zipCode];
-        if (!coords) return;
-        lat = coords.lat;
-        lng = coords.lng;
-      }
-      
       const newPlan = buildPlanFromIndices(
-        {
-          lat,
-          lng,
-          radius,
-          restaurants: restaurantResults,
-          activities: activityResults,
-          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-            ? userPreferences 
-            : undefined,
-        },
-        restaurantIndex,
-        newIndex
+        { lat: searchLat, lng: searchLng, radius, restaurants: restaurantResults, activities: activityResults,
+          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 ? userPreferences : undefined },
+        restaurantIndex, newIndex
       );
       setPlan(newPlan);
       return;
@@ -234,101 +179,39 @@ const PlanPage = () => {
     if (nextActivitiesToken) {
       setLoading(true);
       try {
-        let lat: number, lng: number;
-        if (locationMode === "gps") {
-          if (!currentLocation) {
-            setLoading(false);
-            return;
-          }
-          lat = currentLocation.lat;
-          lng = currentLocation.lng;
-        } else {
-          const coords = ZIP_COORDS[zipCode];
-          if (!coords) {
-            setLoading(false);
-            return;
-          }
-          lat = coords.lat;
-          lng = coords.lng;
-        }
-
         const { data, error } = await supabase.functions.invoke('activities-search', {
-          body: { lat, lng, radiusMiles: radius, category: activity, pagetoken: nextActivitiesToken }
+          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, category: activityCategory, pagetoken: nextActivitiesToken }
         });
-
         if (error) throw error;
 
         const newActivities = [...activityResults, ...(data.items || [])];
-        const sortedActivities = scorePlaces(
-          newActivities,
-          lat,
-          lng,
-          radius,
-          userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-            ? userPreferences 
-            : undefined,
-          'activity'
-        );
+        const sortedActivities = scorePlaces(newActivities, searchLat, searchLng, radius,
+          userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 ? userPreferences : undefined, 'activity');
         
-        setActivityResults(sortedActivities);
-        setNextActivitiesToken(data.nextPageToken || null);
-        
+        setActivities(sortedActivities, data.nextPageToken || null);
         const newIndex = activityIndex + 1;
         setActivityIndex(newIndex);
 
         const newPlan = buildPlanFromIndices(
-          {
-            lat,
-            lng,
-            radius,
-            restaurants: restaurantResults,
-            activities: newActivities,
-            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-              ? userPreferences 
-              : undefined,
-          },
-          restaurantIndex,
-          newIndex
+          { lat: searchLat, lng: searchLng, radius, restaurants: restaurantResults, activities: newActivities,
+            preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 ? userPreferences : undefined },
+          restaurantIndex, newIndex
         );
         setPlan(newPlan);
         toast({ title: "Success", description: "Loaded more activities!" });
       } catch (error) {
-        console.error('Error fetching more activities:', error);
         toast({ title: "Error", description: "Failed to load more activities.", variant: "destructive" });
       } finally {
         setLoading(false);
       }
     } else {
       setActivityIndex(0);
-      
-      let lat: number, lng: number;
-      if (locationMode === "gps") {
-        if (!currentLocation) return;
-        lat = currentLocation.lat;
-        lng = currentLocation.lng;
-      } else {
-        const coords = ZIP_COORDS[zipCode];
-        if (!coords) return;
-        lat = coords.lat;
-        lng = coords.lng;
-      }
-      
       const newPlan = buildPlanFromIndices(
-        {
-          lat,
-          lng,
-          radius,
-          restaurants: restaurantResults,
-          activities: activityResults,
-          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-            ? userPreferences 
-            : undefined,
-        },
-        restaurantIndex,
-        0
+        { lat: searchLat, lng: searchLng, radius, restaurants: restaurantResults, activities: activityResults,
+          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 ? userPreferences : undefined },
+        restaurantIndex, 0
       );
       setPlan(newPlan);
-      toast({ description: "Showing earlier options" });
     }
   };
 
