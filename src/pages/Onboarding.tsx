@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import WelcomeStep from "@/components/Onboarding/WelcomeStep";
 import LocationStep from "@/components/Onboarding/LocationStep";
-import PreferencesStep from "@/components/Onboarding/PreferencesStep";
+import AIChatPreferencesStep from "@/components/Onboarding/AIChatPreferencesStep";
 import FinalStep from "@/components/Onboarding/FinalStep";
 
 export interface OnboardingData {
@@ -117,7 +117,7 @@ const Onboarding = () => {
           />
         )}
         {step === 3 && (
-          <PreferencesStep
+          <AIChatPreferencesStep
             data={formData}
             onUpdate={updateFormData}
             onNext={handleNext}
