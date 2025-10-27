@@ -8,7 +8,8 @@ interface Place {
   lng: number;
   priceLevel?: string;
   cuisine?: string;
-  category?: string;
+  category?: 'event' | 'activity';
+  city?: string;
 }
 
 interface PlanResult {
