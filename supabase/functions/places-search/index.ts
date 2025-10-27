@@ -7,6 +7,13 @@ const corsHeaders = {
 
 const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
 
+function extractCity(addressComponents: any[]): string | undefined {
+  const cityComponent = addressComponents?.find((comp: any) =>
+    comp.types.includes('locality') || comp.types.includes('sublocality')
+  );
+  return cityComponent?.long_name;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {

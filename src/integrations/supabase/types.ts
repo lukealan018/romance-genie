@@ -22,6 +22,9 @@ export type Database = {
           dietary: string[] | null
           home_zip: string | null
           nickname: string | null
+          party_size: number | null
+          preferred_date: string | null
+          preferred_time: string | null
           updated_at: string | null
           user_id: string
         }
@@ -32,6 +35,9 @@ export type Database = {
           dietary?: string[] | null
           home_zip?: string | null
           nickname?: string | null
+          party_size?: number | null
+          preferred_date?: string | null
+          preferred_time?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -42,6 +48,9 @@ export type Database = {
           dietary?: string[] | null
           home_zip?: string | null
           nickname?: string | null
+          party_size?: number | null
+          preferred_date?: string | null
+          preferred_time?: string | null
           updated_at?: string | null
           user_id?: string
         }

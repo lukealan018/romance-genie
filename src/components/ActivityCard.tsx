@@ -1,8 +1,11 @@
-import { useState } from "react";
-import { Star, MapPin, Phone, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Star, MapPin, Phone, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { getActivityLinks } from "@/lib/external-links";
+import { useUserId } from "@/hooks/use-user-id";
 
 interface ActivityCardProps {
   id: string;
@@ -12,6 +15,8 @@ interface ActivityCardProps {
   totalRatings?: number;
   lat: number;
   lng: number;
+  city?: string;
+  category?: 'event' | 'activity';
   onClick?: () => void;
 }
 
@@ -23,10 +28,45 @@ export const ActivityCard = ({
   totalRatings = 0,
   lat,
   lng,
+  city,
+  category = 'activity',
   onClick,
 }: ActivityCardProps) => {
+  const userId = useUserId();
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [loadingPhone, setLoadingPhone] = useState(false);
+  const [userPreferences, setUserPreferences] = useState<{
+    date?: Date;
+  }>({});
+
+  useEffect(() => {
+    const fetchUserPreferences = async () => {
+      if (!userId) return;
+      
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`,
+          {
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'X-User-Id': userId,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setUserPreferences({
+            date: data.preferred_date ? new Date(data.preferred_date) : undefined,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user preferences:', error);
+      }
+    };
+
+    fetchUserPreferences();
+  }, [userId]);
 
   const handleAddressClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -131,6 +171,63 @@ export const ActivityCard = ({
                 )}
               </Button>
             )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <Button size="icon" variant="outline" className="h-8 w-8">
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {(() => {
+                  const links = getActivityLinks(
+                    {
+                      name,
+                      city,
+                      lat,
+                      lng,
+                      address,
+                      category,
+                    },
+                    userPreferences
+                  );
+                  return (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <a href={links.googleMaps} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                          Google Maps
+                        </a>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <a href={links.yelp} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                          Yelp
+                        </a>
+                      </DropdownMenuItem>
+                      {category === 'event' && links.eventbrite && (
+                        <DropdownMenuItem asChild>
+                          <a href={links.eventbrite} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            Eventbrite
+                          </a>
+                        </DropdownMenuItem>
+                      )}
+                      {category === 'event' && links.ticketmaster && (
+                        <DropdownMenuItem asChild>
+                          <a href={links.ticketmaster} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            Ticketmaster
+                          </a>
+                        </DropdownMenuItem>
+                      )}
+                      {category === 'event' && links.fever && (
+                        <DropdownMenuItem asChild>
+                          <a href={links.fever} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            Fever
+                          </a>
+                        </DropdownMenuItem>
+                      )}
+                    </>
+                  );
+                })()}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

@@ -7,6 +7,28 @@ const corsHeaders = {
 
 const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
 
+// Activity types that typically require tickets/advance booking
+const eventTypes = new Set([
+  'movie_theater',
+  'night_club',
+  'performing_arts_theater',
+  'stadium',
+  'concert_hall',
+  'casino',
+]);
+
+function extractCity(addressComponents: any[]): string | undefined {
+  const cityComponent = addressComponents?.find((comp: any) =>
+    comp.types.includes('locality') || comp.types.includes('sublocality')
+  );
+  return cityComponent?.long_name;
+}
+
+function determineCategory(types: string[]): 'event' | 'activity' {
+  const hasEventType = types?.some(type => eventTypes.has(type));
+  return hasEventType ? 'event' : 'activity';
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {

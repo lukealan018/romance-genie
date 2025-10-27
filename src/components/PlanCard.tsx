@@ -1,9 +1,12 @@
 import { RefreshCw, ArrowRight, MapPin, Star, Phone, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { getReservationLinks, getActivityLinks } from "@/lib/external-links";
+import { useUserId } from "@/hooks/use-user-id";
 
 interface Place {
   id: string;
@@ -14,6 +17,8 @@ interface Place {
   lat: number;
   lng: number;
   priceLevel?: string;
+  city?: string;
+  category?: 'event' | 'activity';
 }
 
 interface PlanCardProps {
@@ -43,12 +48,49 @@ export const PlanCard = ({
   canSwapRestaurant = true,
   canSwapActivity = true,
 }: PlanCardProps) => {
+  const userId = useUserId();
   const [restaurantPhone, setRestaurantPhone] = useState<string | null>(null);
   const [activityPhone, setActivityPhone] = useState<string | null>(null);
   const [restaurantWebsite, setRestaurantWebsite] = useState<string | null>(null);
   const [activityWebsite, setActivityWebsite] = useState<string | null>(null);
   const [loadingRestaurantPhone, setLoadingRestaurantPhone] = useState(false);
   const [loadingActivityPhone, setLoadingActivityPhone] = useState(false);
+  const [userPreferences, setUserPreferences] = useState<{
+    date?: Date;
+    time?: Date;
+    partySize?: number;
+  }>({});
+
+  useEffect(() => {
+    const fetchUserPreferences = async () => {
+      if (!userId) return;
+      
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`,
+          {
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'X-User-Id': userId,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setUserPreferences({
+            date: data.preferred_date ? new Date(data.preferred_date) : undefined,
+            time: data.preferred_time ? new Date(`2000-01-01T${data.preferred_time}`) : undefined,
+            partySize: data.party_size || 2,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user preferences:', error);
+      }
+    };
+
+    fetchUserPreferences();
+  }, [userId]);
 
   const fetchPhone = async (placeId: string, type: 'restaurant' | 'activity') => {
     const setPhone = type === 'restaurant' ? setRestaurantPhone : setActivityPhone;
@@ -191,34 +233,83 @@ export const PlanCard = ({
               <span className="line-clamp-1">{restaurant.address}</span>
             </div>
 
-            {restaurantPhone ? (
-              <a
-                href={`tel:${restaurantPhone}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.location.href = `tel:${restaurantPhone}`;
-                }}
-                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors"
-              >
-                <Phone className="h-4 w-4" />
-                <span>Call</span>
-              </a>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => fetchPhone(restaurant.id, 'restaurant')}
-                disabled={loadingRestaurantPhone}
-                className="gap-2"
-              >
-                {loadingRestaurantPhone ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
+            <div className="flex gap-2">
+              {restaurantPhone ? (
+                <a
+                  href={`tel:${restaurantPhone}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = `tel:${restaurantPhone}`;
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors"
+                >
                   <Phone className="h-4 w-4" />
-                )}
-                Get Phone
-              </Button>
-            )}
+                  <span>Call</span>
+                </a>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => fetchPhone(restaurant.id, 'restaurant')}
+                  disabled={loadingRestaurantPhone}
+                  className="gap-2"
+                >
+                  {loadingRestaurantPhone ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Phone className="h-4 w-4" />
+                  )}
+                  Get Phone
+                </Button>
+              )}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Reserve
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {(() => {
+                    const links = getReservationLinks(
+                      {
+                        name: restaurant.name,
+                        city: restaurant.city,
+                        lat: restaurant.lat,
+                        lng: restaurant.lng,
+                        address: restaurant.address,
+                      },
+                      userPreferences
+                    );
+                    return (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <a href={links.openTable} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            OpenTable
+                          </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href={links.resy} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            Resy
+                          </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href={links.yelp} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            Yelp
+                          </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href={links.googleMaps} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            Google Maps
+                          </a>
+                        </DropdownMenuItem>
+                      </>
+                    );
+                  })()}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         )}
 
@@ -271,34 +362,95 @@ export const PlanCard = ({
               <span className="line-clamp-1">{activity.address}</span>
             </div>
 
-            {activityPhone ? (
-              <a
-                href={`tel:${activityPhone}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.location.href = `tel:${activityPhone}`;
-                }}
-                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors"
-              >
-                <Phone className="h-4 w-4" />
-                <span>Call</span>
-              </a>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => fetchPhone(activity.id, 'activity')}
-                disabled={loadingActivityPhone}
-                className="gap-2"
-              >
-                {loadingActivityPhone ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
+            <div className="flex gap-2">
+              {activityPhone ? (
+                <a
+                  href={`tel:${activityPhone}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = `tel:${activityPhone}`;
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors"
+                >
                   <Phone className="h-4 w-4" />
-                )}
-                Get Phone
-              </Button>
-            )}
+                  <span>Call</span>
+                </a>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => fetchPhone(activity.id, 'activity')}
+                  disabled={loadingActivityPhone}
+                  className="gap-2"
+                >
+                  {loadingActivityPhone ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Phone className="h-4 w-4" />
+                  )}
+                  Get Phone
+                </Button>
+              )}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    {activity.category === 'event' ? 'Get Tickets' : 'Visit'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {(() => {
+                    const links = getActivityLinks(
+                      {
+                        name: activity.name,
+                        city: activity.city,
+                        lat: activity.lat,
+                        lng: activity.lng,
+                        address: activity.address,
+                        category: activity.category,
+                      },
+                      userPreferences
+                    );
+                    return (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <a href={links.googleMaps} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            Google Maps
+                          </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href={links.yelp} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            Yelp
+                          </a>
+                        </DropdownMenuItem>
+                        {activity.category === 'event' && links.eventbrite && (
+                          <DropdownMenuItem asChild>
+                            <a href={links.eventbrite} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                              Eventbrite
+                            </a>
+                          </DropdownMenuItem>
+                        )}
+                        {activity.category === 'event' && links.ticketmaster && (
+                          <DropdownMenuItem asChild>
+                            <a href={links.ticketmaster} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                              Ticketmaster
+                            </a>
+                          </DropdownMenuItem>
+                        )}
+                        {activity.category === 'event' && links.fever && (
+                          <DropdownMenuItem asChild>
+                            <a href={links.fever} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                              Fever
+                            </a>
+                          </DropdownMenuItem>
+                        )}
+                      </>
+                    );
+                  })()}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         )}
       </CardContent>
