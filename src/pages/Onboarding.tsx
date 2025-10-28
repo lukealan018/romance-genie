@@ -15,6 +15,11 @@ export interface OnboardingData {
   cuisines: string[];
   activities: string[];
   dietary: string[];
+  price_range?: string;
+  dislikes?: string[];
+  party_size?: number;
+  vibe?: string;
+  planning_style?: string;
 }
 
 const Onboarding = () => {
@@ -30,6 +35,11 @@ const Onboarding = () => {
     cuisines: [],
     activities: [],
     dietary: [],
+    price_range: undefined,
+    dislikes: [],
+    party_size: 2,
+    vibe: undefined,
+    planning_style: undefined,
   });
 
   const updateFormData = (data: Partial<OnboardingData>) => {
@@ -56,6 +66,11 @@ const Onboarding = () => {
           cuisines: formData.cuisines,
           activities: formData.activities,
           dietary: formData.dietary.length > 0 ? formData.dietary : null,
+          price_range: formData.price_range,
+          dislikes: formData.dislikes && formData.dislikes.length > 0 ? formData.dislikes : null,
+          party_size: formData.party_size,
+          vibe: formData.vibe,
+          planning_style: formData.planning_style,
         },
         headers: {
           'X-User-Id': userId,

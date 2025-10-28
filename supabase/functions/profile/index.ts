@@ -100,7 +100,7 @@ serve(async (req) => {
       }
 
       const body = await req.json();
-      const { nickname, home_zip, default_radius_mi, cuisines, activities, dietary } = body;
+      const { nickname, home_zip, default_radius_mi, cuisines, activities, dietary, price_range, dislikes, party_size, vibe, planning_style } = body;
 
       if (!nickname || !home_zip || !default_radius_mi) {
         console.error('Missing required fields:', { nickname, home_zip, default_radius_mi });
@@ -143,6 +143,46 @@ serve(async (req) => {
         );
       }
 
+      if (price_range !== null && price_range !== undefined && typeof price_range !== 'string') {
+        console.error('Invalid price_range field');
+        return new Response(
+          JSON.stringify({ error: 'price_range must be a string or null' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (dislikes !== null && dislikes !== undefined && !Array.isArray(dislikes)) {
+        console.error('Invalid dislikes field');
+        return new Response(
+          JSON.stringify({ error: 'dislikes must be an array or null' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (party_size !== null && party_size !== undefined && typeof party_size !== 'number') {
+        console.error('Invalid party_size field');
+        return new Response(
+          JSON.stringify({ error: 'party_size must be a number or null' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (vibe !== null && vibe !== undefined && typeof vibe !== 'string') {
+        console.error('Invalid vibe field');
+        return new Response(
+          JSON.stringify({ error: 'vibe must be a string or null' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (planning_style !== null && planning_style !== undefined && typeof planning_style !== 'string') {
+        console.error('Invalid planning_style field');
+        return new Response(
+          JSON.stringify({ error: 'planning_style must be a string or null' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       console.log(`Upserting profile for userId: ${userId}`);
 
       const profileData = {
@@ -153,6 +193,11 @@ serve(async (req) => {
         cuisines,
         activities,
         dietary: dietary || null,
+        price_range: price_range || null,
+        dislikes: dislikes || null,
+        party_size: party_size || null,
+        vibe: vibe || null,
+        planning_style: planning_style || null,
       };
 
       const { data, error } = await supabaseClient

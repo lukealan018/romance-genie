@@ -20,39 +20,51 @@ export type Database = {
           cuisines: string[] | null
           default_radius_mi: number | null
           dietary: string[] | null
+          dislikes: string[] | null
           home_zip: string | null
           nickname: string | null
           party_size: number | null
+          planning_style: string | null
           preferred_date: string | null
           preferred_time: string | null
+          price_range: string | null
           updated_at: string | null
           user_id: string
+          vibe: string | null
         }
         Insert: {
           activities?: string[] | null
           cuisines?: string[] | null
           default_radius_mi?: number | null
           dietary?: string[] | null
+          dislikes?: string[] | null
           home_zip?: string | null
           nickname?: string | null
           party_size?: number | null
+          planning_style?: string | null
           preferred_date?: string | null
           preferred_time?: string | null
+          price_range?: string | null
           updated_at?: string | null
           user_id: string
+          vibe?: string | null
         }
         Update: {
           activities?: string[] | null
           cuisines?: string[] | null
           default_radius_mi?: number | null
           dietary?: string[] | null
+          dislikes?: string[] | null
           home_zip?: string | null
           nickname?: string | null
           party_size?: number | null
+          planning_style?: string | null
           preferred_date?: string | null
           preferred_time?: string | null
+          price_range?: string | null
           updated_at?: string | null
           user_id?: string
+          vibe?: string | null
         }
         Relationships: []
       }

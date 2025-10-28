@@ -22,20 +22,50 @@ const questions = [
   {
     id: 1,
     text: "When you're hungry, what's your go-to?",
-    subtext: "(Pizza? Sushi? Burgers? Tell me your favorites!)",
+    subtext: "(Pizza and wine? Sushi and sake? Burgers and beer? Tell me your favorites!)",
     field: "cuisines" as const
   },
   {
     id: 2,
-    text: "What kind of nights do you live for?",
-    subtext: "(Live music, comedy shows, bars, or something totally random?)",
-    field: "activities" as const
+    text: "Ok awesome, What do you typically spend on a night out?",
+    subtext: "(So I can zero in on the perfect spot that fits your vibe)",
+    field: "price_range" as const
   },
   {
     id: 3,
+    text: "What kind of nights do you live for — live music, comedy, chill bars, or something totally random?",
+    subtext: "(Tell me what gets you excited!)",
+    field: "activities" as const
+  },
+  {
+    id: 4,
     text: "Got any food rules or preferences?",
-    subtext: "(Vegan, gluten-free, or type 'none' if you eat everything!)",
+    subtext: "(Vegan, gluten-free, dairy-free, or \"I eat everything, bring it on!\")",
     field: "dietary" as const
+  },
+  {
+    id: 5,
+    text: "Anything you'd rather skip?",
+    subtext: "(A dish, a scene, or maybe that one cuisine you just couldn't stand)",
+    field: "dislikes" as const
+  },
+  {
+    id: 6,
+    text: "Who are you usually out with?",
+    subtext: "(Date night? Just me, myself & I? Or friends that turn every night into a story?)",
+    field: "party_size" as const
+  },
+  {
+    id: 7,
+    text: "What kind of vibe are you usually going for on a night out?",
+    subtext: "(Romantic? Chill? Turn up? Give me the vibe!)",
+    field: "vibe" as const
+  },
+  {
+    id: 8,
+    text: "Are you the type who books a table a week ahead… or just sees where the night takes you?",
+    subtext: "(Planner or spontaneous? No judgment!)",
+    field: "planning_style" as const
   },
 ];
 
@@ -136,6 +166,7 @@ const AIChatPreferencesStep = ({ data, onUpdate, onNext, onBack }: AIChatPrefere
           'mini_golf': ['mini golf', 'minigolf', 'putt putt'],
           'hike': ['hike', 'hiking', 'trail', 'nature'],
           'wine': ['wine', 'wine bar', 'wine tasting'],
+          'bars': ['bar', 'bars', 'chill bar', 'pub', 'tavern'],
         };
         
         const found = new Set<string>();
@@ -146,6 +177,116 @@ const AIChatPreferencesStep = ({ data, onUpdate, onNext, onBack }: AIChatPrefere
         });
         
         return Array.from(found);
+      }
+
+      case 'price_range': {
+        if (lowerResponse.includes('cheap') || lowerResponse.includes('budget') || 
+            (lowerResponse.includes('$') && !lowerResponse.includes('$$'))) {
+          return ['$'];
+        } else if (lowerResponse.includes('$$$$') || lowerResponse.includes('expensive') || 
+                   lowerResponse.includes('fancy') || lowerResponse.includes('upscale')) {
+          return ['$$$$'];
+        } else if (lowerResponse.includes('$$$') || lowerResponse.includes('nice') || 
+                   lowerResponse.includes('splurge')) {
+          return ['$$$'];
+        } else if (lowerResponse.includes('$$') || lowerResponse.includes('moderate') || 
+                   lowerResponse.includes('mid') || lowerResponse.includes('average')) {
+          return ['$$'];
+        }
+        
+        const rangeMatch = lowerResponse.match(/(\d+)[-to]\s*(\d+)/);
+        if (rangeMatch) {
+          const avg = (parseInt(rangeMatch[1]) + parseInt(rangeMatch[2])) / 2;
+          if (avg < 20) return ['$'];
+          if (avg < 40) return ['$$'];
+          if (avg < 70) return ['$$$'];
+          return ['$$$$'];
+        }
+        return ['$$'];
+      }
+
+      case 'dislikes': {
+        if (lowerResponse.includes('none') || lowerResponse.includes('nothing') || 
+            lowerResponse.includes('everything') || lowerResponse.includes("don't skip")) {
+          return [];
+        }
+        
+        const dislikeMap: Record<string, string[]> = {
+          'italian': ['italian', 'pizza', 'pasta'],
+          'mexican': ['mexican', 'tacos'],
+          'japanese': ['japanese', 'sushi'],
+          'indian': ['indian', 'curry'],
+          'seafood': ['seafood', 'fish'],
+          'loud': ['loud', 'noisy', 'crowded'],
+          'quiet': ['quiet', 'boring'],
+          'clubs': ['club', 'clubs', 'nightclub'],
+          'fancy': ['fancy', 'formal', 'dress up'],
+        };
+        
+        const found = new Set<string>();
+        Object.entries(dislikeMap).forEach(([dislike, keywords]) => {
+          if (keywords.some(keyword => lowerResponse.includes(keyword))) {
+            found.add(dislike);
+          }
+        });
+        
+        return Array.from(found);
+      }
+
+      case 'party_size': {
+        const numbers = lowerResponse.match(/\d+/);
+        if (numbers) {
+          return [numbers[0]];
+        }
+        
+        if (lowerResponse.includes('solo') || lowerResponse.includes('alone') || 
+            lowerResponse.includes('myself') || lowerResponse.includes('just me')) {
+          return ['1'];
+        }
+        if (lowerResponse.includes('date') || lowerResponse.includes('couple') || 
+            lowerResponse.includes('two') || lowerResponse.includes('partner')) {
+          return ['2'];
+        }
+        if (lowerResponse.includes('group') || lowerResponse.includes('friends') || 
+            lowerResponse.includes('crew')) {
+          return ['4'];
+        }
+        
+        return ['2'];
+      }
+
+      case 'vibe': {
+        const vibeMap: Record<string, string[]> = {
+          'romantic': ['romantic', 'date', 'intimate', 'cozy'],
+          'casual': ['casual', 'chill', 'relaxed', 'laid back', 'easygoing'],
+          'upscale': ['upscale', 'fancy', 'classy', 'elegant', 'sophisticated'],
+          'lively': ['lively', 'energetic', 'turn up', 'party', 'fun'],
+          'quiet': ['quiet', 'peaceful', 'calm', 'mellow'],
+        };
+        
+        for (const [vibe, keywords] of Object.entries(vibeMap)) {
+          if (keywords.some(keyword => lowerResponse.includes(keyword))) {
+            return [vibe];
+          }
+        }
+        
+        return ['casual'];
+      }
+
+      case 'planning_style': {
+        if (lowerResponse.includes('plan') || lowerResponse.includes('ahead') || 
+            lowerResponse.includes('book') || lowerResponse.includes('reserve') || 
+            lowerResponse.includes('week')) {
+          return ['planner'];
+        } else if (lowerResponse.includes('spontaneous') || lowerResponse.includes('random') || 
+                   lowerResponse.includes('see where') || lowerResponse.includes('go with') || 
+                   lowerResponse.includes('wing it')) {
+          return ['spontaneous'];
+        } else if (lowerResponse.includes('flexible') || lowerResponse.includes('both') || 
+                   lowerResponse.includes('depends')) {
+          return ['flexible'];
+        }
+        return ['flexible'];
       }
 
       case 'dietary': {
@@ -198,29 +339,52 @@ const AIChatPreferencesStep = ({ data, onUpdate, onNext, onBack }: AIChatPrefere
     const currentQ = questions[currentQuestion];
     const extractedData = extractProfileData(userInput, currentQ.field);
 
-    // Update the data
-    const updateData: Partial<OnboardingData> = {
-      [currentQ.field]: extractedData
-    };
-    onUpdate(updateData);
+    // Update the data with proper type conversion
+    let updateData: Partial<OnboardingData>;
 
+    if (currentQ.field === 'party_size') {
+      updateData = {
+        party_size: parseInt(extractedData[0]) || 2
+      };
+    } else if (currentQ.field === 'price_range' || currentQ.field === 'vibe' || 
+               currentQ.field === 'planning_style') {
+      updateData = {
+        [currentQ.field]: extractedData[0] || undefined
+      };
+    } else {
+      updateData = {
+        [currentQ.field]: extractedData
+      };
+    }
+
+    onUpdate(updateData);
     setUserInput('');
 
     // Show confirmation and move to next question or complete
     setTimeout(() => {
-      if (extractedData.length > 0) {
+      if (currentQ.field === 'party_size') {
+        const size = parseInt(extractedData[0]);
+        setMessages(prev => [...prev, {
+          type: 'ai',
+          text: `Got it! Party of ${size}.${currentQuestion === questions.length - 1 ? " Perfect!" : ""}`
+        }]);
+      } else if (currentQ.field === 'price_range' || currentQ.field === 'vibe' || 
+                 currentQ.field === 'planning_style') {
+        setMessages(prev => [...prev, {
+          type: 'ai',
+          text: `Got it! ${extractedData[0]}.${currentQuestion === questions.length - 1 ? " Perfect!" : ""}`
+        }]);
+      } else if (extractedData.length > 0) {
         setMessages(prev => [...prev, {
           type: 'ai',
           text: `Got it! ${extractedData.map(item => item.replace(/_/g, ' ')).join(', ')}.${currentQuestion === questions.length - 1 ? " Perfect!" : ""}`
         }]);
-      } else if (currentQ.field === 'dietary') {
-        // Dietary is optional
+      } else if (currentQ.field === 'dietary' || currentQ.field === 'dislikes') {
         setMessages(prev => [...prev, {
           type: 'ai',
           text: "No worries! All set then."
         }]);
       } else {
-        // Cuisines and activities are required, re-prompt
         setMessages(prev => [...prev, {
           type: 'ai',
           text: `I didn't catch any ${currentQ.field === 'cuisines' ? 'cuisines' : 'activities'}. Could you tell me again? ${currentQ.subtext}`
@@ -252,7 +416,7 @@ const AIChatPreferencesStep = ({ data, onUpdate, onNext, onBack }: AIChatPrefere
               type: 'ai',
               text: "Oops! I need at least one activity preference. What do you like to do?"
             }]);
-            setCurrentQuestion(1);
+            setCurrentQuestion(2);
             return;
           }
           
