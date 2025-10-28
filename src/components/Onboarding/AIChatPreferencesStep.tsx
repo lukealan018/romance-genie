@@ -211,7 +211,7 @@ const AIChatPreferencesStep = ({ data, onUpdate, onNext, onBack }: AIChatPrefere
       if (extractedData.length > 0) {
         setMessages(prev => [...prev, {
           type: 'ai',
-          text: `Got it! ${extractedData.map(item => item.replace(/_/g, ' ')).join(', ')}. ${currentQuestion < questions.length - 1 ? "Next question..." : "Perfect!"}`
+          text: `Got it! ${extractedData.map(item => item.replace(/_/g, ' ')).join(', ')}.${currentQuestion === questions.length - 1 ? " Perfect!" : ""}`
         }]);
       } else if (currentQ.field === 'dietary') {
         // Dietary is optional
