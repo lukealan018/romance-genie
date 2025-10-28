@@ -14,6 +14,7 @@ import { RestaurantCard } from "@/components/RestaurantCard";
 import { ActivityCard } from "@/components/ActivityCard";
 import { PlanCard } from "@/components/PlanCard";
 import { RestaurantDetailsDrawer } from "@/components/RestaurantDetailsDrawer";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
@@ -716,13 +717,16 @@ const Index = () => {
         {/* 1. Header with small title + Profile icon (top-right) */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Date Night Planner</h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/profile')}
-          >
-            <User className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/profile')}
+            >
+              <User className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* 4. CuisinePicker (section title: "Choose cuisine") */}

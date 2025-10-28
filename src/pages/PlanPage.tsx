@@ -4,6 +4,7 @@ import { ArrowLeft, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CustomButton from "@/components/CustomButton";
 import { PlanCard } from "@/components/PlanCard";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { buildPlanFromIndices, scorePlaces } from "@/lib/planner";
@@ -238,7 +239,10 @@ const PlanPage = () => {
       {/* Header */}
       <header style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px'}}>
         <div className="h1">Lovable</div>
-        <Button variant="secondary" size="sm" onClick={() => navigate('/profile')}>Profile</Button>
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          <Button variant="secondary" size="sm" onClick={() => navigate('/profile')}>Profile</Button>
+        </div>
       </header>
 
       {/* Content */}

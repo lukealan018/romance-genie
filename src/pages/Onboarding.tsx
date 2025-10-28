@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserId } from "@/hooks/use-user-id";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import WelcomeStep from "@/components/Onboarding/WelcomeStep";
 import LocationStep from "@/components/Onboarding/LocationStep";
 import AIChatPreferencesStep from "@/components/Onboarding/AIChatPreferencesStep";
@@ -98,6 +99,11 @@ const Onboarding = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Theme toggle */}
+        <div className="flex justify-end mb-4">
+          <ThemeToggle />
+        </div>
+        
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex justify-between mb-2">
