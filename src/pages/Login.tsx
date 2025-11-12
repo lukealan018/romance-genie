@@ -18,7 +18,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: 'https://romance-genie.lovable.app/auth/callback',
         },
       });
 
