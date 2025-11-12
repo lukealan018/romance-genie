@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, Save, CalendarIcon } from "lucide-react";
-import { useUserId } from "@/hooks/use-user-id";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,9 +21,9 @@ const DIETARY = ["gluten_free", "vegetarian", "vegan", "halal", "kosher"];
 
 const Profile = () => {
   const navigate = useNavigate();
-  const userId = useUserId();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   
   const [nickname, setNickname] = useState("");
   const [homeZip, setHomeZip] = useState("");
@@ -36,24 +36,47 @@ const Profile = () => {
   const [partySize, setPartySize] = useState(2);
 
   useEffect(() => {
-    fetchProfile();
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login');
+        return;
+      }
+      setUserId(session.user.id);
+    };
+    initAuth();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (userId) {
+      fetchProfile();
+    }
   }, [userId]);
 
   const fetchProfile = async () => {
+    if (!userId) return;
+    
     try {
       setLoading(true);
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`,
-        {
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'X-User-Id': userId,
-          },
-        }
-      );
+      const response = await supabase.functions.invoke('profile', {
+        method: 'GET',
+      });
 
-      if (response.status === 200) {
-        const profile = await response.json();
+      if (response.error) {
+        if (response.error.message?.includes('not found')) {
+          toast({
+            title: "No profile found",
+            description: "Please complete onboarding first",
+            variant: "destructive",
+          });
+          navigate("/onboarding");
+          return;
+        }
+        throw new Error(response.error.message);
+      }
+
+      if (response.data) {
+        const profile = response.data;
         setNickname(profile.nickname || "");
         setHomeZip(profile.home_zip || "");
         setDefaultRadius(profile.default_radius_mi ?? 7);
@@ -65,13 +88,6 @@ const Profile = () => {
         }
         setPreferredTime(profile.preferred_time || "");
         setPartySize(profile.party_size || 2);
-      } else if (response.status === 404) {
-        toast({
-          title: "No profile found",
-          description: "Please complete onboarding first",
-          variant: "destructive",
-        });
-        navigate("/onboarding");
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -125,30 +141,26 @@ const Profile = () => {
 
     setSaving(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'X-User-Id': userId,
-          },
-          body: JSON.stringify({
-            nickname: nickname.trim(),
-            home_zip: homeZip,
-            default_radius_mi: defaultRadius,
-            cuisines: selectedCuisines,
-            activities: selectedActivities,
-            dietary: selectedDietary.length > 0 ? selectedDietary : null,
-            preferred_date: preferredDate ? preferredDate.toISOString().split('T')[0] : null,
-            preferred_time: preferredTime || null,
-            party_size: partySize,
-          }),
-        }
-      );
+      const response = await supabase.functions.invoke('profile', {
+        method: 'POST',
+        body: {
+          nickname: nickname.trim(),
+          home_zip: homeZip,
+          default_radius_mi: defaultRadius,
+          cuisines: selectedCuisines,
+          activities: selectedActivities,
+          dietary: selectedDietary.length > 0 ? selectedDietary : null,
+          preferred_date: preferredDate ? preferredDate.toISOString().split('T')[0] : null,
+          preferred_time: preferredTime || null,
+          party_size: partySize,
+        },
+      });
 
-      if (response.ok) {
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to update profile");
+      }
+
+      if (response.data) {
         toast({
           title: "Success",
           description: "Profile updated successfully",
@@ -156,9 +168,6 @@ const Profile = () => {
         // Mark that profile needs refresh on Home page
         localStorage.setItem("profileNeedsRefresh", "true");
         navigate("/");
-      } else {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update profile");
       }
     } catch (error) {
       console.error("Error saving profile:", error);
