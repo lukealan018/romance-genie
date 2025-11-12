@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUserId } from "@/hooks/use-user-id";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -25,9 +24,25 @@ export interface OnboardingData {
 
 const Onboarding = () => {
   const navigate = useNavigate();
-  const userId = useUserId();
+  const [userId, setUserId] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate("/login");
+        return;
+      }
+      
+      setUserId(session.user.id);
+    };
+    
+    checkAuth();
+  }, [navigate]);
   
   const [formData, setFormData] = useState<OnboardingData>({
     nickname: "",
@@ -56,9 +71,23 @@ const Onboarding = () => {
   };
 
   const handleSave = async () => {
+    if (!userId) {
+      toast.error("Authentication required. Please log in.");
+      navigate("/login");
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error("Authentication required. Please log in.");
+        navigate("/login");
+        return;
+      }
+      
       const { data, error } = await supabase.functions.invoke('profile', {
         body: {
           nickname: formData.nickname || "Friend",
@@ -74,17 +103,14 @@ const Onboarding = () => {
           planning_style: formData.planning_style,
         },
         headers: {
-          'X-User-Id': userId,
+          'Authorization': `Bearer ${session.access_token}`,
         },
       });
 
       if (error) {
-        console.error('Error saving profile:', error);
         toast.error("Failed to save profile. Please try again.");
         return;
       }
-
-      console.log('Profile saved successfully:', data);
       localStorage.setItem("hasOnboarded", "true");
       localStorage.setItem("showOnboardingCompleteToast", "true");
       navigate("/");

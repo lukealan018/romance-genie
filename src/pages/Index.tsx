@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Heart, RefreshCw, Loader2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useUserId } from "@/hooks/use-user-id";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import CustomButton from "@/components/CustomButton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,13 +16,12 @@ import { PlanCard } from "@/components/PlanCard";
 import { RestaurantDetailsDrawer } from "@/components/RestaurantDetailsDrawer";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
 import { usePlanStore } from "@/store/planStore";
 
 const Index = () => {
   const navigate = useNavigate();
-  const userId = useUserId();
+  const [userId, setUserId] = useState<string | null>(null);
   
   // Global store
   const {
@@ -60,26 +59,41 @@ const Index = () => {
   const [plan, setPlan] = useState<any>(null);
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
 
-  // Check onboarding status and fetch profile on mount
+  // Check authentication and onboarding status
   useEffect(() => {
-    const hasOnboarded = localStorage.getItem("hasOnboarded");
-    if (!hasOnboarded) {
-      navigate("/onboarding");
-    } else {
+    const checkAuth = async () => {
+      setIsCheckingOnboarding(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate("/login");
+        return;
+      }
+      
+      setUserId(session.user.id);
+      
+      const hasOnboarded = localStorage.getItem("hasOnboarded");
+      if (!hasOnboarded) {
+        navigate("/onboarding");
+      } else {
+        await fetchProfile(session.user.id);
+      }
+      
       setIsCheckingOnboarding(false);
-      // Fetch profile
-      fetchProfile();
-    }
-  }, [navigate, userId]);
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   // Check if profile needs refresh (after edit)
   useEffect(() => {
     const needsRefresh = localStorage.getItem("profileNeedsRefresh");
-    if (needsRefresh === "true") {
+    if (needsRefresh === "true" && userId) {
       localStorage.removeItem("profileNeedsRefresh");
-      fetchProfile();
+      fetchProfile(userId);
     }
-  }, []);
+  }, [userId]);
 
   // Show onboarding complete toast and auto-search
   useEffect(() => {
@@ -100,21 +114,26 @@ const Index = () => {
     }
   }, []);
 
-  const fetchProfile = async () => {
+  const fetchProfile = async (uid: string) => {
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`,
-        {
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'X-User-Id': userId,
-          },
-        }
-      );
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate("/login");
+        return;
+      }
 
-      if (response.status === 200) {
-        const profile = await response.json();
-        console.log('Profile loaded:', profile);
+      const { data: profile, error } = await supabase.functions.invoke('profile', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (profile) {
         
         // Prefill controls
         if (profile.home_zip) {
@@ -155,9 +174,6 @@ const Index = () => {
         if (profile.nickname) {
           setNickname(profile.nickname);
         }
-      } else if (response.status === 404) {
-        console.log('Profile not found');
-        setShowProfileBanner(true);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);

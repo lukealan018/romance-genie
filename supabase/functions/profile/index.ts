@@ -32,7 +32,6 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
     if (authError || !user) {
-      console.error('Auth error:', authError);
       return new Response(
         JSON.stringify({ error: 'Invalid or expired token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -50,7 +49,6 @@ serve(async (req) => {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching profile:', error);
         return new Response(
           JSON.stringify({ error: error.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -135,7 +133,6 @@ serve(async (req) => {
         .single();
 
       if (error) {
-        console.error('Error upserting profile:', error);
         return new Response(
           JSON.stringify({ error: error.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -155,7 +152,6 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in profile function:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     return new Response(
       JSON.stringify({ error: errorMessage }),

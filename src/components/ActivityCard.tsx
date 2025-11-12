@@ -5,7 +5,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { getActivityLinks } from "@/lib/external-links";
-import { useUserId } from "@/hooks/use-user-id";
 
 interface ActivityCardProps {
   id: string;
@@ -32,7 +31,6 @@ export const ActivityCard = ({
   category = 'activity',
   onClick,
 }: ActivityCardProps) => {
-  const userId = useUserId();
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [loadingPhone, setLoadingPhone] = useState(false);
   const [userPreferences, setUserPreferences] = useState<{
@@ -41,23 +39,19 @@ export const ActivityCard = ({
 
   useEffect(() => {
     const fetchUserPreferences = async () => {
-      if (!userId) return;
-      
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`,
-          {
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'X-User-Id': userId,
-            },
-          }
-        );
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
 
-        if (response.ok) {
-          const data = await response.json();
+        const { data: profile } = await supabase.functions.invoke('profile', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
+
+        if (profile) {
           setUserPreferences({
-            date: data.preferred_date ? new Date(data.preferred_date) : undefined,
+            date: profile.preferred_date ? new Date(profile.preferred_date) : undefined,
           });
         }
       } catch (error) {
@@ -66,7 +60,7 @@ export const ActivityCard = ({
     };
 
     fetchUserPreferences();
-  }, [userId]);
+  }, []);
 
   const handleAddressClick = (e: React.MouseEvent) => {
     e.stopPropagation();

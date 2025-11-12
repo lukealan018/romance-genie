@@ -6,7 +6,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { getReservationLinks, getActivityLinks } from "@/lib/external-links";
-import { useUserId } from "@/hooks/use-user-id";
 
 interface Place {
   id: string;
@@ -48,7 +47,6 @@ export const PlanCard = ({
   canSwapRestaurant = true,
   canSwapActivity = true,
 }: PlanCardProps) => {
-  const userId = useUserId();
   const [restaurantPhone, setRestaurantPhone] = useState<string | null>(null);
   const [activityPhone, setActivityPhone] = useState<string | null>(null);
   const [restaurantWebsite, setRestaurantWebsite] = useState<string | null>(null);
@@ -63,25 +61,21 @@ export const PlanCard = ({
 
   useEffect(() => {
     const fetchUserPreferences = async () => {
-      if (!userId) return;
-      
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`,
-          {
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'X-User-Id': userId,
-            },
-          }
-        );
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
 
-        if (response.ok) {
-          const data = await response.json();
+        const { data: profile } = await supabase.functions.invoke('profile', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
+
+        if (profile) {
           setUserPreferences({
-            date: data.preferred_date ? new Date(data.preferred_date) : undefined,
-            time: data.preferred_time ? new Date(`2000-01-01T${data.preferred_time}`) : undefined,
-            partySize: data.party_size || 2,
+            date: profile.preferred_date ? new Date(profile.preferred_date) : undefined,
+            time: profile.preferred_time ? new Date(`2000-01-01T${profile.preferred_time}`) : undefined,
+            partySize: profile.party_size || 2,
           });
         }
       } catch (error) {
@@ -90,7 +84,7 @@ export const PlanCard = ({
     };
 
     fetchUserPreferences();
-  }, [userId]);
+  }, []);
 
   const fetchPhone = async (placeId: string, type: 'restaurant' | 'activity') => {
     const setPhone = type === 'restaurant' ? setRestaurantPhone : setActivityPhone;
