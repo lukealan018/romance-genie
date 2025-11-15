@@ -23,11 +23,13 @@ export type Database = {
           dislikes: string[] | null
           home_zip: string | null
           nickname: string | null
+          occasion_type: string | null
           party_size: number | null
           planning_style: string | null
           preferred_date: string | null
           preferred_time: string | null
           price_range: string | null
+          time_preference: string | null
           updated_at: string | null
           user_id: string
           vibe: string | null
@@ -40,11 +42,13 @@ export type Database = {
           dislikes?: string[] | null
           home_zip?: string | null
           nickname?: string | null
+          occasion_type?: string | null
           party_size?: number | null
           planning_style?: string | null
           preferred_date?: string | null
           preferred_time?: string | null
           price_range?: string | null
+          time_preference?: string | null
           updated_at?: string | null
           user_id: string
           vibe?: string | null
@@ -57,11 +61,13 @@ export type Database = {
           dislikes?: string[] | null
           home_zip?: string | null
           nickname?: string | null
+          occasion_type?: string | null
           party_size?: number | null
           planning_style?: string | null
           preferred_date?: string | null
           preferred_time?: string | null
           price_range?: string | null
+          time_preference?: string | null
           updated_at?: string | null
           user_id?: string
           vibe?: string | null
