@@ -8,7 +8,7 @@ import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
-import Onboarding from "./pages/Onboarding";
+import ProfileSetup from "./pages/ProfileSetup";
 import Profile from "./pages/Profile";
 import PlanPage from "./pages/PlanPage";
 import NotFound from "./pages/NotFound";
@@ -24,7 +24,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/onboarding" element={<ProfileSetup />} />
             <Route path="/login" element={<Login />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/profile" element={<Profile />} />
