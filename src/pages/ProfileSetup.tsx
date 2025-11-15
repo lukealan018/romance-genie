@@ -345,6 +345,10 @@ export default function ProfileSetup() {
         if (error) throw error;
       }
 
+      // Mark onboarding as complete
+      localStorage.setItem("hasOnboarded", "true");
+      localStorage.setItem("showOnboardingCompleteToast", "true");
+      
       toast.success("Success! 🎉 Your profile has been saved!");
       
       // Redirect to home page after short delay
