@@ -301,11 +301,23 @@ export default function ProfileSetup() {
     setIsSaving(true);
     
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      // Get the current session to ensure auth.uid() works in RLS policies
+      let { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (userError || !user) {
+      // If no session, try to refresh it
+      if (!session) {
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshData.session) {
+          throw new Error('You must be logged in to save your profile. Please try logging in again.');
+        }
+        session = refreshData.session;
+      }
+      
+      if (!session?.user) {
         throw new Error('You must be logged in to save your profile');
       }
+      
+      const user = session.user;
 
       // Check if profile already exists
       const { data: existingProfile } = await supabase
