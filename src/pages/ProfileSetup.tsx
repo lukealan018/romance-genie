@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Mic, Send, MapPin, Sparkles, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { isDevModeActive, shouldSkipOnboarding, getStartStep, getMockProfile, logDevMode } from '@/lib/dev-utils';
 
 // TypeScript declarations for Web Speech API
 declare global {
@@ -122,6 +123,51 @@ export default function ProfileSetup() {
   // Check authentication on mount
   useEffect(() => {
     const checkAuth = async () => {
+      // Skip auth check in dev mode
+      if (isDevModeActive()) {
+        logDevMode('Dev mode active in ProfileSetup - bypassing auth check');
+        
+        // Auto-skip onboarding if URL parameter is set
+        if (shouldSkipOnboarding()) {
+          logDevMode('Auto-completing onboarding with mock data');
+          const mockProfile = getMockProfile();
+          setProfile({
+            zipCode: mockProfile.home_zip || '',
+            maxDistance: mockProfile.default_radius_mi || 10,
+            cuisinePreferences: mockProfile.cuisines || [],
+            priceRange: '$$',
+            activityPreferences: mockProfile.activities || [],
+            foodRules: mockProfile.dietary || [],
+            dealbreakers: [],
+            occasionType: 'date',
+            timePreference: 'evening',
+            planningStyle: 'spontaneous'
+          });
+          setIsComplete(true);
+          setShowConfetti(true);
+          return;
+        }
+        
+        // Jump to specific question if URL parameter is set
+        const startStep = getStartStep();
+        if (startStep !== null && startStep >= 0 && startStep < questions.length) {
+          logDevMode(`Jumping to question ${startStep}`);
+          setCurrentQuestion(startStep);
+          setMessages([
+            {
+              type: 'ai',
+              text: questions[startStep].text,
+              subtext: questions[startStep].subtext,
+              emoji: questions[startStep].emoji,
+            },
+          ]);
+          setShowLocationSetup(false);
+        }
+        
+        return;
+      }
+      
+      // Normal authentication flow
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
