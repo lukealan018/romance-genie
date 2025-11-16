@@ -18,6 +18,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "@/hooks/use-toast";
 import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
 import { usePlanStore } from "@/store/planStore";
+import { isDevModeActive, getDevUserId, getMockProfile, logDevMode } from "@/lib/dev-utils";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -64,6 +65,35 @@ const Index = () => {
     const checkAuth = async () => {
       setIsCheckingOnboarding(true);
       
+      // Development mode bypass
+      if (isDevModeActive()) {
+        logDevMode('Dev mode active - bypassing authentication');
+        const devUserId = getDevUserId();
+        setUserId(devUserId);
+        
+        // Load mock profile data
+        const mockProfile = getMockProfile();
+        setNickname(mockProfile.nickname || '');
+        setUserPreferences({
+          cuisines: mockProfile.cuisines || [],
+          activities: mockProfile.activities || [],
+        });
+        
+        // Set default location from mock profile
+        if (mockProfile.home_zip) {
+          setFilters({ 
+            zipCode: mockProfile.home_zip,
+            radius: mockProfile.default_radius_mi || 5 
+          });
+        }
+        
+        localStorage.setItem("hasOnboarded", "true");
+        setIsCheckingOnboarding(false);
+        logDevMode('Mock profile loaded', mockProfile);
+        return;
+      }
+      
+      // Normal authentication flow
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
