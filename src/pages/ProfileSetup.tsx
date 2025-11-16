@@ -168,11 +168,20 @@ export default function ProfileSetup() {
       }
       
       // Normal authentication flow
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[ProfileSetup] Checking authentication...');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('[ProfileSetup] Error getting session:', error);
+      }
       
       if (!session) {
-        navigate("/login");
+        console.warn('[ProfileSetup] No session found - redirecting to login');
+        toast.error("Please log in to set up your profile");
+        navigate('/login');
         return;
+      } else {
+        console.log('[ProfileSetup] ✓ User authenticated:', session.user.email);
       }
     };
     
@@ -347,23 +356,43 @@ export default function ProfileSetup() {
     setIsSaving(true);
     
     try {
+      console.log('[ProfileSetup] Starting profile save...');
+      
       // Get the current session to ensure auth.uid() works in RLS policies
       let { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
+      if (sessionError) {
+        console.error('[ProfileSetup] Session error:', sessionError);
+      }
+      
+      console.log('[ProfileSetup] Session check:', session ? `✓ Found (${session.user.email})` : '✗ No session');
+      
       // If no session, try to refresh it
       if (!session) {
+        console.log('[ProfileSetup] Attempting to refresh session...');
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError || !refreshData.session) {
+        
+        if (refreshError) {
+          console.error('[ProfileSetup] Refresh error:', refreshError);
+          throw new Error('Session expired. Please log in again.');
+        }
+        
+        if (!refreshData.session) {
+          console.error('[ProfileSetup] No session after refresh');
           throw new Error('You must be logged in to save your profile. Please try logging in again.');
         }
+        
         session = refreshData.session;
+        console.log('[ProfileSetup] ✓ Session refreshed successfully');
       }
       
       if (!session?.user) {
+        console.error('[ProfileSetup] No user in session');
         throw new Error('You must be logged in to save your profile');
       }
       
       const user = session.user;
+      console.log('[ProfileSetup] Saving profile for user:', user.id);
 
       // Check if profile already exists
       const { data: existingProfile } = await supabase
@@ -386,27 +415,38 @@ export default function ProfileSetup() {
         price_range: profile.priceRange
       };
 
+      console.log('[ProfileSetup] Profile data to save:', profileData);
+
       if (existingProfile) {
-        // Update existing profile
+        console.log('[ProfileSetup] Updating existing profile...');
         const { error } = await supabase
           .from('profiles')
           .update(profileData)
           .eq('user_id', user.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('[ProfileSetup] Update error:', error);
+          throw error;
+        }
+        console.log('[ProfileSetup] ✓ Profile updated successfully');
       } else {
-        // Create new profile
+        console.log('[ProfileSetup] Creating new profile...');
         const { error } = await supabase
           .from('profiles')
           .insert(profileData);
 
-        if (error) throw error;
+        if (error) {
+          console.error('[ProfileSetup] Insert error:', error);
+          throw error;
+        }
+        console.log('[ProfileSetup] ✓ Profile created successfully');
       }
 
       // Mark onboarding as complete
       localStorage.setItem("hasOnboarded", "true");
       localStorage.setItem("showOnboardingCompleteToast", "true");
       
+      console.log('[ProfileSetup] ✓ Profile save complete! Redirecting...');
       toast.success("Success! 🎉 Your profile has been saved!");
       
       // Redirect to home page after short delay
@@ -415,8 +455,17 @@ export default function ProfileSetup() {
       }, 1500);
 
     } catch (error: any) {
-      console.error('Error saving profile:', error);
-      toast.error(error.message || "Failed to save profile. Please try again.");
+      console.error('[ProfileSetup] ✗ Error saving profile:', error);
+      
+      // More helpful error messages
+      let errorMessage = error.message || "Failed to save profile. Please try again.";
+      
+      if (error.message?.includes('session') || error.message?.includes('logged in')) {
+        errorMessage = "Your session has expired. Please log in again.";
+        setTimeout(() => navigate('/login'), 2000);
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
