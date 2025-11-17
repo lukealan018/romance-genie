@@ -56,7 +56,7 @@ serve(async (req) => {
 
     const detailsUrl = new URL('https://maps.googleapis.com/maps/api/place/details/json');
     detailsUrl.searchParams.set('place_id', placeId);
-    detailsUrl.searchParams.set('fields', 'name,formatted_address,formatted_phone_number,international_phone_number,opening_hours,website,url,rating,user_ratings_total,price_level,geometry');
+    detailsUrl.searchParams.set('fields', 'name,formatted_address,formatted_phone_number,international_phone_number,opening_hours,website,url,rating,user_ratings_total,price_level,geometry,photos');
     detailsUrl.searchParams.set('key', GOOGLE_MAPS_API_KEY);
 
     console.log('Fetching from Google Places API...');
@@ -79,6 +79,13 @@ serve(async (req) => {
     
     console.log('Phone number found:', phoneNumber ? 'Yes' : 'No');
     
+    // Process photos - get up to 5 photo references
+    const photos = place.photos?.slice(0, 5).map((photo: any) => ({
+      reference: photo.photo_reference,
+      width: photo.width,
+      height: photo.height,
+    })) || [];
+    
     const details = {
       name: place.name,
       address: place.formatted_address,
@@ -92,6 +99,7 @@ serve(async (req) => {
       isOpen: place.opening_hours?.open_now ?? null,
       lat: place.geometry?.location?.lat || 0,
       lng: place.geometry?.location?.lng || 0,
+      photos: photos,
     };
 
     console.log('Returning details with phone:', details.phoneNumber);
