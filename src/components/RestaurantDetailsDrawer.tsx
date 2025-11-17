@@ -43,24 +43,31 @@ export const RestaurantDetailsDrawer = ({
 }: RestaurantDetailsDrawerProps) => {
   const [details, setDetails] = useState<PlaceDetails | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchDetails = async () => {
     if (details) {
-      console.log('Details already loaded, skipping fetch');
+      console.log('✅ Details already loaded, skipping fetch');
       return;
     }
     
-    console.log('Fetching details for place:', placeId);
+    console.log('🔄 Fetching details for place:', placeId);
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase.functions.invoke('place-details', {
         body: { placeId }
       });
 
-      console.log('Place details response:', { data, error });
+      console.log('📦 Place details response:', { 
+        hasData: !!data, 
+        hasError: !!error,
+        photosCount: data?.photos?.length || 0,
+        dataKeys: data ? Object.keys(data) : []
+      });
 
       if (error) {
-        console.error('Error from place-details function:', error);
+        console.error('❌ Error from place-details function:', error);
         throw error;
       }
       
@@ -68,10 +75,13 @@ export const RestaurantDetailsDrawer = ({
         throw new Error('No data returned from place-details');
       }
       
-      console.log('Setting details with photos:', data.photos?.length || 0);
+      console.log('✅ Setting details state. Photos:', data.photos?.length || 0);
+      console.log('📸 Photo URLs:', data.photos?.map((p: any) => p.url));
       setDetails(data);
+      console.log('✅ Details state set successfully');
     } catch (error) {
-      console.error('Error fetching place details:', error);
+      console.error('💥 Error fetching place details:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load details');
       toast({
         title: "Error",
         description: "Failed to load restaurant details",
@@ -79,17 +89,21 @@ export const RestaurantDetailsDrawer = ({
       });
     } finally {
       setLoading(false);
+      console.log('✅ Fetch complete. Loading set to false');
     }
   };
 
   const handleOpenChange = (open: boolean) => {
-    console.log('Drawer open state changed:', open);
+    console.log('🔄 Drawer open state changed:', open);
     if (open) {
+      console.log('🚪 Opening drawer, fetching details...');
       fetchDetails();
     } else {
+      console.log('🚪 Closing drawer, resetting state...');
       // Reset state when closing
       setDetails(null);
       setLoading(false);
+      setError(null);
       onClose();
     }
   };
@@ -107,10 +121,16 @@ export const RestaurantDetailsDrawer = ({
           <DrawerTitle className="text-2xl">{initialName}</DrawerTitle>
         </DrawerHeader>
         
-        <div className="px-4 pb-8 space-y-6 max-h-[70vh] overflow-y-auto">
+        <div className="px-4 pb-8 space-y-6 max-h-[70vh] overflow-y-auto min-h-[300px]">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <span className="ml-2 text-sm text-muted-foreground">Loading details...</span>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <p className="text-destructive font-medium">Failed to load details</p>
+              <p className="text-sm text-muted-foreground mt-2">{error}</p>
             </div>
           ) : details ? (
             <>
@@ -138,11 +158,13 @@ export const RestaurantDetailsDrawer = ({
               </Button>
 
               {/* Photos Gallery */}
-              {details.photos && details.photos.length > 0 && (
+              {details.photos && details.photos.length > 0 ? (
                 <div className="space-y-2">
-                  <p className="font-medium">Photos</p>
+                  <p className="font-medium">Photos ({details.photos.length})</p>
                   <PhotoGallery photos={details.photos} placeName={details.name} />
                 </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">No photos available</div>
               )}
 
               {/* Address */}
@@ -206,7 +228,11 @@ export const RestaurantDetailsDrawer = ({
                 </div>
               )}
             </>
-          ) : null}
+          ) : (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-muted-foreground">No details available</p>
+            </div>
+          )}
         </div>
       </DrawerContent>
     </Drawer>

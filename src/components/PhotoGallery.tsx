@@ -15,8 +15,14 @@ interface PhotoGalleryProps {
 
 export const PhotoGallery = ({ photos, placeName }: PhotoGalleryProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageError, setImageError] = useState(false);
 
-  if (!photos || photos.length === 0) return null;
+  console.log('🖼️ PhotoGallery rendering with', photos?.length || 0, 'photos');
+
+  if (!photos || photos.length === 0) {
+    console.log('⚠️ PhotoGallery: No photos provided');
+    return null;
+  }
 
   const goToNext = () => {
     setCurrentIndex((prev) => (prev + 1) % photos.length);
@@ -46,11 +52,24 @@ export const PhotoGallery = ({ photos, placeName }: PhotoGalleryProps) => {
 
   return (
     <div className="relative w-full h-48 rounded-lg overflow-hidden bg-muted">
-      <img
-        src={photos[currentIndex].url}
-        alt={`${placeName} - Photo ${currentIndex + 1}`}
-        className="w-full h-full object-cover transition-opacity duration-200"
-      />
+      {imageError ? (
+        <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+          Failed to load image
+        </div>
+      ) : (
+        <img
+          src={photos[currentIndex].url}
+          alt={`${placeName} - Photo ${currentIndex + 1}`}
+          className="w-full h-full object-cover transition-opacity duration-200"
+          onError={(e) => {
+            console.error('❌ Failed to load image:', photos[currentIndex].url);
+            setImageError(true);
+          }}
+          onLoad={() => {
+            console.log('✅ Image loaded successfully:', photos[currentIndex].url);
+          }}
+        />
+      )}
       
       {photos.length > 1 && (
         <>
