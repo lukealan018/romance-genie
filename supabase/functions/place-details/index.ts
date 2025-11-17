@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 
 // Activity types that typically require tickets/advance booking
 const eventTypes = new Set([
@@ -79,9 +80,9 @@ serve(async (req) => {
     
     console.log('Phone number found:', phoneNumber ? 'Yes' : 'No');
     
-    // Process photos - construct full URLs with up to 5 photos
+    // Process photos - use proxy function to serve images with proper headers
     const photos = place.photos?.slice(0, 5).map((photo: any) => ({
-      url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photo.photo_reference}&key=${GOOGLE_MAPS_API_KEY}`,
+      url: `${SUPABASE_URL}/functions/v1/proxy-photo?reference=${photo.photo_reference}&maxwidth=800`,
       width: photo.width,
       height: photo.height,
     })) || [];

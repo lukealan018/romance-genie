@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.place-details]
 verify_jwt = false
 
+[functions.proxy-photo]
+verify_jwt = false
+
 [functions.activities-search]
 verify_jwt = false
 
