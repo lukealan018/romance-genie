@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Star, MapPin, Phone, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -33,34 +33,6 @@ export const ActivityCard = ({
 }: ActivityCardProps) => {
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [loadingPhone, setLoadingPhone] = useState(false);
-  const [userPreferences, setUserPreferences] = useState<{
-    date?: Date;
-  }>({});
-
-  useEffect(() => {
-    const fetchUserPreferences = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
-        const { data: profile } = await supabase.functions.invoke('profile', {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        });
-
-        if (profile) {
-          setUserPreferences({
-            date: profile.preferred_date ? new Date(profile.preferred_date) : undefined,
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching user preferences:', error);
-      }
-    };
-
-    fetchUserPreferences();
-  }, []);
 
   const handleAddressClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -182,7 +154,7 @@ export const ActivityCard = ({
                       address,
                       category,
                     },
-                    userPreferences
+                    undefined
                   );
                   return (
                     <>
