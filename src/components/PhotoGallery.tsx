@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Photo {
-  reference: string; // keep this as-is since it's already working for you
+  url: string;
   width: number;
   height: number;
 }
@@ -18,11 +18,6 @@ export const PhotoGallery = ({ photos, placeName }: PhotoGalleryProps) => {
 
   if (!photos || photos.length === 0) return null;
 
-  const getPhotoUrl = (reference: string, maxWidth = 400) => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-    return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${reference}&key=${apiKey}`;
-  };
-
   const goToNext = () => {
     setCurrentIndex((prev) => (prev + 1) % photos.length);
   };
@@ -36,10 +31,10 @@ export const PhotoGallery = ({ photos, placeName }: PhotoGalleryProps) => {
     if (!photos || photos.length === 0) return;
 
     const preload = (index: number) => {
-      const ref = photos[index]?.reference;
-      if (!ref) return;
+      const url = photos[index]?.url;
+      if (!url) return;
       const img = new Image();
-      img.src = getPhotoUrl(ref);
+      img.src = url;
     };
 
     const nextIndex = (currentIndex + 1) % photos.length;
@@ -52,7 +47,7 @@ export const PhotoGallery = ({ photos, placeName }: PhotoGalleryProps) => {
   return (
     <div className="relative w-full h-48 rounded-lg overflow-hidden bg-muted">
       <img
-        src={getPhotoUrl(photos[currentIndex].reference)}
+        src={photos[currentIndex].url}
         alt={`${placeName} - Photo ${currentIndex + 1}`}
         className="w-full h-full object-cover transition-opacity duration-200"
       />
