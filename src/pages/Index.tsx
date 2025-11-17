@@ -129,31 +129,40 @@ const Index = () => {
   }, [userId]);
 
   // Save location settings to database with debounce
-  const saveLocationSettings = async (newRadius: number, newZipCode: string) => {
+  const saveLocationSettings = async (newRadius: number, newZipCode: string, showToast = false) => {
     if (!userId || isDevModeActive()) return;
+
+    // Validate ZIP code before saving
+    if (newZipCode && !/^\d{5}$/.test(newZipCode.trim())) {
+      return;
+    }
 
     try {
       const { error } = await supabase
         .from('profiles')
         .update({
           default_radius_mi: newRadius,
-          home_zip: newZipCode
+          home_zip: newZipCode || null
         })
         .eq('user_id', userId);
 
       if (error) throw error;
 
-      toast({
-        title: "Settings saved",
-        description: `Default location updated: ${newRadius} miles from ${newZipCode}`,
-      });
+      if (showToast) {
+        toast({
+          title: "Location saved",
+          description: "Your default location has been updated.",
+        });
+      }
     } catch (error) {
       console.error('Error saving location settings:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save location settings",
-        variant: "destructive"
-      });
+      if (showToast) {
+        toast({
+          title: "Error",
+          description: "Failed to save location settings",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -342,25 +351,37 @@ const Index = () => {
       searchLat = lat;
       searchLng = lng;
     } else {
-      if (zipCode.length !== 5) {
-        toast({ title: "Error", description: "Please enter a valid 5-digit ZIP code", variant: "destructive" });
+      // Client-side ZIP validation
+      const cleanZip = zipCode.trim();
+      if (!cleanZip) {
+        toast({ title: "ZIP code required", description: "Please enter a ZIP code to continue.", variant: "destructive" });
+        return;
+      }
+      if (!/^\d{5}$/.test(cleanZip)) {
+        toast({ title: "Invalid ZIP code", description: "Please enter a valid 5-digit US ZIP code.", variant: "destructive" });
         return;
       }
       
       // Geocode the ZIP code using edge function
       try {
         const { data: geocodeData, error: geocodeError } = await supabase.functions.invoke('geocode', {
-          body: { zipCode }
+          body: { zipCode: cleanZip }
         });
         
         if (geocodeError || !geocodeData) {
-          toast({ title: "Error", description: "Invalid ZIP code. Please try again.", variant: "destructive" });
+          const errorMessage = geocodeData?.error || geocodeError?.message || "Could not find location for this ZIP code.";
+          toast({ 
+            title: "Location error", 
+            description: errorMessage, 
+            variant: "destructive" 
+          });
           return;
         }
         
         searchLat = geocodeData.lat;
         searchLng = geocodeData.lng;
-        console.log(`Geocoded ${zipCode} to ${geocodeData.city}:`, searchLat, searchLng);
+        setLocation(searchLat, searchLng);
+        console.log(`Geocoded ${cleanZip} to ${geocodeData.city}:`, searchLat, searchLng);
       } catch (error) {
         console.error('Geocoding error:', error);
         toast({ title: "Error", description: "Could not find location for this ZIP code", variant: "destructive" });
@@ -457,6 +478,9 @@ const Index = () => {
         await trackInteraction(initialPlan.activity, 'activity', 'selected');
       }
       await savePlan(initialPlan);
+      
+      // Auto-save location settings after successful search
+      await saveLocationSettings(radius, zipCode, true);
       
       toast({ 
         title: "Success", 
