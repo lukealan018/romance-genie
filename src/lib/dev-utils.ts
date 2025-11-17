@@ -8,8 +8,6 @@ export const isDevelopment = () => {
 };
 
 export const isDevModeActive = () => {
-  if (!isDevelopment()) return false;
-  
   const params = new URLSearchParams(window.location.search);
   return params.get('dev') === 'true';
 };
