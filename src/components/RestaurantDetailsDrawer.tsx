@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { PhotoGallery } from "@/components/PhotoGallery";
 
 interface RestaurantDetailsDrawerProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ interface PlaceDetails {
   isOpen: boolean | null;
   lat: number;
   lng: number;
+  photos: Array<{ url: string; width: number; height: number }>;
 }
 
 export const RestaurantDetailsDrawer = ({
@@ -126,6 +128,14 @@ export const RestaurantDetailsDrawer = ({
                 <Navigation className="w-4 h-4 mr-2" />
                 Get Directions
               </Button>
+
+              {/* Photos Gallery */}
+              {details.photos && details.photos.length > 0 && (
+                <div className="space-y-2">
+                  <p className="font-medium">Photos</p>
+                  <PhotoGallery photos={details.photos} placeName={details.name} />
+                </div>
+              )}
 
               {/* Address */}
               <div className="flex items-start gap-3">
