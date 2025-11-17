@@ -193,3 +193,15 @@ All colors MUST be HSL.
     animation: fadeSlideIn 180ms ease-out;
   }
 }
+
+/* Prevent mobile zoom on all inputs */
+input, textarea, select {
+  font-size: 16px !important;
+  touch-action: manipulation;
+}
+
+@media screen and (min-width: 640px) {
+  input, textarea, select {
+    font-size: inherit !important;
+  }
+}
