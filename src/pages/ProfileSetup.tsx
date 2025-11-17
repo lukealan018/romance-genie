@@ -607,8 +607,12 @@ export default function ProfileSetup() {
                 onChange={(e) => setUserInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your answer..."
-                style={{ touchAction: 'manipulation', fontSize: '16px' }}
-                className="flex-1 px-4 py-3 bg-slate-700 border-2 border-slate-600 text-slate-100 placeholder-slate-400 rounded-lg focus:border-indigo-500 focus:outline-none transition-all text-base sm:text-lg"
+                style={{ 
+                  touchAction: 'manipulation', 
+                  fontSize: '18px',
+                  WebkitTextSizeAdjust: '100%'
+                }}
+                className="flex-1 px-4 py-3 bg-slate-700 border-2 border-slate-600 text-slate-100 placeholder-slate-400 rounded-lg focus:border-indigo-500 focus:outline-none transition-all"
                 disabled={isListening || isTyping}
               />
               
