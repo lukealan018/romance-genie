@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { getReservationLinks, getActivityLinks } from "@/lib/external-links";
 import { PhotoGallery } from "@/components/PhotoGallery";
+import { trackActivity } from '@/lib/activity-tracker';
 
 interface Place {
   id: string;
@@ -196,6 +197,18 @@ export const PlanCard = ({
       if (error) throw error;
 
       setIsSaved(true);
+      
+      // Track the save action
+      trackActivity({
+        action_type: 'save_combo',
+        restaurant_id: restaurant.id,
+        restaurant_name: restaurant.name,
+        restaurant_cuisine: restaurant.city,
+        activity_id: activity.id,
+        activity_name: activity.name,
+        activity_category: activity.category
+      });
+      
       toast({
         title: "Plan saved!",
         description: "You can view your saved plans in the history page",
@@ -253,16 +266,32 @@ export const PlanCard = ({
               </div>
             )}
           </div>
-          <Button
-            onClick={onReroll}
-            variant="outline"
-            size="sm"
-            disabled={loading}
-            className="gap-2"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            Reroll
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleSavePlan}
+              variant={isSaved ? "secondary" : "default"}
+              size="sm"
+              disabled={savingPlan || !restaurant || !activity}
+              className="gap-2"
+            >
+              {savingPlan ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Heart className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+              )}
+              {isSaved ? 'Saved' : 'Save Plan'}
+            </Button>
+            <Button
+              onClick={onReroll}
+              variant="outline"
+              size="sm"
+              disabled={loading}
+              className="gap-2"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Reroll
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -299,9 +328,23 @@ export const PlanCard = ({
                   )}
                 </div>
               </div>
-              <Button onClick={onSwapRestaurant} variant="ghost" size="sm" disabled={loading || !canSwapRestaurant}>
-                Swap
-              </Button>
+      <Button 
+        onClick={() => {
+          trackActivity({
+            action_type: 'swap_restaurant',
+            restaurant_id: restaurant.id,
+            restaurant_name: restaurant.name,
+            restaurant_cuisine: restaurant.city,
+            restaurant_price_level: restaurant.priceLevel
+          });
+          onSwapRestaurant();
+        }} 
+        variant="ghost" 
+        size="sm" 
+        disabled={loading || !canSwapRestaurant}
+      >
+        Swap
+      </Button>
             </div>
             
             <div 
@@ -315,26 +358,38 @@ export const PlanCard = ({
             <PhotoGallery photos={restaurantPhotos} placeName={restaurant.name} />
 
             <div className="flex gap-2">
-              {restaurantPhone ? (
-                <a
-                  href={`tel:${restaurantPhone}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    window.location.href = `tel:${restaurantPhone}`;
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors"
-                >
-                  <Phone className="h-4 w-4" />
-                  <span>Call</span>
-                </a>
+            {restaurantPhone ? (
+              <a
+                href={`tel:${restaurantPhone}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  trackActivity({
+                    action_type: 'call',
+                    restaurant_id: restaurant.id,
+                    restaurant_name: restaurant.name
+                  });
+                  window.location.href = `tel:${restaurantPhone}`;
+                }}
+                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors"
+              >
+                <Phone className="h-4 w-4" />
+                <span>Call</span>
+              </a>
               ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => fetchPlaceDetails(restaurant.id, 'restaurant')}
-                  disabled={loadingRestaurantPhone}
-                  className="gap-2"
-                >
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  trackActivity({
+                    action_type: 'view_details',
+                    restaurant_id: restaurant.id,
+                    restaurant_name: restaurant.name
+                  });
+                  fetchPlaceDetails(restaurant.id, 'restaurant');
+                }}
+                disabled={loadingRestaurantPhone}
+                className="gap-2"
+              >
                   {loadingRestaurantPhone ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
@@ -364,28 +419,68 @@ export const PlanCard = ({
                       userPreferences
                     );
                     return (
-                      <>
-                        <DropdownMenuItem asChild>
-                          <a href={links.openTable} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-                            OpenTable
-                          </a>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <a href={links.resy} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-                            Resy
-                          </a>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <a href={links.yelp} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-                            Yelp
-                          </a>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <a href={links.googleMaps} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-                            Google Maps
-                          </a>
-                        </DropdownMenuItem>
-                      </>
+                    <>
+                      <DropdownMenuItem asChild>
+                        <a 
+                          href={links.openTable} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="cursor-pointer"
+                          onClick={() => trackActivity({
+                            action_type: 'reserve',
+                            restaurant_id: restaurant.id,
+                            restaurant_name: restaurant.name
+                          })}
+                        >
+                          OpenTable
+                        </a>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <a 
+                          href={links.resy} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="cursor-pointer"
+                          onClick={() => trackActivity({
+                            action_type: 'reserve',
+                            restaurant_id: restaurant.id,
+                            restaurant_name: restaurant.name
+                          })}
+                        >
+                          Resy
+                        </a>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <a 
+                          href={links.yelp} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="cursor-pointer"
+                          onClick={() => trackActivity({
+                            action_type: 'reserve',
+                            restaurant_id: restaurant.id,
+                            restaurant_name: restaurant.name
+                          })}
+                        >
+                          Yelp
+                        </a>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <a 
+                          href={links.googleMaps} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="cursor-pointer"
+                          onClick={() => trackActivity({
+                            action_type: 'reserve',
+                            restaurant_id: restaurant.id,
+                            restaurant_name: restaurant.name
+                          })}
+                        >
+                          Google Maps
+                        </a>
+                      </DropdownMenuItem>
+                    </>
                     );
                   })()}
                 </DropdownMenuContent>
@@ -430,9 +525,22 @@ export const PlanCard = ({
                   <span className="text-xs text-muted-foreground">({activity.totalRatings})</span>
                 </div>
               </div>
-              <Button onClick={onSwapActivity} variant="ghost" size="sm" disabled={loading || !canSwapActivity}>
-                Swap
-              </Button>
+      <Button 
+        onClick={() => {
+          trackActivity({
+            action_type: 'swap_activity',
+            activity_id: activity.id,
+            activity_name: activity.name,
+            activity_category: activity.category
+          });
+          onSwapActivity();
+        }} 
+        variant="ghost" 
+        size="sm" 
+        disabled={loading || !canSwapActivity}
+      >
+        Swap
+      </Button>
             </div>
             
             <div 
@@ -451,6 +559,11 @@ export const PlanCard = ({
                   href={`tel:${activityPhone}`}
                   onClick={(e) => {
                     e.preventDefault();
+                    trackActivity({
+                      action_type: 'call',
+                      activity_id: activity.id,
+                      activity_name: activity.name
+                    });
                     window.location.href = `tel:${activityPhone}`;
                   }}
                   className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors"
@@ -462,7 +575,14 @@ export const PlanCard = ({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => fetchPlaceDetails(activity.id, 'activity')}
+                  onClick={() => {
+                    trackActivity({
+                      action_type: 'view_details',
+                      activity_id: activity.id,
+                      activity_name: activity.name
+                    });
+                    fetchPlaceDetails(activity.id, 'activity');
+                  }}
                   disabled={loadingActivityPhone}
                   className="gap-2"
                 >
@@ -498,32 +618,82 @@ export const PlanCard = ({
                     return (
                       <>
                         <DropdownMenuItem asChild>
-                          <a href={links.googleMaps} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                          <a 
+                            href={links.googleMaps} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="cursor-pointer"
+                            onClick={() => trackActivity({
+                              action_type: 'reserve',
+                              activity_id: activity.id,
+                              activity_name: activity.name
+                            })}
+                          >
                             Google Maps
                           </a>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <a href={links.yelp} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                          <a 
+                            href={links.yelp} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="cursor-pointer"
+                            onClick={() => trackActivity({
+                              action_type: 'reserve',
+                              activity_id: activity.id,
+                              activity_name: activity.name
+                            })}
+                          >
                             Yelp
                           </a>
                         </DropdownMenuItem>
                         {activity.category === 'event' && links.eventbrite && (
                           <DropdownMenuItem asChild>
-                            <a href={links.eventbrite} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            <a 
+                              href={links.eventbrite} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="cursor-pointer"
+                              onClick={() => trackActivity({
+                                action_type: 'reserve',
+                                activity_id: activity.id,
+                                activity_name: activity.name
+                              })}
+                            >
                               Eventbrite
                             </a>
                           </DropdownMenuItem>
                         )}
                         {activity.category === 'event' && links.ticketmaster && (
                           <DropdownMenuItem asChild>
-                            <a href={links.ticketmaster} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            <a 
+                              href={links.ticketmaster} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="cursor-pointer"
+                              onClick={() => trackActivity({
+                                action_type: 'reserve',
+                                activity_id: activity.id,
+                                activity_name: activity.name
+                              })}
+                            >
                               Ticketmaster
                             </a>
                           </DropdownMenuItem>
                         )}
                         {activity.category === 'event' && links.fever && (
                           <DropdownMenuItem asChild>
-                            <a href={links.fever} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            <a 
+                              href={links.fever} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="cursor-pointer"
+                              onClick={() => trackActivity({
+                                action_type: 'reserve',
+                                activity_id: activity.id,
+                                activity_name: activity.name
+                              })}
+                            >
                               Fever
                             </a>
                           </DropdownMenuItem>
