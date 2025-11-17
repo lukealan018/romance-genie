@@ -1,0 +1,104 @@
+import { supabase } from '@/integrations/supabase/client';
+
+interface TrackActivityParams {
+  action_type: 'swap_restaurant' | 'swap_activity' | 'save_combo' | 'view_details' | 'call' | 'reserve';
+  restaurant_id?: string;
+  restaurant_name?: string;
+  restaurant_cuisine?: string;
+  restaurant_price_level?: string;
+  activity_id?: string;
+  activity_name?: string;
+  activity_category?: string;
+}
+
+export async function trackActivity(params: TrackActivityParams) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.log('No user logged in, skipping activity tracking');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('user_activity')
+      .insert({
+        user_id: user.id,
+        ...params
+      });
+
+    if (error) {
+      console.error('Error tracking activity:', error);
+    }
+  } catch (error) {
+    console.error('Failed to track activity:', error);
+  }
+}
+
+// Helper to get user's recent activity
+export async function getRecentActivity(userId: string, limit: number = 50) {
+  const { data, error } = await supabase
+    .from('user_activity')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching activity:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// Analyze what cuisines user is skipping
+export async function getSkippedCuisines(userId: string) {
+  const activities = await getRecentActivity(userId, 100);
+  
+  const swappedRestaurants = activities.filter(a => 
+    a.action_type === 'swap_restaurant' && a.restaurant_cuisine
+  );
+
+  // Count how many times each cuisine was skipped
+  const cuisineSkips: Record<string, number> = {};
+  swappedRestaurants.forEach(activity => {
+    const cuisine = activity.restaurant_cuisine;
+    if (cuisine) {
+      cuisineSkips[cuisine] = (cuisineSkips[cuisine] || 0) + 1;
+    }
+  });
+
+  return cuisineSkips;
+}
+
+// Analyze what activity types user prefers
+export async function getPreferredActivities(userId: string) {
+  const activities = await getRecentActivity(userId, 100);
+  
+  // Activities they saved (positive signal)
+  const saved = activities.filter(a => a.action_type === 'save_combo' && a.activity_category);
+  
+  // Activities they swapped (negative signal)
+  const swapped = activities.filter(a => a.action_type === 'swap_activity' && a.activity_category);
+
+  const preferences: Record<string, number> = {};
+
+  // Boost saved activities
+  saved.forEach(activity => {
+    const category = activity.activity_category;
+    if (category) {
+      preferences[category] = (preferences[category] || 0) + 2; // +2 points for saves
+    }
+  });
+
+  // Penalize swapped activities
+  swapped.forEach(activity => {
+    const category = activity.activity_category;
+    if (category) {
+      preferences[category] = (preferences[category] || 0) - 1; // -1 point for swaps
+    }
+  });
+
+  return preferences;
+}
