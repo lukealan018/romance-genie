@@ -58,7 +58,7 @@ export const LocationToggle = ({
             </>
           ) : locationDetected ? (
             <>
-              <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />
+              <CheckCircle2 className="w-4 h-4 mr-2 text-success" />
               Location Detected
             </>
           ) : (
@@ -69,14 +69,22 @@ export const LocationToggle = ({
           )}
         </Button>
       ) : (
-        <Input
-          type="text"
-          placeholder="Enter ZIP code"
-          value={zipCode}
-          onChange={(e) => onZipCodeChange(e.target.value)}
-          maxLength={5}
-          className="text-center text-lg"
-        />
+        <div className="space-y-2">
+          <Input
+            type="text"
+            placeholder="12345"
+            value={zipCode}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, '').slice(0, 5);
+              onZipCodeChange(value);
+            }}
+            maxLength={5}
+            className="text-center text-lg"
+          />
+          <p className="text-xs text-muted-foreground text-center">
+            5-digit US ZIP code
+          </p>
+        </div>
       )}
     </div>
   );
