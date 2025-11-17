@@ -27,6 +27,13 @@ interface UserPreferences {
   activities: string[];
 }
 
+interface LearnedPreferences {
+  favoriteCuisines: { cuisine: string; score: number }[];
+  favoriteActivities: { category: string; score: number }[];
+  avgRatingThreshold: number;
+  pricePreference: string;
+}
+
 interface BuildPlanParams {
   lat: number;
   lng: number;
@@ -34,6 +41,7 @@ interface BuildPlanParams {
   restaurants: Place[];
   activities: Place[];
   preferences?: UserPreferences;
+  learnedPreferences?: LearnedPreferences;
 }
 
 // Calculate distance between two points in miles using Haversine formula
@@ -104,7 +112,8 @@ function scorePlaces(
   userLng: number,
   radius: number,
   preferences: UserPreferences | undefined,
-  type: 'restaurant' | 'activity'
+  type: 'restaurant' | 'activity',
+  learnedPreferences?: LearnedPreferences
 ): Place[] {
   if (places.length === 0) return [];
   
@@ -122,12 +131,35 @@ function scorePlaces(
     const proximityNorm = normalizeProximity(distance, radius);
     const popularityNorm = normalizePopularity(place.totalRatings, maxRatings);
     
-    // Weighted score: 50% personal fit, 20% rating, 20% proximity, 10% popularity
+    // Calculate learned preference boost
+    let learnedBoost = 0;
+    if (learnedPreferences) {
+      if (type === 'restaurant' && place.cuisine) {
+        const learned = learnedPreferences.favoriteCuisines.find(
+          c => c.cuisine.toLowerCase() === place.cuisine?.toLowerCase()
+        );
+        if (learned) {
+          // Boost based on how often they picked this cuisine
+          learnedBoost = Math.min(0.3, learned.score * 0.1);
+        }
+      } else if (type === 'activity' && place.category) {
+        const learned = learnedPreferences.favoriteActivities.find(
+          a => a.category.toLowerCase() === place.category?.toLowerCase()
+        );
+        if (learned) {
+          // Boost based on how often they picked this activity
+          learnedBoost = Math.min(0.3, learned.score * 0.1);
+        }
+      }
+    }
+    
+    // Weighted score: 40% personal fit, 20% learned boost, 20% rating, 15% proximity, 5% popularity
     const score = 
-      0.5 * personalFit +
+      0.4 * personalFit +
+      0.2 * learnedBoost +
       0.2 * ratingNorm +
-      0.2 * proximityNorm +
-      0.1 * popularityNorm;
+      0.15 * proximityNorm +
+      0.05 * popularityNorm;
     
     return { place, score, distance };
   });
@@ -151,13 +183,14 @@ export function buildPlan({
   restaurants,
   activities,
   preferences,
+  learnedPreferences,
 }: BuildPlanParams): PlanResult {
   // Score and sort restaurants by preference fit, rating, proximity, and popularity
-  const scoredRestaurants = scorePlaces(restaurants, lat, lng, radius, preferences, 'restaurant');
+  const scoredRestaurants = scorePlaces(restaurants, lat, lng, radius, preferences, 'restaurant', learnedPreferences);
   const restaurant = scoredRestaurants.length > 0 ? scoredRestaurants[0] : null;
 
   // Score and sort activities by preference fit, rating, proximity, and popularity
-  const scoredActivities = scorePlaces(activities, lat, lng, radius, preferences, 'activity');
+  const scoredActivities = scorePlaces(activities, lat, lng, radius, preferences, 'activity', learnedPreferences);
   const activity = scoredActivities.length > 0 ? scoredActivities[0] : null;
 
   // Calculate distances
