@@ -79,9 +79,9 @@ serve(async (req) => {
     
     console.log('Phone number found:', phoneNumber ? 'Yes' : 'No');
     
-    // Process photos - get up to 5 photo references
+    // Process photos - construct full URLs with up to 5 photos
     const photos = place.photos?.slice(0, 5).map((photo: any) => ({
-      reference: photo.photo_reference,
+      url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photo.photo_reference}&key=${GOOGLE_MAPS_API_KEY}`,
       width: photo.width,
       height: photo.height,
     })) || [];
