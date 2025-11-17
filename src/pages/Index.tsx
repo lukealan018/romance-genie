@@ -59,6 +59,7 @@ const Index = () => {
   const [selectedPlace, setSelectedPlace] = useState<{ id: string; name: string } | null>(null);
   const [plan, setPlan] = useState<any>(null);
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
+  const locationSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check authentication and onboarding status
   useEffect(() => {
@@ -124,6 +125,46 @@ const Index = () => {
       fetchProfile(userId);
     }
   }, [userId]);
+
+  // Save location settings to database with debounce
+  const saveLocationSettings = async (newRadius: number, newZipCode: string) => {
+    if (!userId || isDevModeActive()) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          default_radius_mi: newRadius,
+          home_zip: newZipCode
+        })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Settings saved",
+        description: `Default location updated: ${newRadius} miles from ${newZipCode}`,
+      });
+    } catch (error) {
+      console.error('Error saving location settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save location settings",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Debounced location save - waits 2 seconds after user stops adjusting
+  const debouncedSaveLocation = (newRadius: number, newZipCode: string) => {
+    if (locationSaveTimeoutRef.current) {
+      clearTimeout(locationSaveTimeoutRef.current);
+    }
+
+    locationSaveTimeoutRef.current = setTimeout(() => {
+      saveLocationSettings(newRadius, newZipCode);
+    }, 2000);
+  };
 
   // Show onboarding complete toast and auto-search
   useEffect(() => {
@@ -793,13 +834,21 @@ const Index = () => {
             mode={locationMode}
             zipCode={zipCode}
             onModeChange={(mode) => setFilters({ locationMode: mode })}
-            onZipCodeChange={(value) => setFilters({ zipCode: value })}
+            onZipCodeChange={(value) => {
+              setFilters({ zipCode: value });
+              if (value.length === 5) {
+                debouncedSaveLocation(radius, value);
+              }
+            }}
             onUseCurrentLocation={handleUseCurrentLocation}
             locationDetected={lat !== null && lng !== null}
             gettingLocation={gettingLocation}
           />
           <div className="h-px bg-border" />
-          <RadiusSelector value={radius} onChange={(value) => setFilters({ radius: value })} />
+          <RadiusSelector value={radius} onChange={(value) => {
+            setFilters({ radius: value });
+            debouncedSaveLocation(value, zipCode);
+          }} />
         </div>
 
         {/* See Tonight's Plan Button */}
