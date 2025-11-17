@@ -81,11 +81,17 @@ serve(async (req) => {
     console.log('Phone number found:', phoneNumber ? 'Yes' : 'No');
     
     // Process photos - use proxy function to serve images with proper headers
-    const photos = place.photos?.slice(0, 5).map((photo: any) => ({
-      url: `${SUPABASE_URL}/functions/v1/proxy-photo?reference=${photo.photo_reference}&maxwidth=800`,
-      width: photo.width,
-      height: photo.height,
-    })) || [];
+    const photos = place.photos?.slice(0, 5).map((photo: any) => {
+      const proxyUrl = `${SUPABASE_URL}/functions/v1/proxy-photo?reference=${photo.photo_reference}&maxwidth=800`;
+      console.log('Generated proxy URL:', proxyUrl);
+      return {
+        url: proxyUrl,
+        width: photo.width,
+        height: photo.height,
+      };
+    }) || [];
+    
+    console.log('Total photos:', photos.length);
     
     const details = {
       name: place.name,
