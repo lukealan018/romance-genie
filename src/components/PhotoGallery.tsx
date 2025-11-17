@@ -14,15 +14,15 @@ interface PhotoGalleryProps {
 }
 
 export const PhotoGallery = ({ photos, placeName }: PhotoGalleryProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [imageError, setImageError] = useState(false);
-
   console.log('🖼️ PhotoGallery rendering with', photos?.length || 0, 'photos');
 
   if (!photos || photos.length === 0) {
     console.log('⚠️ PhotoGallery: No photos provided');
     return null;
   }
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageError, setImageError] = useState(false);
 
   const goToNext = () => {
     setCurrentIndex((prev) => (prev + 1) % photos.length);
