@@ -74,6 +74,87 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_plans: {
+        Row: {
+          activity_category: string | null
+          activity_id: string
+          activity_name: string
+          created_at: string | null
+          id: string
+          restaurant_cuisine: string | null
+          restaurant_id: string
+          restaurant_name: string
+          search_params: Json | null
+          user_id: string
+          was_completed: boolean | null
+        }
+        Insert: {
+          activity_category?: string | null
+          activity_id: string
+          activity_name: string
+          created_at?: string | null
+          id?: string
+          restaurant_cuisine?: string | null
+          restaurant_id: string
+          restaurant_name: string
+          search_params?: Json | null
+          user_id: string
+          was_completed?: boolean | null
+        }
+        Update: {
+          activity_category?: string | null
+          activity_id?: string
+          activity_name?: string
+          created_at?: string | null
+          id?: string
+          restaurant_cuisine?: string | null
+          restaurant_id?: string
+          restaurant_name?: string
+          search_params?: Json | null
+          user_id?: string
+          was_completed?: boolean | null
+        }
+        Relationships: []
+      }
+      user_interactions: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          cuisine: string | null
+          id: string
+          interaction_type: string
+          place_id: string
+          place_name: string
+          place_type: string
+          rating: number | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          cuisine?: string | null
+          id?: string
+          interaction_type: string
+          place_id: string
+          place_name: string
+          place_type: string
+          rating?: number | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          cuisine?: string | null
+          id?: string
+          interaction_type?: string
+          place_id?: string
+          place_name?: string
+          place_type?: string
+          rating?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

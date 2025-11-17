@@ -15,8 +15,10 @@ import { ActivityCard } from "@/components/ActivityCard";
 import { PlanCard } from "@/components/PlanCard";
 import { RestaurantDetailsDrawer } from "@/components/RestaurantDetailsDrawer";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { RecentSearches } from "@/components/RecentSearches";
 import { toast } from "@/hooks/use-toast";
 import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
+import { getLearnedPreferences, getContextualSuggestions } from "@/lib/learning";
 import { usePlanStore } from "@/store/planStore";
 import { isDevModeActive, getDevUserId, getMockProfile, logDevMode } from "@/lib/dev-utils";
 
@@ -251,6 +253,56 @@ const Index = () => {
     }
   };
 
+  // Track user interactions
+  const trackInteraction = async (
+    place: any,
+    type: 'restaurant' | 'activity',
+    interactionType: 'viewed' | 'selected' | 'skipped'
+  ) => {
+    if (!userId) return;
+    
+    try {
+      await supabase.from('user_interactions').insert({
+        user_id: userId,
+        place_id: place.id,
+        place_name: place.name,
+        place_type: type,
+        interaction_type: interactionType,
+        cuisine: place.cuisine,
+        category: place.category,
+        rating: place.rating,
+      });
+    } catch (error) {
+      console.error('Error tracking interaction:', error);
+    }
+  };
+
+  // Save the current plan
+  const savePlan = async (currentPlan: any) => {
+    if (!userId || !currentPlan) return;
+    
+    try {
+      await supabase.from('saved_plans').insert({
+        user_id: userId,
+        restaurant_id: currentPlan.restaurant.id,
+        restaurant_name: currentPlan.restaurant.name,
+        restaurant_cuisine: currentPlan.restaurant.cuisine,
+        activity_id: currentPlan.activity.id,
+        activity_name: currentPlan.activity.name,
+        activity_category: currentPlan.activity.category,
+        search_params: {
+          lat,
+          lng,
+          radius,
+          cuisine,
+          activityCategory,
+        },
+      });
+    } catch (error) {
+      console.error('Error saving plan:', error);
+    }
+  };
+
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
       toast({ title: "Error", description: "Geolocation is not supported by your browser", variant: "destructive" });
@@ -318,6 +370,9 @@ const Index = () => {
 
     setLoading(true);
     try {
+      // Get learned preferences
+      const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
+      
       // Fetch both restaurants and activities in parallel
       const [restaurantsResponse, activitiesResponse] = await Promise.all([
         supabase.functions.invoke('places-search', {
@@ -346,7 +401,8 @@ const Index = () => {
         userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
           ? userPreferences 
           : undefined,
-        'restaurant'
+        'restaurant',
+        learnedPrefs
       );
       const sortedActivities = scorePlaces(
         activities, 
@@ -356,7 +412,8 @@ const Index = () => {
         userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
           ? userPreferences 
           : undefined,
-        'activity'
+        'activity',
+        learnedPrefs
       );
       
       setRestaurants(sortedRestaurants, restaurantsResponse.data?.nextPageToken || null);
@@ -375,6 +432,7 @@ const Index = () => {
         preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
           ? userPreferences 
           : undefined,
+        learnedPreferences: learnedPrefs,
       });
 
       // Find the indices of the selected restaurant and activity in the sorted arrays
@@ -390,6 +448,15 @@ const Index = () => {
       setActivityIndex(selectedActivityIndex >= 0 ? selectedActivityIndex : 0);
       
       setPlan(initialPlan);
+      
+      // Track selections and save plan
+      if (initialPlan.restaurant) {
+        await trackInteraction(initialPlan.restaurant, 'restaurant', 'selected');
+      }
+      if (initialPlan.activity) {
+        await trackInteraction(initialPlan.activity, 'activity', 'selected');
+      }
+      await savePlan(initialPlan);
       
       toast({ 
         title: "Success", 
@@ -408,6 +475,11 @@ const Index = () => {
     if (swapDebounceRef.current.restaurant) return;
     swapDebounceRef.current.restaurant = true;
     setTimeout(() => { swapDebounceRef.current.restaurant = false; }, 300);
+
+    // Track skip before moving to next
+    if (restaurantResults[restaurantIndex]) {
+      await trackInteraction(restaurantResults[restaurantIndex], 'restaurant', 'skipped');
+    }
 
     // Get coordinates based on location mode
     // Get coordinates from store (already geocoded during initial search)
@@ -517,6 +589,11 @@ const Index = () => {
     if (swapDebounceRef.current.activity) return;
     swapDebounceRef.current.activity = true;
     setTimeout(() => { swapDebounceRef.current.activity = false; }, 300);
+
+    // Track skip before moving to next
+    if (activityResults[activityIndex]) {
+      await trackInteraction(activityResults[activityIndex], 'activity', 'skipped');
+    }
 
     // Get coordinates from store (already geocoded during initial search)
     if (lat === null || lng === null) return;
@@ -798,6 +875,23 @@ const Index = () => {
     navigate("/plan");
   };
 
+  const handleSelectRecentPlan = (plan: any) => {
+    // Apply the search params from the recent plan
+    setFilters({
+      radius: plan.search_params.radius,
+      cuisine: plan.search_params.cuisine,
+      activityCategory: plan.search_params.activityCategory,
+    });
+    if (plan.search_params.lat && plan.search_params.lng) {
+      setLocation(plan.search_params.lat, plan.search_params.lng);
+    }
+    
+    toast({
+      title: "Plan loaded! 💫",
+      description: "Click 'See Tonight's Plan' to search again with these settings",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       <div className="container max-w-2xl mx-auto px-4 py-8">
@@ -815,6 +909,14 @@ const Index = () => {
             </Button>
           </div>
         </div>
+
+        {/* Recent Searches */}
+        {userId && (
+          <RecentSearches 
+            userId={userId} 
+            onSelectPlan={handleSelectRecentPlan} 
+          />
+        )}
 
         {/* 4. CuisinePicker (section title: "Choose cuisine") */}
         <div className="mb-6">
