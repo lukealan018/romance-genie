@@ -1,4 +1,4 @@
-import { RefreshCw, ArrowRight, MapPin, Star, Phone, Loader2, ExternalLink } from "lucide-react";
+import { RefreshCw, ArrowRight, MapPin, Star, Phone, Loader2, ExternalLink, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -58,6 +58,8 @@ export const PlanCard = ({
     time?: Date;
     partySize?: number;
   }>({});
+  const [savingPlan, setSavingPlan] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     const fetchUserPreferences = async () => {
@@ -140,6 +142,65 @@ export const PlanCard = ({
 
   const handleNavigate = (lat: number, lng: number) => {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+  };
+
+  const handleSavePlan = async () => {
+    if (!restaurant || !activity) {
+      toast({
+        title: "No plan to save",
+        description: "Generate a plan first before saving",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSavingPlan(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to save plans",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const planData = {
+        user_id: session.user.id,
+        restaurant_id: restaurant.id,
+        restaurant_name: restaurant.name,
+        restaurant_cuisine: restaurant.city || '',
+        activity_id: activity.id,
+        activity_name: activity.name,
+        activity_category: activity.category || 'activity',
+        search_params: {
+          distances: distances,
+          userPreferences: userPreferences
+        } as any
+      };
+
+      const { error } = await supabase
+        .from('saved_plans')
+        .insert(planData);
+
+      if (error) throw error;
+
+      setIsSaved(true);
+      toast({
+        title: "Plan saved!",
+        description: "You can view your saved plans in the history page",
+      });
+    } catch (error) {
+      console.error('Error saving plan:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save plan",
+        variant: "destructive"
+      });
+    } finally {
+      setSavingPlan(false);
+    }
   };
 
   // Fetch websites when places change
