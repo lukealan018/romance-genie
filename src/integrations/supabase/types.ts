@@ -116,6 +116,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity: {
+        Row: {
+          action_type: string
+          activity_category: string | null
+          activity_id: string | null
+          activity_name: string | null
+          created_at: string | null
+          id: string
+          restaurant_cuisine: string | null
+          restaurant_id: string | null
+          restaurant_name: string | null
+          restaurant_price_level: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          activity_category?: string | null
+          activity_id?: string | null
+          activity_name?: string | null
+          created_at?: string | null
+          id?: string
+          restaurant_cuisine?: string | null
+          restaurant_id?: string | null
+          restaurant_name?: string | null
+          restaurant_price_level?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          activity_category?: string | null
+          activity_id?: string | null
+          activity_name?: string | null
+          created_at?: string | null
+          id?: string
+          restaurant_cuisine?: string | null
+          restaurant_id?: string | null
+          restaurant_name?: string | null
+          restaurant_price_level?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_interactions: {
         Row: {
           category: string | null
