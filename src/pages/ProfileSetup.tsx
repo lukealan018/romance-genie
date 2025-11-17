@@ -200,7 +200,7 @@ export default function ProfileSetup() {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
+      recognitionRef.current.continuous = true; // Enable continuous recognition for longer phrases
       recognitionRef.current.interimResults = false;
 
       recognitionRef.current.onresult = (event) => {
@@ -221,55 +221,38 @@ export default function ProfileSetup() {
     }
   };
 
-  const extractProfileData = (response, field) => {
-    const lowerResponse = response.toLowerCase();
-    
-    switch(field) {
-      case 'cuisinePreferences':
-        const cuisines = ['italian', 'mexican', 'chinese', 'japanese', 'sushi', 'thai', 'indian', 'american', 'pizza', 'burgers', 'bbq', 'seafood', 'steakhouse', 'mediterranean', 'french', 'korean', 'vietnamese'];
-        return cuisines.filter(c => lowerResponse.includes(c));
-      
-      case 'priceRange':
-        if (lowerResponse.match(/\$\$\$\$|expensive|splurge|treat.*myself|high.*end|100\+|150/)) return '$$$$';
-        if (lowerResponse.match(/\$\$\$|nice|upscale|75|80|90/)) return '$$$';
-        if (lowerResponse.match(/\$\$|moderate|mid.*range|50|60/)) return '$$';
-        if (lowerResponse.match(/\$|cheap|budget|chill|30|40|affordable/)) return '$';
-        return '$$';
-      
-      case 'activityPreferences':
-        const activities = ['live music', 'comedy', 'bars', 'clubs', 'dancing', 'sports', 'theater', 'concerts', 'karaoke', 'trivia', 'games', 'arcade'];
-        return activities.filter(a => lowerResponse.includes(a));
-      
-      case 'foodRules':
-        const dietary = ['vegan', 'vegetarian', 'gluten-free', 'dairy-free', 'kosher', 'halal', 'pescatarian', 'keto', 'paleo'];
-        const found = dietary.filter(d => lowerResponse.includes(d));
-        if (lowerResponse.includes('eat everything') || lowerResponse.includes('no restrictions')) {
-          return ['no restrictions'];
+  // AI-powered parsing of user responses
+  const parseAnswerWithAI = async (answer: string, field: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('parse-onboarding-answer', {
+        body: { 
+          question: questions[currentQuestion].text,
+          answer,
+          field 
         }
-        return found;
+      });
+
+      if (error) throw error;
       
-      case 'dealbreakers':
-        return [response];
-      
-      case 'occasionType':
-        if (lowerResponse.includes('date') || lowerResponse.includes('romantic') || lowerResponse.includes('special')) return 'date';
-        if (lowerResponse.includes('solo') || lowerResponse.includes('myself') || lowerResponse.includes('alone')) return 'solo';
-        if (lowerResponse.includes('friend')) return 'friends';
-        return 'any';
-      
-      case 'timePreference':
-        if (lowerResponse.includes('brunch') || lowerResponse.includes('morning') || lowerResponse.includes('mimosa')) return 'brunch';
-        if (lowerResponse.includes('golden hour') || lowerResponse.includes('sunset') || lowerResponse.includes('happy hour')) return 'golden-hour';
-        if (lowerResponse.includes('late') || lowerResponse.includes('night') || lowerResponse.includes('after dark')) return 'late-night';
-        return 'evening';
-      
-      case 'planningStyle':
-        if (lowerResponse.includes('book') || lowerResponse.includes('plan') || lowerResponse.includes('ahead') || lowerResponse.includes('week')) return 'planner';
-        if (lowerResponse.includes('spontaneous') || lowerResponse.includes('last minute') || lowerResponse.includes('see where')) return 'spontaneous';
-        return 'flexible';
-      
-      default:
-        return response;
+      if (data?.error === 'rate_limit') {
+        toast.error('Too many requests. Please wait a moment and try again.');
+        return null;
+      }
+
+      if (data?.error === 'payment_required') {
+        toast.error('AI service unavailable. Please contact support.');
+        return null;
+      }
+
+      if (!data?.success) {
+        throw new Error('Failed to parse answer');
+      }
+
+      return data.result;
+    } catch (error) {
+      console.error('Error parsing answer:', error);
+      toast.error('Sorry, I had trouble understanding that. Could you rephrase?');
+      return null;
     }
   };
 
@@ -294,10 +277,35 @@ export default function ProfileSetup() {
   const handleSendMessage = async () => {
     if (!userInput.trim()) return;
 
-    setMessages(prev => [...prev, { type: 'user', text: userInput }]);
+    const userMessage = userInput;
+    setMessages(prev => [...prev, { type: 'user', text: userMessage }]);
+    setUserInput('');
+
+    // Show loading state while AI processes
+    setIsTyping(true);
+    setMessages(prev => [...prev, { 
+      type: 'ai', 
+      text: 'Processing your answer...',
+      isCelebration: false
+    }]);
 
     const currentQ = questions[currentQuestion];
-    const extractedData = extractProfileData(userInput, currentQ.field);
+    const extractedData = await parseAnswerWithAI(userMessage, currentQ.field);
+    
+    // Remove loading message
+    setMessages(prev => prev.filter(m => m.text !== 'Processing your answer...'));
+    setIsTyping(false);
+
+    if (!extractedData) {
+      // If AI couldn't parse, show helpful message
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          type: 'ai',
+          text: `Could you rephrase that? For example: "${currentQ.subtext || 'Be more specific'}"`
+        }]);
+      }, 400);
+      return;
+    }
     
     const newProfile = {
       ...profile,
@@ -305,8 +313,7 @@ export default function ProfileSetup() {
     };
     setProfile(newProfile);
 
-    setUserInput('');
-
+    // Show celebration
     const celebration = celebrationPhrases[Math.floor(Math.random() * celebrationPhrases.length)];
     setTimeout(() => {
       setMessages(prev => [...prev, {
@@ -559,7 +566,14 @@ export default function ProfileSetup() {
                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' 
                     : 'bg-slate-700 text-slate-100'
               }`}>
-                {msg.emoji && <span className="text-4xl block mb-2">{msg.emoji}</span>}
+                {msg.emoji && (
+                  <span className="text-5xl block mb-3" style={{ 
+                    lineHeight: '1',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  }}>
+                    {msg.emoji}
+                  </span>
+                )}
                 <p className="text-lg">{msg.text}</p>
                 {msg.subtext && (
                   <p className="text-sm mt-2 opacity-75">{msg.subtext}</p>
@@ -626,16 +640,31 @@ export default function ProfileSetup() {
         {isComplete && (
           <div className="border-t border-slate-700 bg-gradient-to-r from-slate-800 to-slate-700 p-6 relative overflow-hidden">
             {showConfetti && (
-              <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <style>{`
+                  @keyframes confetti-fall {
+                    0% {
+                      transform: translateY(-20px) rotate(0deg);
+                      opacity: 1;
+                    }
+                    100% {
+                      transform: translateY(100vh) rotate(360deg);
+                      opacity: 0;
+                    }
+                  }
+                  .confetti-piece {
+                    animation: confetti-fall 3s ease-in-out infinite;
+                  }
+                `}</style>
                 {[...Array(50)].map((_, i) => (
                   <div
                     key={i}
-                    className="absolute text-2xl animate-ping"
+                    className="absolute text-2xl confetti-piece"
                     style={{
                       left: `${Math.random() * 100}%`,
                       top: `-20px`,
                       animationDelay: `${Math.random() * 2}s`,
-                      animationDuration: '3s'
+                      animationDuration: `${2 + Math.random() * 2}s`
                     }}
                   >
                     {['🎉', '✨', '🎊', '💫', '🌟'][Math.floor(Math.random() * 5)]}
