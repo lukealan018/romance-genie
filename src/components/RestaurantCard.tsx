@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Star, MapPin, Phone, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -33,38 +33,6 @@ export const RestaurantCard = ({
 }: RestaurantCardProps) => {
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [loadingPhone, setLoadingPhone] = useState(false);
-  const [userPreferences, setUserPreferences] = useState<{
-    date?: Date;
-    time?: Date;
-    partySize?: number;
-  }>({});
-
-  useEffect(() => {
-    const fetchUserPreferences = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
-        const { data: profile } = await supabase.functions.invoke('profile', {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        });
-
-        if (profile) {
-          setUserPreferences({
-            date: profile.preferred_date ? new Date(profile.preferred_date) : undefined,
-            time: profile.preferred_time ? new Date(`2000-01-01T${profile.preferred_time}`) : undefined,
-            partySize: profile.party_size || 2,
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching user preferences:', error);
-      }
-    };
-
-    fetchUserPreferences();
-  }, []);
 
   const handleAddressClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -188,7 +156,7 @@ export const RestaurantCard = ({
                       lng,
                       address,
                     },
-                    userPreferences
+                    undefined
                   );
                   return (
                     <>
