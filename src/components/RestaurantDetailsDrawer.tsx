@@ -45,7 +45,10 @@ export const RestaurantDetailsDrawer = ({
   const [loading, setLoading] = useState(false);
 
   const fetchDetails = async () => {
-    if (details) return; // Already fetched
+    if (details) {
+      console.log('Details already loaded, skipping fetch');
+      return;
+    }
     
     console.log('Fetching details for place:', placeId);
     setLoading(true);
@@ -65,6 +68,7 @@ export const RestaurantDetailsDrawer = ({
         throw new Error('No data returned from place-details');
       }
       
+      console.log('Setting details with photos:', data.photos?.length || 0);
       setDetails(data);
     } catch (error) {
       console.error('Error fetching place details:', error);
@@ -79,9 +83,13 @@ export const RestaurantDetailsDrawer = ({
   };
 
   const handleOpenChange = (open: boolean) => {
+    console.log('Drawer open state changed:', open);
     if (open) {
       fetchDetails();
     } else {
+      // Reset state when closing
+      setDetails(null);
+      setLoading(false);
       onClose();
     }
   };
