@@ -63,6 +63,11 @@ export const PlanCard = ({
   const [isSaved, setIsSaved] = useState(false);
   const [restaurantPhotos, setRestaurantPhotos] = useState<any[]>([]);
   const [activityPhotos, setActivityPhotos] = useState<any[]>([]);
+  const [weather, setWeather] = useState<{
+    temperature: number;
+    description: string;
+    icon: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchUserPreferences = async () => {
@@ -91,8 +96,10 @@ export const PlanCard = ({
     fetchUserPreferences();
   }, []);
 
-  const fetchPhone = async (placeId: string, type: 'restaurant' | 'activity') => {
+  const fetchPlaceDetails = async (placeId: string, type: 'restaurant' | 'activity') => {
     const setPhone = type === 'restaurant' ? setRestaurantPhone : setActivityPhone;
+    const setWebsite = type === 'restaurant' ? setRestaurantWebsite : setActivityWebsite;
+    const setPhotos = type === 'restaurant' ? setRestaurantPhotos : setActivityPhotos;
     const setLoading = type === 'restaurant' ? setLoadingRestaurantPhone : setLoadingActivityPhone;
     
     setLoading(true);
@@ -103,45 +110,44 @@ export const PlanCard = ({
 
       if (error) throw error;
       
-      if (data?.phoneNumber) {
-        setPhone(data.phoneNumber);
-      } else {
-        toast({
-          title: "No phone number",
-          description: `This ${type} doesn't have a phone number listed`,
-        });
+      if (data) {
+        setPhone(data.phoneNumber || null);
+        setWebsite(data.website || null);
+        setPhotos(data.photos || []);
       }
     } catch (error) {
-      console.error('Error fetching phone number:', error);
+      console.error('Error fetching place details:', error);
       toast({
         title: "Error",
-        description: "Failed to get phone number",
-        variant: "destructive"
+        description: `Failed to fetch ${type} details`,
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchWebsite = async (placeId: string, type: 'restaurant' | 'activity') => {
+  const fetchWeather = async (lat: number, lng: number) => {
     try {
-      const { data, error } = await supabase.functions.invoke('place-details', {
-        body: { placeId }
+      const { data, error } = await supabase.functions.invoke('weather', {
+        body: { lat, lng }
       });
 
       if (error) throw error;
       
-      if (data?.website) {
-        if (type === 'restaurant') {
-          setRestaurantWebsite(data.website);
-        } else {
-          setActivityWebsite(data.website);
-        }
+      if (data) {
+        setWeather(data);
       }
     } catch (error) {
-      console.error('Error fetching website:', error);
+      console.error('Error fetching weather:', error);
     }
   };
+
+  useEffect(() => {
+    if (restaurant) {
+      fetchWeather(restaurant.lat, restaurant.lng);
+    }
+  }, [restaurant?.id]);
 
   const handleNavigate = (lat: number, lng: number) => {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
@@ -206,18 +212,20 @@ export const PlanCard = ({
     }
   };
 
-  // Fetch websites when places change
+  // Fetch place details when places change
   useEffect(() => {
     if (restaurant?.id) {
       setRestaurantWebsite(null);
-      fetchWebsite(restaurant.id, 'restaurant');
+      setRestaurantPhotos([]);
+      fetchPlaceDetails(restaurant.id, 'restaurant');
     }
   }, [restaurant?.id]);
 
   useEffect(() => {
     if (activity?.id) {
       setActivityWebsite(null);
-      fetchWebsite(activity.id, 'activity');
+      setActivityPhotos([]);
+      fetchPlaceDetails(activity.id, 'activity');
     }
   }, [activity?.id]);
 
@@ -228,10 +236,23 @@ export const PlanCard = ({
   return (
     <Card className="mb-8 border-2 border-primary/20 shadow-lg bg-gradient-to-br from-card to-card/50">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Tonight's Plan
-          </CardTitle>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-4">
+            <CardTitle className="text-2xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Tonight's Plan
+            </CardTitle>
+            {weather && (
+              <div className="flex items-center gap-2 text-sm">
+                <img 
+                  src={`https://openweathermap.org/img/wn/${weather.icon}.png`}
+                  alt={weather.description}
+                  className="w-8 h-8"
+                />
+                <span className="font-medium">{weather.temperature}°F</span>
+                <span className="text-muted-foreground capitalize">{weather.description}</span>
+              </div>
+            )}
+          </div>
           <Button
             onClick={onReroll}
             variant="outline"
@@ -291,6 +312,8 @@ export const PlanCard = ({
               <span className="line-clamp-1">{restaurant.address}</span>
             </div>
 
+            <PhotoGallery photos={restaurantPhotos} placeName={restaurant.name} />
+
             <div className="flex gap-2">
               {restaurantPhone ? (
                 <a
@@ -308,7 +331,7 @@ export const PlanCard = ({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => fetchPhone(restaurant.id, 'restaurant')}
+                  onClick={() => fetchPlaceDetails(restaurant.id, 'restaurant')}
                   disabled={loadingRestaurantPhone}
                   className="gap-2"
                 >
@@ -317,7 +340,7 @@ export const PlanCard = ({
                   ) : (
                     <Phone className="h-4 w-4" />
                   )}
-                  Get Phone
+                  Get Details
                 </Button>
               )}
 
@@ -420,6 +443,8 @@ export const PlanCard = ({
               <span className="line-clamp-1">{activity.address}</span>
             </div>
 
+            <PhotoGallery photos={activityPhotos} placeName={activity.name} />
+
             <div className="flex gap-2">
               {activityPhone ? (
                 <a
@@ -437,7 +462,7 @@ export const PlanCard = ({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => fetchPhone(activity.id, 'activity')}
+                  onClick={() => fetchPlaceDetails(activity.id, 'activity')}
                   disabled={loadingActivityPhone}
                   className="gap-2"
                 >
@@ -446,7 +471,7 @@ export const PlanCard = ({
                   ) : (
                     <Phone className="h-4 w-4" />
                   )}
-                  Get Phone
+                  Get Details
                 </Button>
               )}
 

@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.parse-onboarding-answer]
 verify_jwt = true
+
+[functions.weather]
+verify_jwt = false
