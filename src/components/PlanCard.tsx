@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { getReservationLinks, getActivityLinks } from "@/lib/external-links";
+import { PhotoGallery } from "@/components/PhotoGallery";
 
 interface Place {
   id: string;
@@ -60,6 +61,8 @@ export const PlanCard = ({
   }>({});
   const [savingPlan, setSavingPlan] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [restaurantPhotos, setRestaurantPhotos] = useState<any[]>([]);
+  const [activityPhotos, setActivityPhotos] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchUserPreferences = async () => {
