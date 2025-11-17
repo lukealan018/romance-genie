@@ -922,12 +922,21 @@ const Index = () => {
         {/* 1. Header with small title + Profile icon (top-right) */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Date Night Planner</h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <ThemeToggle />
             <Button
               variant="ghost"
               size="icon"
+              onClick={() => navigate('/history')}
+              title="Saved Plans"
+            >
+              <Heart className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => navigate('/profile')}
+              title="Profile"
             >
               <User className="w-5 h-5" />
             </Button>
