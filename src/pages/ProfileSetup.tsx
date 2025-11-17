@@ -80,14 +80,66 @@ const questions = [
   }
 ];
 
-const celebrationPhrases = [
-  "Love it! ✨",
-  "Perfect! 🎯",
-  "Nice choice! 👌",
-  "Got it! 🙌",
-  "Awesome! 🔥",
-  "Great taste! 💫"
-];
+const celebrationsByField: Record<string, string[]> = {
+  cuisinePreferences: [
+    "Yum! 🍕",
+    "Tasty choice! 😋",
+    "My mouth is watering! 🤤",
+    "Delicious picks! 🍜",
+    "Great taste! 👨‍🍳",
+    "Love those flavors! 🔥"
+  ],
+  priceRange: [
+    "Got it, we'll keep it in budget! 💰",
+    "Perfect, I know the sweet spots! 💎",
+    "Smart spending! 🎯",
+    "Love the vibe! ✨",
+    "Got the perfect places for that! 🙌"
+  ],
+  activityPreferences: [
+    "Sounds like a blast! 🎉",
+    "Love the energy! ⚡",
+    "That's my vibe! 🎭",
+    "Hell yeah! 🔥",
+    "Now we're talking! 🙌",
+    "Can't wait to find your spots! 🎪"
+  ],
+  foodRules: [
+    "Noted! 📝",
+    "Got it, I'll keep that in mind! ✅",
+    "Perfect, good to know! 👍",
+    "Thanks for letting me know! 🙏",
+    "I'll make sure to respect that! ✨"
+  ],
+  dealbreakers: [
+    "Good to know what to avoid! 🚫",
+    "Noted, we'll steer clear! ✅",
+    "Got it, no problem! 👍",
+    "Thanks for the heads up! 💡",
+    "We'll skip those! ⚠️"
+  ],
+  occasionType: [
+    "Love it! 💕",
+    "Perfect vibes! ✨",
+    "Got the perfect spots for that! 🎯",
+    "Awesome! 🙌",
+    "Great energy! 💫"
+  ],
+  timePreference: [
+    "Perfect timing! ⏰",
+    "Love that energy! 🌅",
+    "Got it! 🙌",
+    "Noted! ⭐",
+    "That's the vibe! 🔥"
+  ],
+  planningStyle: [
+    "Love your style! 📅",
+    "Perfect! 🎯",
+    "Got it! ✨",
+    "That works! 🙌",
+    "Nice approach! 💫"
+  ]
+};
 
 export default function ProfileSetup() {
   const navigate = useNavigate();
@@ -313,8 +365,50 @@ export default function ProfileSetup() {
     };
     setProfile(newProfile);
 
-    // Show celebration
-    const celebration = celebrationPhrases[Math.floor(Math.random() * celebrationPhrases.length)];
+    // Get contextual response or field-specific celebration
+    const getContextualResponse = (userInput: string, field: string): string | null => {
+      const input = userInput.toLowerCase();
+      
+      // Food enthusiasm
+      if (field === 'cuisinePreferences') {
+        if (input.includes('obsessed') || input.includes('love love')) {
+          return "OBSESSED? Say less! 🔥";
+        }
+        if (input.includes('anything') || input.includes('everything')) {
+          return "An adventurous eater! Love it! 🌍";
+        }
+        if (input.includes('taco')) {
+          return "Tacos are life! 🌮";
+        }
+      }
+      
+      // Budget responses
+      if (field === 'priceRange') {
+        if (input.includes('balling') || input.includes('ballin')) {
+          return "Hey, no shame in that game! 💪";
+        }
+        if (input.includes('splurge') || input.includes('fancy')) {
+          return "Treating yourself right! 💎";
+        }
+      }
+      
+      // Activity enthusiasm
+      if (field === 'activityPreferences') {
+        if (input.includes('wild') || input.includes('crazy')) {
+          return "Now that's what I'm talking about! 🎉";
+        }
+        if (input.includes('chill') || input.includes('low-key')) {
+          return "Chill vibes only! 😌";
+        }
+      }
+      
+      return null;
+    };
+
+    const currentField = currentQ.field;
+    const contextualResponse = getContextualResponse(userMessage, currentField);
+    const fieldCelebrations = celebrationsByField[currentField] || celebrationsByField.cuisinePreferences;
+    const celebration = contextualResponse || fieldCelebrations[Math.floor(Math.random() * fieldCelebrations.length)];
     setTimeout(() => {
       setMessages(prev => [...prev, {
         type: 'ai',
