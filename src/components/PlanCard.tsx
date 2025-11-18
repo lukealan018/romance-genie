@@ -9,6 +9,20 @@ import { getReservationLinks, getActivityLinks } from "@/lib/external-links";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { trackActivity } from '@/lib/activity-tracker';
 
+// Estimate travel time based on distance
+const estimateTravelTime = (miles: number) => {
+  // Rough estimate: 2 minutes per mile in city traffic
+  const minutes = Math.round(miles * 2);
+  
+  if (minutes < 60) {
+    return `${minutes} min`;
+  } else {
+    const hours = Math.floor(minutes / 60);
+    const remainingMins = minutes % 60;
+    return remainingMins > 0 ? `${hours}h ${remainingMins}m` : `${hours}h`;
+  }
+};
+
 interface Place {
   id: string;
   name: string;
