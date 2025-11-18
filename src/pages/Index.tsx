@@ -1037,7 +1037,10 @@ const Index = () => {
         activityCategory: selectedActivity 
       });
 
-      navigate("/plan");
+      // Use setTimeout to ensure store updates have flushed before navigation
+      setTimeout(() => {
+        navigate("/plan");
+      }, 100);
     } catch (error) {
       console.error('Error in surprise me:', error);
       toast({ 
