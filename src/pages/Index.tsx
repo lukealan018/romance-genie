@@ -987,18 +987,30 @@ const Index = () => {
         </div>
 
         {/* See Tonight's Plan Button */}
-        <div className="mb-6">
-          <CustomButton full onClick={handleSeePlan} disabled={loading} size="lg">
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Finding Spots...
-              </>
-            ) : (
-              "See Tonight's Plan"
-            )}
-          </CustomButton>
-        </div>
+<div className="mb-6 space-y-3">
+  <CustomButton full onClick={handleSeePlan} disabled={loading} size="lg">
+    {loading ? (
+      <>
+        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        Finding Spots...
+      </>
+    ) : (
+      "See Tonight's Plan"
+    )}
+  </CustomButton>
+  
+  {/* Surprise Me Button */}
+  <div className="text-center">
+    <button
+      onClick={handleSurpriseMe}
+      disabled={loading}
+      className="text-sm text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+    >
+      <span className="text-lg">✨</span>
+      <span>or let us surprise you</span>
+    </button>
+  </div>
+</div>
 
         {/* 6. ResultsList (section title: "More options") */}
         {(loading || restaurantResults.length > 0 || activityResults.length > 0) && (
