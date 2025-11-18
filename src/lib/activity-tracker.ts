@@ -13,25 +13,37 @@ interface TrackActivityParams {
 
 export async function trackActivity(params: TrackActivityParams) {
   try {
+    console.log('🔍 Attempting to track activity:', params);
+    
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      console.log('No user logged in, skipping activity tracking');
+      console.log('❌ No user logged in, skipping activity tracking');
       return;
     }
 
-    const { error } = await supabase
+    console.log('✅ User found:', user.id);
+
+    const insertData = {
+      user_id: user.id,
+      ...params
+    };
+    
+    console.log('📝 Inserting data:', insertData);
+
+    const { data, error } = await supabase
       .from('user_activity')
-      .insert({
-        user_id: user.id,
-        ...params
-      });
+      .insert(insertData);
 
     if (error) {
-      console.error('Error tracking activity:', error);
+      console.error('❌ Error tracking activity:', error);
+    } else {
+      console.log('✅ Activity tracked successfully!', data);
     }
   } catch (error) {
-    console.error('Failed to track activity:', error);
+    console.error('❌ Failed to track activity:', error);
+  }
+}error);
   }
 }
 
