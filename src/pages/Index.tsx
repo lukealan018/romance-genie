@@ -948,16 +948,6 @@ const Index = () => {
       selectedActivity = activityOptions[Math.floor(Math.random() * activityOptions.length)];
     }
     
-    // Update filters with random selections
-    setFilters({ 
-      cuisine: selectedCuisine, 
-      activityCategory: selectedActivity 
-    });
-    
-    // Reset indices
-    setRestaurantIndex(0);
-    setActivityIndex(0);
-    
     // Show fun toast message
     const activityLabel = selectedActivity.replace('_', ' ');
     toast({
@@ -965,9 +955,99 @@ const Index = () => {
       description: `Finding ${selectedCuisine} restaurants and ${activityLabel} nearby...`,
     });
     
-    // Fetch places and navigate
-    await handleFindPlaces();
-    navigate("/plan");
+    setLoading(true);
+    try {
+      const searchLat = lat;
+      const searchLng = lng;
+
+      // Get learned preferences
+      const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
+      
+      // Fetch both restaurants and activities with the randomly selected values
+      const [restaurantsResponse, activitiesResponse] = await Promise.all([
+        supabase.functions.invoke('places-search', {
+          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine: selectedCuisine }
+        }),
+        supabase.functions.invoke('activities-search', {
+          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, category: selectedActivity }
+        })
+      ]);
+
+      if (restaurantsResponse.error) throw restaurantsResponse.error;
+      if (activitiesResponse.error) throw activitiesResponse.error;
+
+      const restaurants = restaurantsResponse.data?.items || [];
+      const activities = activitiesResponse.data?.items || [];
+      
+      // Sort results by preference-based scoring
+      const sortedRestaurants = scorePlaces(
+        restaurants, 
+        searchLat, 
+        searchLng, 
+        radius, 
+        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+          ? userPreferences 
+          : undefined,
+        'restaurant',
+        learnedPrefs
+      );
+      const sortedActivities = scorePlaces(
+        activities, 
+        searchLat, 
+        searchLng, 
+        radius, 
+        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+          ? userPreferences 
+          : undefined,
+        'activity',
+        learnedPrefs
+      );
+      
+      setRestaurants(sortedRestaurants, restaurantsResponse.data?.nextPageToken || null);
+      setActivities(sortedActivities, activitiesResponse.data?.nextPageToken || null);
+
+      // Build the initial plan
+      const initialPlan = buildPlan({
+        lat: searchLat,
+        lng: searchLng,
+        radius,
+        restaurants: sortedRestaurants,
+        activities: sortedActivities,
+        preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+          ? userPreferences 
+          : undefined,
+      });
+
+      // Find the indices of the selected items
+      const selectedRestaurantIndex = initialPlan.restaurant 
+        ? sortedRestaurants.findIndex(r => r.id === initialPlan.restaurant?.id)
+        : 0;
+      const selectedActivityIndex = initialPlan.activity
+        ? sortedActivities.findIndex(a => a.id === initialPlan.activity?.id)
+        : 0;
+
+      setRestaurantIndex(selectedRestaurantIndex >= 0 ? selectedRestaurantIndex : 0);
+      setActivityIndex(selectedActivityIndex >= 0 ? selectedActivityIndex : 0);
+      
+      setPlan(initialPlan);
+
+      // Update filters AFTER successful search
+      setFilters({ 
+        cuisine: selectedCuisine, 
+        activityCategory: selectedActivity 
+      });
+
+      navigate("/plan");
+    } catch (error) {
+      console.error('Error in surprise me:', error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to find places. Please try again.", 
+        variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSelectRecentPlan = (plan: any) => {
