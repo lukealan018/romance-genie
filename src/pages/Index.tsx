@@ -1091,7 +1091,14 @@ const Index = () => {
       <div className="container max-w-2xl mx-auto px-4 py-8">
         {/* 1. Header with small title + Profile icon (top-right) */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Date Night Planner</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">Date Night Planner</h1>
+            {isDevModeActive() && (
+              <span className="text-xs bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded border border-yellow-500/30">
+                DEV MODE
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Button

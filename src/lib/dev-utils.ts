@@ -8,8 +8,31 @@ export const isDevelopment = () => {
 };
 
 export const isDevModeActive = () => {
+  // Check URL parameter first
   const params = new URLSearchParams(window.location.search);
-  return params.get('dev') === 'true';
+  const devParam = params.get('dev') === 'true';
+  
+  // Check localStorage
+  const devStored = localStorage.getItem('devMode') === 'true';
+  
+  // If URL has dev=true, store it in localStorage
+  if (devParam) {
+    localStorage.setItem('devMode', 'true');
+    return true;
+  }
+  
+  // Otherwise use stored value
+  return devStored;
+};
+
+export const enableDevMode = () => {
+  localStorage.setItem('devMode', 'true');
+  logDevMode('Dev mode enabled');
+};
+
+export const disableDevMode = () => {
+  localStorage.removeItem('devMode');
+  logDevMode('Dev mode disabled');
 };
 
 export const getDevUserId = () => {
