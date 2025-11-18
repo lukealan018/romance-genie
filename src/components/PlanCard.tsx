@@ -504,12 +504,17 @@ export const PlanCard = ({
         )}
 
         {/* Connection Arrow */}
-        {restaurant && activity && (
-          <div className="flex items-center justify-center gap-2 text-muted-foreground">
-            <ArrowRight className="w-5 h-5" />
-            <span className="text-sm">{distances.betweenPlaces.toFixed(1)} mi between venues</span>
-          </div>
-        )}
+{restaurant && activity && (
+  <div className="flex items-center justify-center gap-2 text-muted-foreground">
+    <ArrowRight className="w-5 h-5" />
+    <div className="text-center">
+      <span className="text-sm font-medium block">{distances.betweenPlaces.toFixed(1)} mi between venues</span>
+      <span className="text-xs text-muted-foreground/70">
+        ~{estimateTravelTime(distances.betweenPlaces)} drive
+      </span>
+    </div>
+  </div>
+)}
 
         {/* Activity Section */}
         {activity && (
