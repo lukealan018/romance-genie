@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Heart, RefreshCw, Loader2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,8 @@ import { ActivityCard } from "@/components/ActivityCard";
 import { PlanCard } from "@/components/PlanCard";
 import { RestaurantDetailsDrawer } from "@/components/RestaurantDetailsDrawer";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { HeroSection } from "@/components/hero-section";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { toast } from "@/hooks/use-toast";
 import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
 import { getLearnedPreferences, getContextualSuggestions } from "@/lib/learning";
@@ -62,8 +64,66 @@ const Index = () => {
   const [gettingLocation, setGettingLocation] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<{ id: string; name: string } | null>(null);
   const [plan, setPlan] = useState<any>(null);
+  const [showPickers, setShowPickers] = useState(false);
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
   const locationSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Initialize voice input hook
+  const handlePreferencesExtracted = useCallback((preferences: any) => {
+    console.log('Voice preferences extracted:', preferences);
+    
+    // Update filters based on AI-extracted preferences
+    const updates: any = {};
+    
+    // Map cuisine preferences
+    if (preferences.cuisinePreferences && preferences.cuisinePreferences.length > 0) {
+      // Take the first cuisine mentioned
+      const mappedCuisine = preferences.cuisinePreferences[0].toLowerCase();
+      updates.cuisine = mappedCuisine;
+    }
+    
+    // Map activity preferences
+    if (preferences.activityPreferences && preferences.activityPreferences.length > 0) {
+      // Map spoken activity to our activity IDs
+      const activityMap: Record<string, string> = {
+        'music': 'live_music',
+        'comedy': 'comedy',
+        'movie': 'movies',
+        'movies': 'movies',
+        'bowling': 'bowling',
+        'arcade': 'arcade',
+        'museum': 'museum',
+        'escape': 'escape_room',
+        'golf': 'mini_golf',
+        'hiking': 'hike',
+        'hike': 'hike',
+        'wine': 'wine',
+      };
+      
+      const spokenActivity = preferences.activityPreferences[0].toLowerCase();
+      const mappedActivity = activityMap[spokenActivity] || 'live_music';
+      updates.activityCategory = mappedActivity;
+    }
+    
+    // Apply the updates
+    if (Object.keys(updates).length > 0) {
+      setFilters(updates);
+    }
+    
+    // Automatically trigger the search after a brief delay
+    setTimeout(() => {
+      handleFindPlaces();
+    }, 500);
+  }, [setFilters]);
+
+  const { isListening, isProcessing, startListening } = useVoiceInput({
+    onPreferencesExtracted: handlePreferencesExtracted,
+    userProfile: {
+      cuisines: userPreferences?.cuisines || [],
+      activities: userPreferences?.activities || [],
+      home_zip: zipCode,
+    },
+  });
 
   // Check authentication and onboarding status
   useEffect(() => {
@@ -1088,39 +1148,80 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       <div className="container max-w-2xl mx-auto px-4 py-8">
-        {/* 1. Header with small title + Profile icon (top-right) */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">Date Night Planner</h1>
-            {isDevModeActive() && (
-              <span className="text-xs bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded border border-yellow-500/30">
-                DEV MODE
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/history')}
-              title="Saved Plans"
-            >
-              <Heart className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/profile')}
-              title="Profile"
-            >
-              <User className="w-5 h-5" />
-            </Button>
-          </div>
+        {/* Header with ThemeToggle and Profile icons */}
+        <div className="flex items-center justify-end gap-2 mb-4">
+          <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={() => navigate('/history')} title="Saved Plans">
+            <Heart className="w-5 h-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} title="Profile">
+            <User className="w-5 h-5" />
+          </Button>
         </div>
 
+        {/* Hero Section with Voice Input */}
+        <HeroSection
+          userName={nickname}
+          isLoggedIn={!!userId}
+          loading={loading || isProcessing}
+          isListening={isListening}
+          onVoiceInput={startListening}
+          onSurpriseMe={handleSurpriseMe}
+          onTogglePickers={() => setShowPickers(!showPickers)}
+          showPickers={showPickers}
+        >
+          {/* Pickers inside HeroSection */}
+          <div className="space-y-6 mt-6">
+            {/* CuisinePicker */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Choose cuisine</h2>
+              <CuisinePicker selected={cuisine} onSelect={(value) => setFilters({ cuisine: value })} />
+            </div>
 
-        {/* 4. CuisinePicker (section title: "Choose cuisine") */}
+            {/* ActivityPicker */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Choose activity</h2>
+              <ActivityPicker selected={activityCategory} onSelect={(value) => setFilters({ activityCategory: value })} />
+            </div>
+
+            {/* Location and Radius */}
+            <div className="bg-card rounded-xl border p-6 space-y-6">
+              <LocationToggle
+                mode={locationMode}
+                zipCode={zipCode}
+                onModeChange={(mode) => setFilters({ locationMode: mode })}
+                onZipCodeChange={(value) => {
+                  setFilters({ zipCode: value });
+                  if (value.length === 5) {
+                    debouncedSaveLocation(radius, value);
+                  }
+                }}
+                onUseCurrentLocation={handleUseCurrentLocation}
+                locationDetected={lat !== null && lng !== null}
+                gettingLocation={gettingLocation}
+              />
+              <div className="h-px bg-border" />
+              <RadiusSelector value={radius} onChange={(value) => {
+                setFilters({ radius: value });
+                debouncedSaveLocation(value, zipCode);
+              }} />
+            </div>
+
+            {/* See Tonight's Plan Button */}
+            <CustomButton full onClick={handleSeePlan} disabled={loading} size="lg">
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Finding Spots...
+                </>
+              ) : (
+                "See Tonight's Plan"
+              )}
+            </CustomButton>
+          </div>
+        </HeroSection>
+
+        {/* Results section - moved outside pickers */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold mb-4">Choose cuisine</h2>
           <CuisinePicker selected={cuisine} onSelect={(value) => setFilters({ cuisine: value })} />
