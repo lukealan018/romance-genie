@@ -899,6 +899,77 @@ const Index = () => {
     navigate("/plan");
   };
 
+  const handleSurpriseMe = async () => {
+    // Validate only location requirements
+    if (radius <= 0) {
+      toast({ 
+        title: "Error", 
+        description: "Please set a valid search radius", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    if (!lat || !lng) {
+      toast({ 
+        title: "Error", 
+        description: "Please set your location first", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    // Available options
+    const cuisineOptions = ["Italian", "Mexican", "Japanese", "Chinese", "Thai", "American", "Indian", "French", "Mediterranean"];
+    const activityOptions = ["live_music", "comedy", "movies", "bowling", "arcade", "museum", "escape_room", "mini_golf", "hike", "wine"];
+    
+    // Smart selection: prefer user preferences if available
+    let selectedCuisine: string;
+    if (userPreferences.cuisines && userPreferences.cuisines.length > 0) {
+      const matchingCuisines = cuisineOptions.filter(c => 
+        userPreferences.cuisines.some(pref => pref.toLowerCase() === c.toLowerCase())
+      );
+      selectedCuisine = matchingCuisines.length > 0 
+        ? matchingCuisines[Math.floor(Math.random() * matchingCuisines.length)]
+        : cuisineOptions[Math.floor(Math.random() * cuisineOptions.length)];
+    } else {
+      selectedCuisine = cuisineOptions[Math.floor(Math.random() * cuisineOptions.length)];
+    }
+    
+    let selectedActivity: string;
+    if (userPreferences.activities && userPreferences.activities.length > 0) {
+      const matchingActivities = activityOptions.filter(a => 
+        userPreferences.activities.includes(a)
+      );
+      selectedActivity = matchingActivities.length > 0
+        ? matchingActivities[Math.floor(Math.random() * matchingActivities.length)]
+        : activityOptions[Math.floor(Math.random() * activityOptions.length)];
+    } else {
+      selectedActivity = activityOptions[Math.floor(Math.random() * activityOptions.length)];
+    }
+    
+    // Update filters with random selections
+    setFilters({ 
+      cuisine: selectedCuisine, 
+      activityCategory: selectedActivity 
+    });
+    
+    // Reset indices
+    setRestaurantIndex(0);
+    setActivityIndex(0);
+    
+    // Show fun toast message
+    const activityLabel = selectedActivity.replace('_', ' ');
+    toast({
+      title: "✨ Surprise!",
+      description: `Finding ${selectedCuisine} restaurants and ${activityLabel} nearby...`,
+    });
+    
+    // Fetch places and navigate
+    await handleFindPlaces();
+    navigate("/plan");
+  };
+
   const handleSelectRecentPlan = (plan: any) => {
     // Apply the search params from the recent plan
     setFilters({
