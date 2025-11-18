@@ -15,7 +15,6 @@ import { ActivityCard } from "@/components/ActivityCard";
 import { PlanCard } from "@/components/PlanCard";
 import { RestaurantDetailsDrawer } from "@/components/RestaurantDetailsDrawer";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { RecentSearches } from "@/components/RecentSearches";
 import { toast } from "@/hooks/use-toast";
 import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
 import { getLearnedPreferences, getContextualSuggestions } from "@/lib/learning";
@@ -1120,13 +1119,6 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Recent Searches */}
-        {userId && (
-          <RecentSearches 
-            userId={userId} 
-            onSelectPlan={handleSelectRecentPlan} 
-          />
-        )}
 
         {/* 4. CuisinePicker (section title: "Choose cuisine") */}
         <div className="mb-6">
