@@ -43,8 +43,6 @@ export async function trackActivity(params: TrackActivityParams) {
   } catch (error) {
     console.error('❌ Failed to track activity:', error);
   }
-}error);
-  }
 }
 
 // Helper to get user's recent activity
