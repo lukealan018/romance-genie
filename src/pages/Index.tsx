@@ -41,6 +41,8 @@ const Index = () => {
     activityIdx: activityIndex,
     nextRestaurantsToken,
     nextActivitiesToken,
+    lastSearchedCuisine,
+    lastSearchedActivity,
     userPreferences,
     setLocation,
     setFilters,
@@ -49,6 +51,7 @@ const Index = () => {
     setRestaurantIdx: setRestaurantIndex,
     setActivityIdx: setActivityIndex,
     setUserPreferences,
+    setLastSearched,
   } = usePlanStore();
   
   // Local UI state only
@@ -439,6 +442,9 @@ const Index = () => {
       
       setRestaurants(sortedRestaurants, restaurantsResponse.data?.nextPageToken || null);
       setActivities(sortedActivities, activitiesResponse.data?.nextPageToken || null);
+      
+      // Record what we just searched for
+      setLastSearched(cuisine, activityCategory);
       
       // Update location in store
       setLocation(searchLat, searchLng);
@@ -888,13 +894,20 @@ const Index = () => {
     if (restaurantIndex === null || restaurantIndex === undefined) setRestaurantIndex(0);
     if (activityIndex === null || activityIndex === undefined) setActivityIndex(0);
 
-    // If we have results, navigate immediately
-    if (restaurantResults.length > 0 && activityResults.length > 0) {
+    // Check if we have results AND they match the current filters
+    const filtersChanged = 
+      lastSearchedCuisine !== cuisine || 
+      lastSearchedActivity !== activityCategory;
+
+    // Only reuse cached results if filters haven't changed
+    if (restaurantResults.length > 0 && 
+        activityResults.length > 0 && 
+        !filtersChanged) {
       navigate("/plan");
       return;
     }
 
-    // Otherwise, fetch data first then navigate immediately
+    // Filters changed or no results - fetch fresh data
     await handleFindPlaces();
     navigate("/plan");
   };
@@ -1005,6 +1018,9 @@ const Index = () => {
       
       setRestaurants(sortedRestaurants, restaurantsResponse.data?.nextPageToken || null);
       setActivities(sortedActivities, activitiesResponse.data?.nextPageToken || null);
+
+      // Record what we searched for
+      setLastSearched(selectedCuisine, selectedActivity);
 
       // Build the initial plan
       const initialPlan = buildPlan({

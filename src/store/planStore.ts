@@ -34,6 +34,10 @@ interface PlanState {
   nextRestaurantsToken: string | null;
   nextActivitiesToken: string | null;
   
+  // Track what was last searched
+  lastSearchedCuisine: string | null;
+  lastSearchedActivity: string | null;
+  
   // User preferences
   userPreferences: {
     cuisines: string[];
@@ -48,6 +52,7 @@ interface PlanState {
   setRestaurantIdx: (idx: number) => void;
   setActivityIdx: (idx: number) => void;
   setUserPreferences: (preferences: { cuisines: string[]; activities: string[] }) => void;
+  setLastSearched: (cuisine: string, activity: string) => void;
   resetPlan: () => void;
 }
 
@@ -68,6 +73,9 @@ export const usePlanStore = create<PlanState>((set) => ({
   
   nextRestaurantsToken: null,
   nextActivitiesToken: null,
+  
+  lastSearchedCuisine: null,
+  lastSearchedActivity: null,
   
   userPreferences: {
     cuisines: [],
@@ -98,6 +106,11 @@ export const usePlanStore = create<PlanState>((set) => ({
   
   setUserPreferences: (preferences) => set({ userPreferences: preferences }),
   
+  setLastSearched: (cuisine, activity) => set({ 
+    lastSearchedCuisine: cuisine, 
+    lastSearchedActivity: activity 
+  }),
+  
   resetPlan: () => set({
     restaurants: [],
     activities: [],
@@ -105,5 +118,7 @@ export const usePlanStore = create<PlanState>((set) => ({
     activityIdx: 0,
     nextRestaurantsToken: null,
     nextActivitiesToken: null,
+    lastSearchedCuisine: null,
+    lastSearchedActivity: null,
   }),
 }));
