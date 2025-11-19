@@ -69,6 +69,12 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
     setTranscript("");
 
     recognition.onstart = () => {
+      // Start the 15-second silence timer from the beginning
+      silenceTimer = setTimeout(() => {
+        console.log('15 seconds elapsed - stopping recognition');
+        recognition.stop();
+      }, SILENCE_TIMEOUT);
+      
       toast({
         title: "Listening... 🎤",
         description: "Tell me about your night! (15s timeout)",
@@ -125,16 +131,6 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
       }
     };
 
-    recognition.onspeechend = () => {
-      // Start silence timer when speech ends
-      if (silenceTimer) {
-        clearTimeout(silenceTimer);
-      }
-      silenceTimer = setTimeout(() => {
-        console.log('15 seconds of silence after speech ended');
-        recognition.stop();
-      }, SILENCE_TIMEOUT);
-    };
 
     recognition.onerror = (event: any) => {
       if (silenceTimer) {
