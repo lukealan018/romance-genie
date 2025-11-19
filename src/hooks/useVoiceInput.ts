@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 // Types for the AI-extracted preferences
 export interface VoicePreferences {
@@ -75,6 +76,7 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
         recognition.stop();
       }, SILENCE_TIMEOUT);
       
+      console.log('Voice recognition started');
       toast({
         title: "Listening... 🎤",
         description: "Tell me about your night! (15s timeout)",
@@ -104,19 +106,14 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
         });
 
         // Send to AI for interpretation
+        console.log('Final transcript captured:', speechResult);
         try {
-          const preferences = await interpretVoiceInput(speechResult, userProfile);
-          onPreferencesExtracted(preferences);
-          
-          toast({
-            title: "Perfect! ✨",
-            description: `Looking for ${preferences.cuisinePreferences[0] || 'great'} food and ${preferences.activityPreferences[0] || 'fun'} activities!`,
-          });
+          await interpretVoiceInput(speechResult, onPreferencesExtracted, userProfile);
         } catch (error) {
           console.error('Error interpreting voice:', error);
           toast({
-            title: "Hmm, I'm not sure I got that",
-            description: "Want to try again or just pick from the options?",
+            title: "Something went wrong",
+            description: "Try typing your preferences instead.",
             variant: "destructive",
           });
         } finally {
@@ -174,71 +171,57 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
   };
 };
 
-// AI interpretation function using Claude
+// AI interpretation function using Lovable AI
 async function interpretVoiceInput(
   transcript: string,
+  onPreferencesExtracted: (preferences: VoicePreferences) => void,
   userProfile?: { cuisines?: string[]; activities?: string[]; home_zip?: string }
-): Promise<VoicePreferences> {
+) {
   try {
-    // Build the system prompt with user context
-    const systemPrompt = `You are a helpful assistant that extracts user preferences from natural language about planning a night out.
-
-User Profile Context:
-${userProfile?.cuisines ? `- Favorite cuisines: ${userProfile.cuisines.join(', ')}` : ''}
-${userProfile?.activities ? `- Favorite activities: ${userProfile.activities.join(', ')}` : ''}
-${userProfile?.home_zip ? `- Home location: ${userProfile.home_zip}` : ''}
-
-Extract the following from the user's message:
-1. Energy level (low/medium/high)
-2. Mood (romantic/fun/adventurous/chill/celebratory)
-3. Cuisine preferences (array of strings)
-4. Activity preferences (array of strings)
-5. Any constraints or requirements
-6. Any location mentions
-
-Return ONLY a JSON object with this structure:
-{
-  "energyLevel": "low" | "medium" | "high",
-  "mood": "romantic" | "fun" | "adventurous" | "chill" | "celebratory",
-  "cuisinePreferences": string[],
-  "activityPreferences": string[],
-  "constraints": string[],
-  "locationMention": string | undefined
-}`;
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY || '',
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 1024,
-        messages: [
-          {
-            role: 'user',
-            content: `${systemPrompt}\n\nUser message: "${transcript}"`
-          }
-        ]
-      })
+    console.log('Calling interpret-voice edge function with transcript:', transcript);
+    
+    const { data, error } = await supabase.functions.invoke('interpret-voice', {
+      body: { transcript, userProfile }
     });
 
-    if (!response.ok) {
-      throw new Error('AI interpretation failed');
+    if (error) {
+      console.error('Edge function error:', error);
+      throw error;
     }
 
-    const data = await response.json();
-    const extractedData = JSON.parse(data.content[0].text);
+    if (!data) {
+      throw new Error('No data returned from edge function');
+    }
 
-    return {
-      ...extractedData,
+    console.log('Interpretation result:', data);
+
+    const preferences: VoicePreferences = {
+      cuisinePreferences: data.cuisinePreferences || [],
+      activityPreferences: data.activityPreferences || [],
+      energyLevel: data.energyLevel || 'medium',
+      mood: data.mood || 'fun',
+      constraints: data.constraints || [],
+      locationMention: data.locationMention,
       rawTranscript: transcript
     };
+
+    onPreferencesExtracted(preferences);
+    
+    toast({
+      title: "Perfect! ✨",
+      description: `Looking for ${preferences.cuisinePreferences[0] || 'great'} food and ${preferences.activityPreferences[0] || 'fun'} activities!`,
+    });
+
   } catch (error) {
-    console.error('Error with AI interpretation, using fallback:', error);
-    return fallbackInterpretation(transcript);
+    console.error('Error interpreting voice input:', error);
+    toast({
+      title: "Using basic interpretation",
+      description: "AI interpretation failed, using keyword matching",
+      variant: "default"
+    });
+    // Fall back to basic interpretation
+    const fallbackPrefs = fallbackInterpretation(transcript);
+    onPreferencesExtracted(fallbackPrefs);
   }
 }
 
