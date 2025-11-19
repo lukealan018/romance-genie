@@ -57,10 +57,13 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     const recognition = new SpeechRecognition();
 
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true;  // Keep listening continuously
+    recognition.interimResults = true;  // Get interim results to detect speech activity
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 1;
+
+    let silenceTimer: NodeJS.Timeout | null = null;
+    const SILENCE_TIMEOUT = 15000; // 15 seconds
 
     setIsListening(true);
     setTranscript("");
@@ -68,43 +71,75 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
     recognition.onstart = () => {
       toast({
         title: "Listening... 🎤",
-        description: "Tell me about your night!",
+        description: "Tell me about your night! (15s timeout)",
       });
     };
 
     recognition.onresult = async (event: any) => {
-      const speechResult = event.results[0][0].transcript;
-      setTranscript(speechResult);
-      setIsListening(false);
-      setIsProcessing(true);
+      // Clear any existing silence timer on speech activity
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+      }
 
-      toast({
-        title: "Got it! 💭",
-        description: "Let me think about that...",
-      });
+      // Check if we have a final result
+      const lastResult = event.results[event.results.length - 1];
+      
+      if (lastResult.isFinal) {
+        const speechResult = lastResult[0].transcript;
+        setTranscript(speechResult);
+        recognition.stop();
+        setIsListening(false);
+        setIsProcessing(true);
 
-      // Send to AI for interpretation
-      try {
-        const preferences = await interpretVoiceInput(speechResult, userProfile);
-        onPreferencesExtracted(preferences);
-        
         toast({
-          title: "Perfect! ✨",
-          description: `Looking for ${preferences.cuisinePreferences[0] || 'great'} food and ${preferences.activityPreferences[0] || 'fun'} activities!`,
+          title: "Got it! 💭",
+          description: "Let me think about that...",
         });
-      } catch (error) {
-        console.error('Error interpreting voice:', error);
-        toast({
-          title: "Hmm, I'm not sure I got that",
-          description: "Want to try again or just pick from the options?",
-          variant: "destructive",
-        });
-      } finally {
-        setIsProcessing(false);
+
+        // Send to AI for interpretation
+        try {
+          const preferences = await interpretVoiceInput(speechResult, userProfile);
+          onPreferencesExtracted(preferences);
+          
+          toast({
+            title: "Perfect! ✨",
+            description: `Looking for ${preferences.cuisinePreferences[0] || 'great'} food and ${preferences.activityPreferences[0] || 'fun'} activities!`,
+          });
+        } catch (error) {
+          console.error('Error interpreting voice:', error);
+          toast({
+            title: "Hmm, I'm not sure I got that",
+            description: "Want to try again or just pick from the options?",
+            variant: "destructive",
+          });
+        } finally {
+          setIsProcessing(false);
+        }
+      } else {
+        // Interim result - reset silence timer
+        silenceTimer = setTimeout(() => {
+          console.log('15 seconds of silence detected, stopping recognition');
+          recognition.stop();
+        }, SILENCE_TIMEOUT);
       }
     };
 
+    recognition.onspeechend = () => {
+      // Start silence timer when speech ends
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+      }
+      silenceTimer = setTimeout(() => {
+        console.log('15 seconds of silence after speech ended');
+        recognition.stop();
+      }, SILENCE_TIMEOUT);
+    };
+
     recognition.onerror = (event: any) => {
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+      }
       setIsListening(false);
       setIsProcessing(false);
       
@@ -117,7 +152,7 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
       } else if (event.error === 'not-allowed') {
         errorMessage = "Microphone access blocked. Check your browser settings.";
       }
-
+      
       toast({
         title: "Oops!",
         description: errorMessage,
@@ -126,6 +161,9 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
     };
 
     recognition.onend = () => {
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+      }
       setIsListening(false);
     };
 

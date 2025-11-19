@@ -65,6 +65,7 @@ const Index = () => {
   const [selectedPlace, setSelectedPlace] = useState<{ id: string; name: string } | null>(null);
   const [plan, setPlan] = useState<any>(null);
   const [showPickers, setShowPickers] = useState(false);
+  const [voiceSearchTrigger, setVoiceSearchTrigger] = useState(0);
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
   const locationSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -124,10 +125,8 @@ const Index = () => {
       setFilters(updates);
     }
     
-    // Automatically trigger the search after a brief delay
-    setTimeout(() => {
-      handleFindPlaces();
-    }, 500);
+    // Trigger search via state change to ensure updated filters are used
+    setVoiceSearchTrigger(prev => prev + 1);
   }, [setFilters]);
 
   const { isListening, isProcessing, startListening } = useVoiceInput({
@@ -138,6 +137,23 @@ const Index = () => {
       home_zip: zipCode,
     },
   });
+
+  // Trigger search when voice preferences are set
+  useEffect(() => {
+    if (voiceSearchTrigger > 0) {
+      console.log('Voice search triggered with:', { cuisine, activityCategory, radius });
+      
+      toast({
+        title: "Finding your perfect match...",
+        description: "Searching for restaurants and activities",
+      });
+      
+      // Small delay to ensure state has updated
+      setTimeout(() => {
+        handleFindPlaces();
+      }, 300);
+    }
+  }, [voiceSearchTrigger]);
 
   // Check authentication and onboarding status
   useEffect(() => {
