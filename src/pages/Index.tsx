@@ -1298,66 +1298,7 @@ const Index = () => {
           </div>
         </HeroSection>
 
-        {/* Results section - moved outside pickers */}
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-4">Choose cuisine</h2>
-          <CuisinePicker selected={cuisine} onSelect={(value) => setFilters({ cuisine: value })} />
-        </div>
-
-        {/* 5. ActivityPicker (section title: "Choose activity") */}
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-4">Choose activity</h2>
-          <ActivityPicker selected={activityCategory} onSelect={(value) => setFilters({ activityCategory: value })} />
-        </div>
-
-        {/* Location and Radius controls */}
-        <div className="bg-card rounded-xl border p-6 mb-6 space-y-6">
-          <LocationToggle
-            mode={locationMode}
-            zipCode={zipCode}
-            onModeChange={(mode) => setFilters({ locationMode: mode })}
-            onZipCodeChange={(value) => {
-              setFilters({ zipCode: value });
-              if (value.length === 5) {
-                debouncedSaveLocation(radius, value);
-              }
-            }}
-            onUseCurrentLocation={() => handleUseCurrentLocation(false)}
-            locationDetected={lat !== null && lng !== null}
-            gettingLocation={gettingLocation}
-          />
-          <div className="h-px bg-border" />
-          <RadiusSelector value={radius} onChange={(value) => {
-            setFilters({ radius: value });
-            debouncedSaveLocation(value, zipCode);
-          }} />
-        </div>
-
-        {/* See Tonight's Plan Button */}
-<div className="mb-6 space-y-3">
-  <CustomButton full onClick={handleSeePlan} disabled={loading} size="lg">
-    {loading ? (
-      <>
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-        Finding Spots...
-      </>
-    ) : (
-      "See Tonight's Plan"
-    )}
-  </CustomButton>
-  
-  {/* Surprise Me Button */}
-  <div className="text-center">
-    <button
-      onClick={handleSurpriseMe}
-      disabled={loading}
-      className="text-sm text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
-    >
-      <span className="text-lg">✨</span>
-      <span>or let us surprise you</span>
-    </button>
-  </div>
-</div>
+        {/* Results section */}
 
         {/* 6. ResultsList (section title: "More options") */}
         {(loading || restaurantResults.length > 0 || activityResults.length > 0) && (
