@@ -141,16 +141,22 @@ const Index = () => {
   // Trigger search when voice preferences are set
   useEffect(() => {
     if (voiceSearchTrigger > 0) {
-      console.log('Voice search triggered with:', { cuisine, activityCategory, radius });
+      // Get the current values directly from the store to avoid stale closures
+      const currentState = usePlanStore.getState();
+      console.log('Voice search triggered with:', { 
+        cuisine: currentState.cuisine, 
+        activityCategory: currentState.activityCategory, 
+        radius: currentState.radius 
+      });
       
       toast({
         title: "Finding your perfect match...",
         description: "Searching for restaurants and activities",
       });
       
-      // Small delay to ensure state has updated
+      // Small delay to ensure state has updated, then pass values directly
       setTimeout(() => {
-        handleFindPlaces();
+        handleFindPlaces(currentState.cuisine, currentState.activityCategory);
       }, 300);
     }
   }, [voiceSearchTrigger]);
@@ -467,7 +473,11 @@ const Index = () => {
     });
   };
 
-  const handleFindPlaces = async () => {
+  const handleFindPlaces = async (overrideCuisine?: string, overrideActivity?: string) => {
+    // Use override values or fall back to current state
+    const searchCuisine = overrideCuisine ?? cuisine;
+    const searchActivity = overrideActivity ?? activityCategory;
+    
     // Validate and get coordinates
     let searchLat: number, searchLng: number;
 
@@ -525,10 +535,10 @@ const Index = () => {
       // Fetch both restaurants and activities in parallel
       const [restaurantsResponse, activitiesResponse] = await Promise.all([
         supabase.functions.invoke('places-search', {
-          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine }
+          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine: searchCuisine }
         }),
         supabase.functions.invoke('activities-search', {
-          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, category: activityCategory }
+          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, category: searchActivity }
         })
       ]);
 
