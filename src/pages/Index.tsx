@@ -79,7 +79,7 @@ const Index = () => {
         description: "Please wait while we determine your location",
       });
       try {
-        await handleUseCurrentLocation();
+        await handleUseCurrentLocation(true);
       } catch (error) {
         console.error('Failed to get location:', error);
         return;
@@ -272,15 +272,7 @@ const Index = () => {
     }
   }, []);
 
-  // Auto-request GPS location on mount if in GPS mode
-  useEffect(() => {
-    if (locationMode === "gps" && !lat && !lng && userId) {
-      handleUseCurrentLocation().catch((error) => {
-        console.log('Auto-location failed:', error);
-        // Silently fail - user can manually trigger if needed
-      });
-    }
-  }, [locationMode, userId]);
+  // Removed auto-GPS request - only request GPS when user explicitly enables it
 
   const fetchProfile = async (uid: string) => {
     try {
@@ -412,11 +404,13 @@ const Index = () => {
     }
   };
 
-  const handleUseCurrentLocation = (): Promise<void> => {
+  const handleUseCurrentLocation = (silent: boolean = false): Promise<void> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
         const message = "Geolocation is not supported by your browser";
-        toast({ title: "Error", description: message, variant: "destructive" });
+        if (!silent) {
+          toast({ title: "Error", description: message, variant: "destructive" });
+        }
         reject(new Error(message));
         return;
       }
@@ -426,27 +420,31 @@ const Index = () => {
         (position) => {
           setLocation(position.coords.latitude, position.coords.longitude);
           setGettingLocation(false);
-          toast({ title: "Success", description: "Location detected! Ready to find date spots near you." });
+          if (!silent) {
+            toast({ title: "Success", description: "Location detected! Ready to find date spots near you." });
+          }
           resolve();
         },
         (error) => {
           setGettingLocation(false);
-          console.error('Geolocation error:', error);
+          console.log('Geolocation error (silent=' + silent + '):', error);
           
-          let description = "Could not get your location";
-          if (error.code === 1) {
-            description = "Location permission denied. Please allow location access in your browser settings or use ZIP code instead.";
-          } else if (error.code === 2) {
-            description = "Location unavailable. Please check your device settings or use ZIP code instead.";
-          } else if (error.code === 3) {
-            description = "Location request timed out. Please try again or use ZIP code instead.";
+          if (!silent) {
+            let description = "Could not get your location";
+            if (error.code === 1) {
+              description = "Location permission denied. Please allow location access in your browser settings or use ZIP code instead.";
+            } else if (error.code === 2) {
+              description = "Location unavailable. Please check your device settings or use ZIP code instead.";
+            } else if (error.code === 3) {
+              description = "Location request timed out. Please try again or use ZIP code instead.";
+            }
+            
+            toast({ 
+              title: "Location Error", 
+              description,
+              variant: "destructive" 
+            });
           }
-          
-          toast({ 
-            title: "Location Error", 
-            description,
-            variant: "destructive" 
-          });
           reject(error);
         }
       );
@@ -1275,7 +1273,7 @@ const Index = () => {
                     debouncedSaveLocation(radius, value);
                   }
                 }}
-                onUseCurrentLocation={handleUseCurrentLocation}
+                onUseCurrentLocation={() => handleUseCurrentLocation(false)}
                 locationDetected={lat !== null && lng !== null}
                 gettingLocation={gettingLocation}
               />
@@ -1324,7 +1322,7 @@ const Index = () => {
                 debouncedSaveLocation(radius, value);
               }
             }}
-            onUseCurrentLocation={handleUseCurrentLocation}
+            onUseCurrentLocation={() => handleUseCurrentLocation(false)}
             locationDetected={lat !== null && lng !== null}
             gettingLocation={gettingLocation}
           />
