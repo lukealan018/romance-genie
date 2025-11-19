@@ -69,8 +69,22 @@ const Index = () => {
   const locationSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize voice input hook
-  const handlePreferencesExtracted = useCallback((preferences: any) => {
+  const handlePreferencesExtracted = useCallback(async (preferences: any) => {
     console.log('Voice preferences extracted:', preferences);
+    
+    // Check if location is ready before proceeding
+    if (locationMode === "gps" && (!lat || !lng)) {
+      toast({
+        title: "Getting your location...",
+        description: "Please wait while we determine your location",
+      });
+      try {
+        await handleUseCurrentLocation();
+      } catch (error) {
+        console.error('Failed to get location:', error);
+        return;
+      }
+    }
     
     // Update filters based on AI-extracted preferences
     const updates: any = {};
@@ -258,6 +272,16 @@ const Index = () => {
     }
   }, []);
 
+  // Auto-request GPS location on mount if in GPS mode
+  useEffect(() => {
+    if (locationMode === "gps" && !lat && !lng && userId) {
+      handleUseCurrentLocation().catch((error) => {
+        console.log('Auto-location failed:', error);
+        // Silently fail - user can manually trigger if needed
+      });
+    }
+  }, [locationMode, userId]);
+
   const fetchProfile = async (uid: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -279,9 +303,23 @@ const Index = () => {
 
       if (profile) {
         
-        // Prefill controls
+        // Prefill controls and geocode home_zip
         if (profile.home_zip) {
           setFilters({ zipCode: profile.home_zip, locationMode: "zip" });
+          
+          // Geocode the home ZIP to get coordinates
+          try {
+            const { data: geocodeData, error: geocodeError } = await supabase.functions.invoke('geocode', {
+              body: { zipCode: profile.home_zip }
+            });
+            
+            if (!geocodeError && geocodeData?.lat && geocodeData?.lng) {
+              setLocation(geocodeData.lat, geocodeData.lng);
+              console.log('Home ZIP geocoded:', geocodeData);
+            }
+          } catch (geocodeError) {
+            console.error('Failed to geocode home ZIP:', geocodeError);
+          }
         }
         if (profile.default_radius_mi !== null && profile.default_radius_mi !== undefined) {
           setFilters({ radius: profile.default_radius_mi });
@@ -374,31 +412,45 @@ const Index = () => {
     }
   };
 
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast({ title: "Error", description: "Geolocation is not supported by your browser", variant: "destructive" });
-      return;
-    }
-
-    setGettingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation(position.coords.latitude, position.coords.longitude);
-        setGettingLocation(false);
-        toast({ title: "Success", description: "Location detected! Ready to find date spots near you." });
-      },
-      (error) => {
-        setGettingLocation(false);
-        console.error('Geolocation error:', error);
-        toast({ 
-          title: "Location Error", 
-          description: error.code === 1 
-            ? "Location permission denied. Please enable location access or use ZIP code." 
-            : "Could not get your location. Please try ZIP code instead.", 
-          variant: "destructive" 
-        });
+  const handleUseCurrentLocation = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        const message = "Geolocation is not supported by your browser";
+        toast({ title: "Error", description: message, variant: "destructive" });
+        reject(new Error(message));
+        return;
       }
-    );
+
+      setGettingLocation(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation(position.coords.latitude, position.coords.longitude);
+          setGettingLocation(false);
+          toast({ title: "Success", description: "Location detected! Ready to find date spots near you." });
+          resolve();
+        },
+        (error) => {
+          setGettingLocation(false);
+          console.error('Geolocation error:', error);
+          
+          let description = "Could not get your location";
+          if (error.code === 1) {
+            description = "Location permission denied. Please allow location access in your browser settings or use ZIP code instead.";
+          } else if (error.code === 2) {
+            description = "Location unavailable. Please check your device settings or use ZIP code instead.";
+          } else if (error.code === 3) {
+            description = "Location request timed out. Please try again or use ZIP code instead.";
+          }
+          
+          toast({ 
+            title: "Location Error", 
+            description,
+            variant: "destructive" 
+          });
+          reject(error);
+        }
+      );
+    });
   };
 
   const handleFindPlaces = async () => {
@@ -947,6 +999,33 @@ const Index = () => {
     if (!activityCategory) {
       toast({ title: "Error", description: "Please select an activity", variant: "destructive" });
       return;
+    }
+    
+    // Location validation
+    if (!lat || !lng) {
+      if (locationMode === "gps") {
+        toast({ 
+          title: "Getting your location...", 
+          description: "Please wait while we determine your location",
+        });
+        try {
+          await handleUseCurrentLocation();
+        } catch (error) {
+          toast({ 
+            title: "Location Required", 
+            description: "Please allow location access or switch to ZIP code mode",
+            variant: "destructive"
+          });
+          return;
+        }
+      } else {
+        toast({ 
+          title: "Location Required", 
+          description: "Please enter a valid ZIP code",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     // Ensure indices are set
