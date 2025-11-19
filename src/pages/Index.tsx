@@ -1086,12 +1086,29 @@ const Index = () => {
     }
     
     if (!lat || !lng) {
-      toast({ 
-        title: "Error", 
-        description: "Please set your location first", 
-        variant: "destructive" 
-      });
-      return;
+      if (locationMode === "gps") {
+        toast({ 
+          title: "Getting your location...", 
+          description: "Please wait while we determine your location",
+        });
+        try {
+          await handleUseCurrentLocation();
+        } catch (error) {
+          toast({ 
+            title: "Location Required", 
+            description: "Please allow location access or switch to ZIP code mode",
+            variant: "destructive"
+          });
+          return;
+        }
+      } else {
+        toast({ 
+          title: "Location Required", 
+          description: "Please enter a valid ZIP code first",
+          variant: "destructive"
+        });
+        return;
+      }
     }
     
     // Available options
