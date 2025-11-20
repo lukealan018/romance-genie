@@ -24,6 +24,10 @@ interface PlanState {
   locationMode: "gps" | "zip";
   zipCode: string;
   
+  // Last search location fallback
+  lastSearchLat: number | null;
+  lastSearchLng: number | null;
+  
   // Results
   restaurants: Place[];
   activities: Place[];
@@ -53,6 +57,7 @@ interface PlanState {
   setActivityIdx: (idx: number) => void;
   setUserPreferences: (preferences: { cuisines: string[]; activities: string[] }) => void;
   setLastSearched: (cuisine: string, activity: string) => void;
+  setLastSearchLocation: (lat: number, lng: number) => void;
   resetPlan: () => void;
 }
 
@@ -65,6 +70,9 @@ export const usePlanStore = create<PlanState>((set) => ({
   activityCategory: "",
   locationMode: "gps",
   zipCode: "",
+  
+  lastSearchLat: null,
+  lastSearchLng: null,
   
   restaurants: [],
   activities: [],
@@ -109,6 +117,11 @@ export const usePlanStore = create<PlanState>((set) => ({
   setLastSearched: (cuisine, activity) => set({ 
     lastSearchedCuisine: cuisine, 
     lastSearchedActivity: activity 
+  }),
+  
+  setLastSearchLocation: (lat, lng) => set({
+    lastSearchLat: lat,
+    lastSearchLng: lng
   }),
   
   resetPlan: () => set({
