@@ -153,15 +153,36 @@ const Index = () => {
       
       toast({
         title: "Finding your perfect match...",
-        description: "Searching for restaurants and activities",
+        description: "🔍 Searching restaurants and activities...",
+        duration: 5000,
       });
       
-      // Small delay to ensure state has updated, then pass values directly
+      // Search and navigate to results
+      const searchAndNavigate = async () => {
+        try {
+          await handleFindPlaces(currentState.cuisine, currentState.activityCategory);
+          // Navigate to plan page after search completes
+          navigate("/plan");
+          toast({
+            title: "Here's your perfect night! ✨",
+            description: "Swipe to see more options",
+          });
+        } catch (error) {
+          console.error('Voice search failed:', error);
+          toast({
+            title: "Search failed",
+            description: "Please try again or use manual selection",
+            variant: "destructive"
+          });
+        }
+      };
+      
+      // Small delay to ensure state has updated
       setTimeout(() => {
-        handleFindPlaces(currentState.cuisine, currentState.activityCategory);
+        searchAndNavigate();
       }, 300);
     }
-  }, [voiceSearchTrigger]);
+  }, [voiceSearchTrigger, navigate]);
 
   // Check authentication and onboarding status
   useEffect(() => {

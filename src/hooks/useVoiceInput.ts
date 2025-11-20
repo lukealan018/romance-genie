@@ -64,36 +64,39 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
     recognition.maxAlternatives = 1;
 
     let silenceTimer: NodeJS.Timeout | null = null;
-    const SILENCE_TIMEOUT = 15000; // 15 seconds
+    let hasSpokenYet = false;
+    const INITIAL_TIMEOUT = 15000; // 15 seconds before any speech
+    const POST_SPEECH_TIMEOUT = 2000; // 2 seconds after speech detected
 
     setIsListening(true);
     setTranscript("");
 
     recognition.onstart = () => {
-      // Start the 15-second silence timer from the beginning
+      hasSpokenYet = false;
+      // Start with longer initial timeout
       silenceTimer = setTimeout(() => {
-        console.log('15 seconds elapsed - stopping recognition');
+        console.log('Initial timeout - stopping recognition');
         recognition.stop();
-      }, SILENCE_TIMEOUT);
+      }, INITIAL_TIMEOUT);
       
       console.log('Voice recognition started');
       toast({
         title: "Listening... 🎤",
-        description: "Tell me about your night! (15s timeout)",
+        description: "Tell me about your night!",
       });
     };
 
     recognition.onresult = async (event: any) => {
-      // Clear any existing silence timer on speech activity
+      // Clear existing timer
       if (silenceTimer) {
         clearTimeout(silenceTimer);
         silenceTimer = null;
       }
 
-      // Check if we have a final result
       const lastResult = event.results[event.results.length - 1];
       
       if (lastResult.isFinal) {
+        // Final result - process immediately
         const speechResult = lastResult[0].transcript;
         setTranscript(speechResult);
         recognition.stop();
@@ -120,11 +123,13 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
           setIsProcessing(false);
         }
       } else {
-        // Interim result - reset silence timer
+        // Interim result - user is speaking
+        hasSpokenYet = true;
+        // Use shorter timeout after speech detected
         silenceTimer = setTimeout(() => {
-          console.log('15 seconds of silence detected, stopping recognition');
+          console.log('Silence detected after speech - stopping recognition');
           recognition.stop();
-        }, SILENCE_TIMEOUT);
+        }, POST_SPEECH_TIMEOUT);
       }
     };
 
