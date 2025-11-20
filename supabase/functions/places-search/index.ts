@@ -26,7 +26,7 @@ serve(async (req) => {
     }
 
     // Parse request body for POST requests
-    let lat: number, lng: number, radiusMiles: number, cuisine: string, pagetoken: string | undefined;
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, pagetoken: string | undefined;
 
     if (req.method === 'POST') {
       const body = await req.json();
@@ -34,6 +34,7 @@ serve(async (req) => {
       lng = body.lng;
       radiusMiles = body.radiusMiles;
       cuisine = body.cuisine;
+      priceLevel = body.priceLevel;
       pagetoken = body.pagetoken;
     } else {
       // Fallback to query params for GET
@@ -42,6 +43,7 @@ serve(async (req) => {
       lng = parseFloat(url.searchParams.get('lng') || '');
       radiusMiles = parseFloat(url.searchParams.get('radiusMiles') || '');
       cuisine = url.searchParams.get('cuisine') || '';
+      priceLevel = url.searchParams.get('priceLevel') || undefined;
       pagetoken = url.searchParams.get('pagetoken') || undefined;
     }
 
@@ -57,6 +59,23 @@ serve(async (req) => {
     // Convert miles to meters
     const radiusMeters = Math.round(radiusMiles * 1609.34);
 
+    // Map price level to Google's scale (1-4)
+    const priceLevelMap: Record<string, { min: number; max: number }> = {
+      'budget': { min: 1, max: 2 },
+      'moderate': { min: 2, max: 3 },
+      'upscale': { min: 3, max: 4 }
+    };
+    
+    const priceRange = priceLevel ? priceLevelMap[priceLevel] : null;
+    
+    // Add price descriptors to keyword
+    let enhancedKeyword = cuisine === 'restaurant' ? 'restaurant' : `${cuisine} restaurant`;
+    if (priceLevel === 'upscale') {
+      enhancedKeyword = `upscale ${enhancedKeyword} fine dining`;
+    } else if (priceLevel === 'budget') {
+      enhancedKeyword = `affordable ${enhancedKeyword}`;
+    }
+
     // If pagetoken is present, wait 2 seconds (Google requirement)
     if (pagetoken) {
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -66,9 +85,12 @@ serve(async (req) => {
     const placesUrl = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json');
     placesUrl.searchParams.set('location', `${lat},${lng}`);
     placesUrl.searchParams.set('radius', radiusMeters.toString());
-    const keyword = cuisine ? `${cuisine} restaurant` : 'restaurant';
-    placesUrl.searchParams.set('keyword', keyword);
+    placesUrl.searchParams.set('keyword', enhancedKeyword);
     placesUrl.searchParams.set('type', 'restaurant');
+    if (priceRange) {
+      placesUrl.searchParams.set('minprice', priceRange.min.toString());
+      placesUrl.searchParams.set('maxprice', priceRange.max.toString());
+    }
     placesUrl.searchParams.set('key', GOOGLE_MAPS_API_KEY);
     
     if (pagetoken) {
@@ -79,7 +101,9 @@ serve(async (req) => {
       lat, 
       lng, 
       radiusMeters, 
-      cuisine: cuisine || 'any', 
+      cuisine: cuisine || 'any',
+      priceLevel: priceLevel || 'any',
+      enhancedKeyword,
       hasPageToken: !!pagetoken 
     });
 
@@ -94,17 +118,23 @@ serve(async (req) => {
       );
     }
 
-    // Map response to desired format
-    const items = (data.results || []).map((place: any) => ({
-      id: place.place_id,
-      name: place.name,
-      rating: place.rating || 0,
-      totalRatings: place.user_ratings_total || 0,
-      priceLevel: place.price_level ? '$'.repeat(place.price_level) : '',
-      address: place.vicinity || '',
-      lat: place.geometry?.location?.lat || 0,
-      lng: place.geometry?.location?.lng || 0,
-    }));
+    // Map response to desired format with price level filtering
+    const items = (data.results || [])
+      .filter((place: any) => {
+        if (!priceRange) return true;
+        const placePrice = place.price_level || 2; // Default to moderate
+        return placePrice >= priceRange.min && placePrice <= priceRange.max;
+      })
+      .map((place: any) => ({
+        id: place.place_id,
+        name: place.name,
+        rating: place.rating || 0,
+        totalRatings: place.user_ratings_total || 0,
+        priceLevel: place.price_level ? '$'.repeat(place.price_level) : '',
+        address: place.vicinity || '',
+        lat: place.geometry?.location?.lat || 0,
+        lng: place.geometry?.location?.lng || 0,
+      }));
 
     console.log(`Found ${items.length} places, nextPageToken: ${!!data.next_page_token}`);
 
