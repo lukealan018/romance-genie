@@ -16,6 +16,7 @@ import { PlanCard } from "@/components/PlanCard";
 import { RestaurantDetailsDrawer } from "@/components/RestaurantDetailsDrawer";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { HeroSection } from "@/components/hero-section";
+import { LocationDialog } from "@/components/LocationDialog";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { toast } from "@/hooks/use-toast";
 import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
@@ -65,6 +66,7 @@ const Index = () => {
   const [selectedPlace, setSelectedPlace] = useState<{ id: string; name: string } | null>(null);
   const [plan, setPlan] = useState<any>(null);
   const [showPickers, setShowPickers] = useState(false);
+  const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [voiceSearchTrigger, setVoiceSearchTrigger] = useState(0);
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
   const locationSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1086,29 +1088,8 @@ const Index = () => {
     }
     
     if (!lat || !lng) {
-      if (locationMode === "gps") {
-        toast({ 
-          title: "Getting your location...", 
-          description: "Please wait while we determine your location",
-        });
-        try {
-          await handleUseCurrentLocation();
-        } catch (error) {
-          toast({ 
-            title: "Location Required", 
-            description: "Please allow location access or switch to ZIP code mode",
-            variant: "destructive"
-          });
-          return;
-        }
-      } else {
-        toast({ 
-          title: "Location Required", 
-          description: "Please enter a valid ZIP code first",
-          variant: "destructive"
-        });
-        return;
-      }
+      setShowLocationDialog(true);
+      return;
     }
     
     // Available options
@@ -1448,6 +1429,50 @@ const Index = () => {
             initialName={selectedPlace.name}
           />
         )}
+
+        <LocationDialog
+          open={showLocationDialog}
+          onOpenChange={setShowLocationDialog}
+          defaultZipCode={zipCode}
+          defaultRadius={radius}
+          onSave={async (zip, radiusValue) => {
+            setFilters({ locationMode: "zip", zipCode: zip, radius: radiusValue });
+            
+            // Geocode the ZIP to get coordinates
+            try {
+              const { data: geocodeData, error: geocodeError } = await supabase.functions.invoke('geocode', {
+                body: { zipCode: zip }
+              });
+              
+              if (!geocodeError && geocodeData?.lat && geocodeData?.lng) {
+                setLocation(geocodeData.lat, geocodeData.lng);
+              }
+            } catch (error) {
+              console.error('Failed to geocode ZIP:', error);
+            }
+            
+            toast({
+              title: "Location Saved",
+              description: `Set to ${zip} with ${radiusValue} mile radius`,
+            });
+          }}
+          onUseGPS={async () => {
+            try {
+              await handleUseCurrentLocation();
+              toast({
+                title: "Location Updated",
+                description: "Using your current GPS location",
+              });
+            } catch (error) {
+              toast({
+                title: "Location Access Denied",
+                description: "Please allow location access or enter a ZIP code",
+                variant: "destructive",
+              });
+              setShowLocationDialog(true);
+            }
+          }}
+        />
       </div>
     </div>
   );
