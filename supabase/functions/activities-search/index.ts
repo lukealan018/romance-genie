@@ -7,6 +7,63 @@ const corsHeaders = {
 
 const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
 
+// Venue type mappings
+const activityMappings: Record<string, { googleType: string; keywords: string[] }> = {
+  'whiskey bar': { googleType: 'bar', keywords: ['whiskey bar', 'whisky bar', 'bourbon bar'] },
+  'cocktail bar': { googleType: 'bar', keywords: ['cocktail bar', 'mixology', 'craft cocktails'] },
+  'wine bar': { googleType: 'bar', keywords: ['wine bar', 'wine lounge'] },
+  'speakeasy': { googleType: 'bar', keywords: ['speakeasy', 'hidden bar', 'secret bar'] },
+  'lounge bar': { googleType: 'bar', keywords: ['lounge bar', 'cocktail lounge', 'upscale lounge'] },
+  'lounge': { googleType: 'bar', keywords: ['lounge', 'cocktail lounge'] },
+  'sports bar': { googleType: 'bar', keywords: ['sports bar', 'sports pub'] },
+  'dive bar': { googleType: 'bar', keywords: ['dive bar', 'local bar'] },
+  'rooftop bar': { googleType: 'bar', keywords: ['rooftop bar', 'rooftop lounge', 'sky bar'] },
+  'tiki bar': { googleType: 'bar', keywords: ['tiki bar', 'tropical bar', 'rum bar'] },
+  'brewery': { googleType: 'bar', keywords: ['brewery', 'brewpub', 'craft brewery'] },
+  'jazz lounge': { googleType: 'bar', keywords: ['jazz lounge', 'jazz bar', 'live jazz'] },
+  'hookah lounge': { googleType: 'bar', keywords: ['hookah lounge', 'shisha bar'] },
+  'cocktail lounge': { googleType: 'bar', keywords: ['cocktail lounge', 'upscale lounge'] },
+  'comedy club': { googleType: 'night_club', keywords: ['comedy club', 'comedy show', 'stand up'] },
+  'karaoke': { googleType: 'night_club', keywords: ['karaoke', 'karaoke bar'] },
+  'karaoke bar': { googleType: 'night_club', keywords: ['karaoke bar', 'karaoke'] },
+  'nightclub': { googleType: 'night_club', keywords: ['nightclub', 'club', 'dance club'] },
+  'live music': { googleType: 'night_club', keywords: ['live music', 'music venue', 'concert'] },
+  'bowling': { googleType: 'bowling_alley', keywords: ['bowling', 'bowling alley'] },
+  'mini golf': { googleType: 'amusement_center', keywords: ['mini golf', 'putt putt'] },
+  'golf': { googleType: 'park', keywords: ['golf', 'golf course', 'driving range', 'top golf'] },
+  'pool hall': { googleType: 'bar', keywords: ['pool hall', 'billiards', 'pool table'] },
+  'axe throwing': { googleType: 'amusement_center', keywords: ['axe throwing', 'hatchet throwing'] },
+  'escape room': { googleType: 'amusement_center', keywords: ['escape room', 'escape game'] },
+  'arcade': { googleType: 'amusement_center', keywords: ['arcade', 'game room'] },
+  'movie theater': { googleType: 'movie_theater', keywords: ['movie theater', 'cinema'] },
+  'wine tasting': { googleType: 'bar', keywords: ['wine tasting', 'winery', 'vineyard'] },
+  'painting class': { googleType: 'art_gallery', keywords: ['painting class', 'paint night', 'sip and paint'] },
+  'paint and sip': { googleType: 'art_gallery', keywords: ['paint and sip', 'wine and paint'] },
+  'art gallery': { googleType: 'art_gallery', keywords: ['art gallery', 'gallery'] },
+  'museum': { googleType: 'museum', keywords: ['museum', 'exhibit'] },
+  'theater': { googleType: 'performing_arts_theater', keywords: ['theater', 'play', 'musical'] },
+};
+
+function getActivityMapping(keyword: string): { googleType: string; keywords: string[] } | null {
+  const normalized = keyword.toLowerCase().trim();
+  return activityMappings[normalized] || null;
+}
+
+function shouldExcludeResult(placeTypes: string[], searchKeyword: string): boolean {
+  const keyword = searchKeyword.toLowerCase();
+  
+  // If searching for "bar" or "lounge", exclude salons, spas, beauty services
+  if (keyword.includes('bar') || keyword.includes('lounge')) {
+    const excludeTypes = [
+      'beauty_salon', 'hair_care', 'spa', 'nail_salon', 'barber_shop',
+      'hair_salon', 'salon', 'beauty', 'cosmetics'
+    ];
+    return placeTypes.some(type => excludeTypes.includes(type));
+  }
+  
+  return false;
+}
+
 // Activity types that typically require tickets/advance booking
 const eventTypes = new Set([
   'movie_theater',
@@ -50,8 +107,15 @@ serve(async (req) => {
 
     const radiusMeters = Math.round(radiusMiles * 1609.34);
 
+    // Get mapped Google Place type and enhanced keywords
+    const mapping = getActivityMapping(keyword);
+    const googlePlaceType = mapping?.googleType || null;
+    const enhancedKeywords = mapping?.keywords.join(' ') || keyword;
+
     console.log('=== GOOGLE PLACES REQUEST ===');
     console.log('Keyword:', keyword);
+    console.log('Enhanced Keywords:', enhancedKeywords);
+    console.log('Google Type:', googlePlaceType);
     console.log('Location:', { lat, lng });
     console.log('Radius (meters):', radiusMeters);
     console.log('Has pagetoken:', !!pagetoken);
@@ -66,7 +130,10 @@ serve(async (req) => {
     const url = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json');
     url.searchParams.set('location', `${lat},${lng}`);
     url.searchParams.set('radius', radiusMeters.toString());
-    url.searchParams.set('keyword', keyword);
+    url.searchParams.set('keyword', enhancedKeywords);
+    if (googlePlaceType) {
+      url.searchParams.set('type', googlePlaceType);
+    }
     url.searchParams.set('key', GOOGLE_MAPS_API_KEY);
     
     if (pagetoken) {
@@ -90,17 +157,19 @@ serve(async (req) => {
       );
     }
 
-    const items = (data.results || []).map((place: any) => ({
-      id: place.place_id,
-      name: place.name,
-      rating: place.rating || 0,
-      totalRatings: place.user_ratings_total || 0,
-      address: place.vicinity || place.formatted_address || '',
-      lat: place.geometry?.location?.lat || 0,
-      lng: place.geometry?.location?.lng || 0,
-      city: extractCity(place.address_components),
-      category: determineCategory(place.types || []),
-    }));
+    const items = (data.results || [])
+      .filter((place: any) => !shouldExcludeResult(place.types || [], keyword))
+      .map((place: any) => ({
+        id: place.place_id,
+        name: place.name,
+        rating: place.rating || 0,
+        totalRatings: place.user_ratings_total || 0,
+        address: place.vicinity || place.formatted_address || '',
+        lat: place.geometry?.location?.lat || 0,
+        lng: place.geometry?.location?.lng || 0,
+        city: extractCity(place.address_components),
+        category: determineCategory(place.types || []),
+      }));
 
     console.log(`Found ${items.length} activities, nextPageToken: ${!!data.next_page_token}`);
 

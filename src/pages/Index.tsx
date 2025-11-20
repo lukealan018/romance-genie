@@ -298,6 +298,9 @@ const Index = () => {
     try {
       const searchCuisine = updates.cuisine || cuisine || "";
       const searchActivity = updates.activityCategory || activityCategory;
+      const restaurantPriceLevel = preferences.restaurantRequest?.priceLevel || null;
+      
+      console.log('Voice search params:', { searchCuisine, searchActivity, restaurantPriceLevel });
       
       // Get learned preferences and interaction history
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
@@ -326,7 +329,8 @@ const Index = () => {
           lat: restaurantLat, 
           lng: restaurantLng, 
           radiusMiles: radius, 
-          cuisine: searchCuisine === "🌍 Around the World" ? "" : searchCuisine
+          cuisine: searchCuisine === "🌍 Around the World" ? "" : searchCuisine,
+          priceLevel: restaurantPriceLevel
         }
       });
 
