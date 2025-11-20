@@ -32,6 +32,10 @@ Return a JSON object with these fields:
 - mood: string
 - constraints: array of dietary/preference constraints
 - transcript: the original transcript
+- intent: "surprise" | "specific" | "flexible" - Detect user's planning intent
+- noveltyLevel: "safe" | "adventurous" | "wild" - How far outside comfort zone
+- mustHaves: array of non-negotiable requirements
+- avoidances: array of things to avoid
 
 CRITICAL Rules:
 1. **PRESERVE EXACT SPECIFICITY** - If user says "whiskey bar", return "whiskey bar" NOT "bar"
@@ -42,6 +46,15 @@ CRITICAL Rules:
    - "upscale", "fancy", "fine dining", "luxury", "high-end" → "upscale"
    - "mid-range", "moderate" → "moderate"
    - If not mentioned → null
+5. **Intent Detection:**
+   - "surprise" → User wants novel/unexpected suggestions ("surprise me", "something different", "never been", "hidden gem")
+   - "specific" → User has clear requirements ("I want", specific cuisine/place type, exact location)
+   - "flexible" → User is open but has some preferences ("maybe", "something like", "open to")
+6. **Novelty Level:**
+   - "safe" → User wants quality but familiar (no explicit adventure keywords)
+   - "adventurous" → User wants something different ("new", "different", "explore", "try something")
+   - "wild" → User wants completely unexpected ("blow my mind", "crazy", "wildest", "never heard of")
+7. **Must-Haves & Avoidances:** Extract explicit requirements and dislikes
 
 Examples:
 
@@ -64,6 +77,19 @@ Examples:
 → restaurantRequest: {type: "steakhouse", location: "Beverly Hills", priceLevel: "upscale"}
 → activityRequest: {type: "", location: null, priceLevel: null}
 → generalLocation: null
+→ intent: "specific", noveltyLevel: "safe", mustHaves: ["upscale", "steakhouse"], avoidances: []
+
+"surprise me with something wild"
+→ restaurantRequest: {type: "", location: null, priceLevel: null}
+→ activityRequest: {type: "", location: null, priceLevel: null}
+→ generalLocation: null
+→ intent: "surprise", noveltyLevel: "wild", mustHaves: [], avoidances: []
+
+"something different but not too crazy, maybe Italian"
+→ restaurantRequest: {type: "italian", location: null, priceLevel: null}
+→ activityRequest: {type: "", location: null, priceLevel: null}
+→ generalLocation: null
+→ intent: "flexible", noveltyLevel: "adventurous", mustHaves: [], avoidances: ["too crazy"]
 
 Be flexible: "pasta" = Italian, "tacos" = Mexican, "drinks" = bar, BUT preserve specific bar types like "whiskey bar", "wine bar", "cocktail lounge", "speakeasy"`;
 
@@ -97,6 +123,10 @@ Be flexible: "pasta" = Italian, "tacos" = Mexican, "drinks" = bar, BUT preserve 
     console.log('Extracted restaurant:', result.restaurantRequest);
     console.log('Extracted activity:', result.activityRequest);
     console.log('General location:', result.generalLocation);
+    console.log('Intent:', result.intent);
+    console.log('Novelty level:', result.noveltyLevel);
+    console.log('Must-haves:', result.mustHaves);
+    console.log('Avoidances:', result.avoidances);
     console.log('Price levels:', {
       restaurant: result.restaurantRequest?.priceLevel,
       activity: result.activityRequest?.priceLevel
