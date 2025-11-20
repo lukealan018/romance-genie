@@ -338,6 +338,86 @@ const Index = () => {
       const restaurants = restaurantsResponse.data?.items || [];
       const activities = activitiesResponse.data?.items || [];
       
+      // ===== FALLBACK STRATEGY FOR ACTIVITIES (VOICE PATH) =====
+      let finalActivities = activities;
+      let usedRadius = radius;
+      let usedKeyword = searchActivity;
+
+      // STEP 1: Keyword fallback
+      if (activities.length === 0 && searchActivity) {
+        console.log(`⚠️ Voice search: No results for "${searchActivity}", trying fallback...`);
+        
+        const fallbackMap: Record<string, string> = {
+          'whiskey bar': 'bar',
+          'cocktail bar': 'bar',
+          'wine bar': 'bar',
+          'speakeasy': 'bar',
+          'comedy club': 'comedy',
+          'live music': 'music venue',
+          'escape room': 'entertainment',
+          'mini golf': 'golf',
+        };
+        
+        const fallbackTerm = fallbackMap[searchActivity.toLowerCase()] || searchActivity.split(' ')[0];
+        
+        if (fallbackTerm !== searchActivity) {
+          console.log(`🔄 Voice search: Retrying with broader term: "${fallbackTerm}"`);
+          usedKeyword = fallbackTerm;
+          
+          const fallbackResponse = await supabase.functions.invoke('activities-search', {
+            body: { lat: activityLat, lng: activityLng, radiusMiles: radius, keyword: fallbackTerm }
+          });
+          
+          if (!fallbackResponse.error && fallbackResponse.data?.items?.length > 0) {
+            finalActivities = fallbackResponse.data.items;
+            console.log(`✅ Voice search: Fallback found ${finalActivities.length} results`);
+            toast({
+              title: "Search expanded",
+              description: `No ${searchActivity} found, showing ${fallbackTerm} instead`,
+            });
+          }
+        }
+      }
+
+      // STEP 2: Radius expansion fallback
+      if (finalActivities.length === 0 && usedKeyword) {
+        console.log(`⚠️ Voice search: Still no results for "${usedKeyword}" in ${radius} miles, expanding radius...`);
+        
+        const radiusSteps = [10, 15];
+        
+        for (const expandedRadius of radiusSteps) {
+          if (expandedRadius <= radius) continue;
+          
+          console.log(`🔄 Voice search: Retrying with ${expandedRadius} mile radius`);
+          
+          const expandedResponse = await supabase.functions.invoke('activities-search', {
+            body: { lat: activityLat, lng: activityLng, radiusMiles: expandedRadius, keyword: usedKeyword }
+          });
+          
+          if (!expandedResponse.error && expandedResponse.data?.items?.length > 0) {
+            finalActivities = expandedResponse.data.items;
+            usedRadius = expandedRadius;
+            console.log(`✅ Voice search: Found ${finalActivities.length} results at ${expandedRadius} miles`);
+            
+            toast({
+              title: "Expanded search area",
+              description: `Found ${finalActivities.length} options within ${expandedRadius} miles`,
+            });
+            
+            break;
+          }
+        }
+        
+        if (finalActivities.length === 0) {
+          console.log(`❌ Voice search: No results found even with expanded radius`);
+          toast({
+            title: "No results nearby",
+            description: `Couldn't find any ${usedKeyword} within 15 miles. Try a different activity.`,
+            variant: "destructive"
+          });
+        }
+      }
+      
       // Use the midpoint between restaurant and activity locations for plan building
       const planLat = (restaurantLat + activityLat) / 2;
       const planLng = (restaurantLng + activityLng) / 2;
@@ -355,10 +435,10 @@ const Index = () => {
         learnedPrefs
       );
       const sortedActivities = scorePlaces(
-        activities, 
+        finalActivities, 
         activityLat,  // Score activities relative to their search center
         activityLng, 
-        radius, 
+        usedRadius, 
         userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
           ? userPreferences 
           : undefined,
