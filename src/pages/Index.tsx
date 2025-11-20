@@ -76,10 +76,11 @@ const Index = () => {
     console.log('Voice preferences extracted:', preferences);
     
     // Determine search centers for restaurant and activity
-    let restaurantLat = lat;
-    let restaurantLng = lng;
-    let activityLat = lat;
-    let activityLng = lng;
+    // Start with current location if available, otherwise will get location later
+    let restaurantLat = lat || null;
+    let restaurantLng = lng || null;
+    let activityLat = lat || null;
+    let activityLng = lng || null;
     let needsLocationSetup = false;
     
     // Helper function to geocode a location
@@ -115,9 +116,15 @@ const Index = () => {
         needsLocationSetup = true;
         console.log(`Restaurant search centered on ${preferences.restaurantRequest.location}`);
       } else {
+        // Geocoding failed - use default location if available
+        if (lat && lng) {
+          restaurantLat = lat;
+          restaurantLng = lng;
+          console.log(`Geocoding failed for ${preferences.restaurantRequest.location}, using default location`);
+        }
         toast({
           title: "Couldn't find restaurant location",
-          description: `Using default location instead of ${preferences.restaurantRequest.location}`,
+          description: `Using your current location instead`,
           variant: "destructive"
         });
       }
@@ -137,9 +144,15 @@ const Index = () => {
         needsLocationSetup = true;
         console.log(`Activity search centered on ${preferences.activityRequest.location}`);
       } else {
+        // Geocoding failed - use default location if available
+        if (lat && lng) {
+          activityLat = lat;
+          activityLng = lng;
+          console.log(`Geocoding failed for ${preferences.activityRequest.location}, using default location`);
+        }
         toast({
           title: "Couldn't find activity location",
-          description: `Using default location instead of ${preferences.activityRequest.location}`,
+          description: `Using your current location instead`,
           variant: "destructive"
         });
       }
@@ -182,18 +195,43 @@ const Index = () => {
       }
     }
     
-    // Check if we need current location as fallback
-    if (!needsLocationSetup && locationMode === "gps" && (!lat || !lng)) {
+    // Check if we still don't have valid coordinates - get current location
+    if ((!restaurantLat || !restaurantLng || !activityLat || !activityLng)) {
+      console.log('No valid coordinates, getting current location...');
       toast({
         title: "Getting your location...",
         description: "Please wait while we determine your location",
       });
       try {
         await handleUseCurrentLocation(true);
-        restaurantLat = activityLat = lat;
-        restaurantLng = activityLng = lng;
+        // After getting location, lat/lng state will be updated
+        // We need to use the updated values from the store
+        const currentLat = usePlanStore.getState().lat;
+        const currentLng = usePlanStore.getState().lng;
+        
+        if (!currentLat || !currentLng) {
+          throw new Error('Could not get current location');
+        }
+        
+        // Use current location for any missing coordinates
+        if (!restaurantLat || !restaurantLng) {
+          restaurantLat = currentLat;
+          restaurantLng = currentLng;
+        }
+        if (!activityLat || !activityLng) {
+          activityLat = currentLat;
+          activityLng = currentLng;
+        }
+        
+        console.log('Using current location:', { lat: currentLat, lng: currentLng });
       } catch (error) {
         console.error('Failed to get location:', error);
+        toast({
+          title: "Location required",
+          description: "Please enable location services or set a ZIP code in settings",
+          variant: "destructive"
+        });
+        setLoading(false);
         return;
       }
     }
