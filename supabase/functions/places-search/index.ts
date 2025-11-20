@@ -46,7 +46,7 @@ serve(async (req) => {
     }
 
     // Validate required parameters
-    if (isNaN(lat) || isNaN(lng) || isNaN(radiusMiles) || !cuisine) {
+    if (isNaN(lat) || isNaN(lng) || isNaN(radiusMiles)) {
       console.error('Invalid parameters:', { lat, lng, radiusMiles, cuisine });
       return new Response(
         JSON.stringify({ error: 'Missing or invalid required parameters: lat, lng, radiusMiles, cuisine' }),
@@ -66,7 +66,8 @@ serve(async (req) => {
     const placesUrl = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json');
     placesUrl.searchParams.set('location', `${lat},${lng}`);
     placesUrl.searchParams.set('radius', radiusMeters.toString());
-    placesUrl.searchParams.set('keyword', `${cuisine} restaurant`);
+    const keyword = cuisine ? `${cuisine} restaurant` : 'restaurant';
+    placesUrl.searchParams.set('keyword', keyword);
     placesUrl.searchParams.set('type', 'restaurant');
     placesUrl.searchParams.set('key', GOOGLE_MAPS_API_KEY);
     
@@ -74,7 +75,13 @@ serve(async (req) => {
       placesUrl.searchParams.set('pagetoken', pagetoken);
     }
 
-    console.log('Fetching places:', { lat, lng, radiusMeters, cuisine, hasPageToken: !!pagetoken });
+    console.log('Fetching places:', { 
+      lat, 
+      lng, 
+      radiusMeters, 
+      cuisine: cuisine || 'any', 
+      hasPageToken: !!pagetoken 
+    });
 
     const response = await fetch(placesUrl.toString());
     const data = await response.json();
