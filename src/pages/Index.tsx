@@ -454,19 +454,25 @@ const Index = () => {
           console.log('Geolocation error (silent=' + silent + '):', error);
           
           if (!silent) {
+            let title = "Location Error";
             let description = "Could not get your location";
+            
             if (error.code === 1) {
-              description = "Location permission denied. Please allow location access in your browser settings or use ZIP code instead.";
+              title = "Location Access Blocked";
+              description = "Location permission was denied. To use GPS:\n\n• Safari: Go to Settings → Safari → Location → Allow\n• Or use ZIP code mode instead";
             } else if (error.code === 2) {
-              description = "Location unavailable. Please check your device settings or use ZIP code instead.";
+              title = "Location Unavailable";
+              description = "Location services may be disabled. Check your device settings or use ZIP code instead.";
             } else if (error.code === 3) {
+              title = "Location Timeout";
               description = "Location request timed out. Please try again or use ZIP code instead.";
             }
             
             toast({ 
-              title: "Location Error", 
+              title,
               description,
-              variant: "destructive" 
+              variant: "destructive",
+              duration: 8000,
             });
           }
           reject(error);
@@ -1045,12 +1051,25 @@ const Index = () => {
           return;
         }
       } else {
-        toast({ 
-          title: "Location Required", 
-          description: "Please enter a valid ZIP code",
-          variant: "destructive"
-        });
-        return;
+        // ZIP mode - validate ZIP format but DON'T require lat/lng yet
+        const cleanZip = zipCode.trim();
+        if (!cleanZip) {
+          toast({ 
+            title: "ZIP Code Required", 
+            description: "Please enter your ZIP code to continue",
+            variant: "destructive"
+          });
+          return;
+        }
+        if (!/^\d{5}$/.test(cleanZip)) {
+          toast({ 
+            title: "Invalid ZIP Code", 
+            description: "Please enter a valid 5-digit US ZIP code",
+            variant: "destructive"
+          });
+          return;
+        }
+        // ZIP is valid format - continue to handleFindPlaces which will geocode it
       }
     }
 
