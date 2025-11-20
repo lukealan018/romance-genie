@@ -210,6 +210,9 @@ async function interpretVoiceInput(
     console.log('Interpretation result:', data);
 
     const preferences: VoicePreferences = {
+      restaurantRequest: data.restaurantRequest,
+      activityRequest: data.activityRequest,
+      generalLocation: data.generalLocation,
       cuisinePreferences: data.cuisinePreferences || [],
       activityPreferences: data.activityPreferences || [],
       energyLevel: data.energyLevel || 'medium',
