@@ -7,19 +7,6 @@ const corsHeaders = {
 
 const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
 
-// Category to keyword mapping
-const categoryKeywords: Record<string, string> = {
-  'live_music': 'live music',
-  'comedy': 'comedy club',
-  'movies': 'movie theater',
-  'bowling': 'bowling alley',
-  'arcade': 'arcade',
-  'escape_room': 'escape room',
-  'mini_golf': 'mini golf',
-  'hike': 'hiking trail',
-  'wine': 'wine bar',
-};
-
 // Activity types that typically require tickets/advance booking
 const eventTypes = new Set([
   'movie_theater',
@@ -52,23 +39,21 @@ serve(async (req) => {
       throw new Error('GOOGLE_MAPS_API_KEY is not configured');
     }
 
-    const { lat, lng, radiusMiles, category, pagetoken } = await req.json();
+    const { lat, lng, radiusMiles, keyword, pagetoken } = await req.json();
 
-    if (!lat || !lng || !radiusMiles || !category) {
+    if (!lat || !lng || !radiusMiles || !keyword) {
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters: lat, lng, radiusMiles, category' }),
+        JSON.stringify({ error: 'Missing required parameters: lat, lng, radiusMiles, keyword' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const radiusMeters = Math.round(radiusMiles * 1609.34);
-    const keyword = categoryKeywords[category] || category;
 
     console.log('Fetching activities:', {
       lat,
       lng,
       radiusMeters,
-      category,
       keyword,
       hasPageToken: !!pagetoken
     });
