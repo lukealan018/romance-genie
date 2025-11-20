@@ -88,7 +88,7 @@ const Index = () => {
       try {
         // Geocode the mentioned location
         const { data, error } = await supabase.functions.invoke('geocode', {
-          body: { zipCode: preferences.locationMention }
+          body: { address: preferences.locationMention }
         });
 
         if (error) throw error;
