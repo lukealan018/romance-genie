@@ -1,4 +1,4 @@
-import { Label } from "@/components/ui/label";
+import { AnimatedPickerButton, AnimatedPickerSection } from "@/components/AnimatedPickerComponents";
 
 interface CuisinePickerProps {
   selected: string;
@@ -15,23 +15,23 @@ const cuisines = [
   "Indian",
   "French",
   "Mediterranean",
+  "🌍 Around the World",
 ];
 
 export const CuisinePicker = ({ selected, onSelect }: CuisinePickerProps) => {
   return (
-    <div className="space-y-4">
-      <Label className="text-base font-medium">Cuisine Type</Label>
-      <div style={{display:'flex', flexWrap:'wrap', gap:'8px'}}>
-        {cuisines.map((cuisine) => (
-          <button
+    <AnimatedPickerSection title="Cuisine Type">
+      <div className="flex flex-wrap gap-2">
+        {cuisines.map((cuisine, index) => (
+          <AnimatedPickerButton
             key={cuisine}
-            className={`chip ${selected === cuisine ? 'selected' : ''}`}
+            label={cuisine}
+            isSelected={selected === cuisine}
             onClick={() => onSelect(cuisine)}
-          >
-            {cuisine}
-          </button>
+            delay={index * 0.05}
+          />
         ))}
       </div>
-    </div>
+    </AnimatedPickerSection>
   );
 };
