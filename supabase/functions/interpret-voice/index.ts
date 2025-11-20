@@ -20,21 +20,45 @@ serve(async (req) => {
 
     console.log('Interpreting voice input:', transcript);
 
-    const systemPrompt = `You are a helpful date night planning assistant. Analyze the user's spoken input and extract their preferences for restaurants and activities.
+    const systemPrompt = `You are a helpful date night planning assistant. Parse the user's request and extract structured venue requests with their specific locations.
 
 ${userProfile ? `User's saved preferences: ${JSON.stringify(userProfile)}` : ''}
 
 Return a JSON object with these fields:
-- cuisinePreferences: array of cuisine types mentioned (e.g., ["italian", "mexican"])
-- activityPreferences: array of activity types (e.g., ["movie", "bowling", "museum"])
+- restaurantRequest: { type: string, location: string | null } - restaurant/dining venue type and its specific location if mentioned
+- activityRequest: { type: string, location: string | null } - activity/entertainment venue type and its specific location if mentioned
+- generalLocation: string | null - fallback location if no specific venue locations mentioned
 - energyLevel: "low" | "medium" | "high" (based on vibe)
 - mood: string describing the mood
 - constraints: array of any dietary restrictions or constraints mentioned
-- locationMention: string with specific location if mentioned (e.g., "Beverly Hills", "downtown Los Angeles", "90210"), or null if no location mentioned
 - transcript: the original transcript
 
-Be flexible with language - "pasta" means Italian, "tacos" means Mexican, etc.
-For locations, extract city names, neighborhood names, or ZIP codes mentioned.`;
+CRITICAL Classification Rules:
+- Restaurants/Dining: steakhouse, Italian restaurant, sushi, taco place, bistro, cafe, pizza, burger joint, seafood, etc.
+- Activities/Entertainment: bar, whiskey bar, cocktail lounge, wine bar, comedy club, bowling, movie theater, arcade, karaoke, etc.
+
+Examples:
+"steakhouse in Santa Monica and whiskey bar in Hollywood"
+→ restaurantRequest: {type: "steakhouse", location: "Santa Monica"}
+→ activityRequest: {type: "bar", location: "Hollywood"}
+→ generalLocation: null
+
+"Italian food in Beverly Hills"
+→ restaurantRequest: {type: "italian", location: "Beverly Hills"}
+→ activityRequest: {type: "", location: null}
+→ generalLocation: null
+
+"whiskey bar in downtown LA"
+→ restaurantRequest: {type: "", location: null}
+→ activityRequest: {type: "bar", location: "downtown LA"}
+→ generalLocation: null
+
+"Mexican and bowling in Pasadena"
+→ restaurantRequest: {type: "mexican", location: null}
+→ activityRequest: {type: "bowling", location: null}
+→ generalLocation: "Pasadena"
+
+Be flexible with language - "pasta" means Italian, "tacos" means Mexican, "drinks" means bar, etc.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

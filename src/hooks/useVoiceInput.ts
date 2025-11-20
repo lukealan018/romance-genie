@@ -4,6 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Types for the AI-extracted preferences
 export interface VoicePreferences {
+  restaurantRequest?: {
+    type: string;
+    location: string | null;
+  };
+  activityRequest?: {
+    type: string;
+    location: string | null;
+  };
+  generalLocation?: string | null;
   energyLevel: "low" | "medium" | "high";
   mood: "romantic" | "fun" | "adventurous" | "chill" | "celebratory";
   cuisinePreferences: string[];
