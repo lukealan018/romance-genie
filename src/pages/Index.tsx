@@ -76,8 +76,53 @@ const Index = () => {
   const handlePreferencesExtracted = useCallback(async (preferences: any) => {
     console.log('Voice preferences extracted:', preferences);
     
-    // Check if location is ready before proceeding
-    if (locationMode === "gps" && (!lat || !lng)) {
+    // Handle location if mentioned in voice input
+    if (preferences.locationMention) {
+      console.log('Location mentioned in voice:', preferences.locationMention);
+      
+      toast({
+        title: "Setting location...",
+        description: `Looking up ${preferences.locationMention}`,
+      });
+
+      try {
+        // Geocode the mentioned location
+        const { data, error } = await supabase.functions.invoke('geocode', {
+          body: { zipCode: preferences.locationMention }
+        });
+
+        if (error) throw error;
+
+        if (data?.lat && data?.lng) {
+          console.log('Voice location geocoded:', data);
+          setLocation(data.lat, data.lng);
+          
+          // If it's a ZIP code, update the ZIP field
+          if (/^\d{5}$/.test(preferences.locationMention)) {
+            setFilters({ 
+              locationMode: 'zip',
+              zipCode: preferences.locationMention
+            });
+          }
+          
+          toast({
+            title: "Location set!",
+            description: `Searching in ${preferences.locationMention}`,
+          });
+        } else {
+          throw new Error('Could not find location');
+        }
+      } catch (error) {
+        console.error('Error geocoding voice location:', error);
+        toast({
+          title: "Couldn't find location",
+          description: `Using your default location instead of ${preferences.locationMention}`,
+          variant: "destructive"
+        });
+        // Continue with existing location
+      }
+    } else if (locationMode === "gps" && (!lat || !lng)) {
+      // Check if location is ready before proceeding only if no location was mentioned
       toast({
         title: "Getting your location...",
         description: "Please wait while we determine your location",
@@ -130,7 +175,7 @@ const Index = () => {
     
     // Trigger search via state change to ensure updated filters are used
     setVoiceSearchTrigger(prev => prev + 1);
-  }, [setFilters]);
+  }, [setFilters, setLocation, locationMode, lat, lng]);
 
   const { isListening, isProcessing, startListening } = useVoiceInput({
     onPreferencesExtracted: handlePreferencesExtracted,
@@ -149,7 +194,8 @@ const Index = () => {
       console.log('Voice search triggered with:', { 
         cuisine: currentState.cuisine, 
         activityCategory: currentState.activityCategory, 
-        radius: currentState.radius 
+        radius: currentState.radius,
+        location: { lat: currentState.lat, lng: currentState.lng }
       });
       
       toast({
@@ -178,10 +224,10 @@ const Index = () => {
         }
       };
       
-      // Small delay to ensure state has updated
+      // Delay to ensure geocoding completes if location was mentioned
       setTimeout(() => {
         searchAndNavigate();
-      }, 300);
+      }, 500);
     }
   }, [voiceSearchTrigger, navigate]);
 
