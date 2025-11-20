@@ -30,9 +30,11 @@ Return a JSON object with these fields:
 - energyLevel: "low" | "medium" | "high" (based on vibe)
 - mood: string describing the mood
 - constraints: array of any dietary restrictions or constraints mentioned
+- locationMention: string with specific location if mentioned (e.g., "Beverly Hills", "downtown Los Angeles", "90210"), or null if no location mentioned
 - transcript: the original transcript
 
-Be flexible with language - "pasta" means Italian, "tacos" means Mexican, etc.`;
+Be flexible with language - "pasta" means Italian, "tacos" means Mexican, etc.
+For locations, extract city names, neighborhood names, or ZIP codes mentioned.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
