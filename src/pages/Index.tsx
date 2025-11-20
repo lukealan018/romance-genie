@@ -220,48 +220,12 @@ const Index = () => {
       updates.cuisine = preferences.cuisinePreferences[0].toLowerCase();
     }
     
-    // Handle activity type
+    // Pass through raw activity keyword - no mapping
     if (preferences.activityRequest?.type) {
-      const activityType = preferences.activityRequest.type.toLowerCase();
-      // Map activity types
-      const activityMap: Record<string, string> = {
-        'bar': 'live_music',
-        'bars': 'live_music',
-        'whiskey bar': 'live_music',
-        'cocktail': 'live_music',
-        'cocktails': 'live_music',
-        'drinks': 'live_music',
-        'comedy': 'comedy',
-        'movie': 'movies',
-        'movies': 'movies',
-        'bowling': 'bowling',
-        'arcade': 'arcade',
-        'museum': 'museum',
-        'escape': 'escape_room',
-        'golf': 'mini_golf',
-        'hiking': 'hike',
-        'hike': 'hike',
-        'wine': 'wine',
-      };
-      updates.activityCategory = activityMap[activityType] || 'live_music';
+      updates.activityCategory = preferences.activityRequest.type;
     } else if (preferences.activityPreferences && preferences.activityPreferences.length > 0) {
       // Fallback to old format
-      const spokenActivity = preferences.activityPreferences[0].toLowerCase();
-      const activityMap: Record<string, string> = {
-        'music': 'live_music',
-        'comedy': 'comedy',
-        'movie': 'movies',
-        'movies': 'movies',
-        'bowling': 'bowling',
-        'arcade': 'arcade',
-        'museum': 'museum',
-        'escape': 'escape_room',
-        'golf': 'mini_golf',
-        'hiking': 'hike',
-        'hike': 'hike',
-        'wine': 'wine',
-      };
-      updates.activityCategory = activityMap[spokenActivity] || 'live_music';
+      updates.activityCategory = preferences.activityPreferences[0];
     }
     
     // Apply filter updates
@@ -279,23 +243,30 @@ const Index = () => {
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
       
       // Search restaurants and activities at their respective locations
+      const restaurantsPromise = supabase.functions.invoke('places-search', {
+        body: { 
+          lat: restaurantLat, 
+          lng: restaurantLng, 
+          radiusMiles: radius, 
+          cuisine: searchCuisine === "🌍 Around the World" ? "" : searchCuisine
+        }
+      });
+
+      // Only search activities if we have a keyword
+      const activitiesPromise = searchActivity 
+        ? supabase.functions.invoke('activities-search', {
+            body: { 
+              lat: activityLat, 
+              lng: activityLng, 
+              radiusMiles: radius, 
+              keyword: searchActivity 
+            }
+          })
+        : Promise.resolve({ data: { items: [] }, error: null });
+
       const [restaurantsResponse, activitiesResponse] = await Promise.all([
-        supabase.functions.invoke('places-search', {
-          body: { 
-            lat: restaurantLat, 
-            lng: restaurantLng, 
-            radiusMiles: radius, 
-            cuisine: searchCuisine === "🌍 Around the World" ? "" : searchCuisine
-          }
-        }),
-        supabase.functions.invoke('activities-search', {
-          body: { 
-            lat: activityLat, 
-            lng: activityLng, 
-            radiusMiles: radius, 
-            category: searchActivity 
-          }
-        })
+        restaurantsPromise,
+        activitiesPromise
       ]);
 
       console.log('Voice search - Restaurants response:', restaurantsResponse);
