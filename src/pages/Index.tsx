@@ -299,8 +299,26 @@ const Index = () => {
       const searchCuisine = updates.cuisine || cuisine || "";
       const searchActivity = updates.activityCategory || activityCategory;
       
-      // Get learned preferences
+      // Get learned preferences and interaction history
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
+      
+      // Get user's interaction history (place IDs they've seen/selected before) for novelty scoring
+      let userInteractionPlaceIds: string[] = [];
+      if (userId && preferences.intent === 'surprise') {
+        try {
+          const { data: interactions } = await supabase
+            .from('user_interactions')
+            .select('place_id')
+            .eq('user_id', userId);
+          
+          if (interactions) {
+            userInteractionPlaceIds = interactions.map(i => i.place_id);
+            console.log(`Loaded ${userInteractionPlaceIds.length} previous interactions for novelty scoring`);
+          }
+        } catch (error) {
+          console.error('Failed to load user interactions:', error);
+        }
+      }
       
       // Search restaurants and activities at their respective locations
       const restaurantsPromise = supabase.functions.invoke('places-search', {
@@ -432,7 +450,10 @@ const Index = () => {
           ? userPreferences 
           : undefined,
         'restaurant',
-        learnedPrefs
+        learnedPrefs,
+        preferences.intent,
+        preferences.noveltyLevel,
+        userInteractionPlaceIds
       );
       const sortedActivities = scorePlaces(
         finalActivities, 
@@ -443,7 +464,10 @@ const Index = () => {
           ? userPreferences 
           : undefined,
         'activity',
-        learnedPrefs
+        learnedPrefs,
+        preferences.intent,
+        preferences.noveltyLevel,
+        userInteractionPlaceIds
       );
       
       setRestaurants(sortedRestaurants, restaurantsResponse.data?.nextPageToken || null);
@@ -466,6 +490,9 @@ const Index = () => {
           ? userPreferences 
           : undefined,
         learnedPreferences: learnedPrefs,
+        intent: preferences.intent,
+        noveltyLevel: preferences.noveltyLevel,
+        userInteractionPlaceIds,
       });
 
       // Set indices

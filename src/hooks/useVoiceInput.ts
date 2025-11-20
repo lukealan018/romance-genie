@@ -20,6 +20,10 @@ export interface VoicePreferences {
   constraints: string[];
   locationMention?: string;
   rawTranscript: string;
+  intent?: "surprise" | "specific" | "flexible";
+  noveltyLevel?: "safe" | "adventurous" | "wild";
+  mustHaves?: string[];
+  avoidances?: string[];
 }
 
 interface UseVoiceInputProps {
@@ -219,7 +223,11 @@ async function interpretVoiceInput(
       mood: data.mood || 'fun',
       constraints: data.constraints || [],
       locationMention: data.locationMention,
-      rawTranscript: transcript
+      rawTranscript: transcript,
+      intent: data.intent || 'flexible',
+      noveltyLevel: data.noveltyLevel || 'safe',
+      mustHaves: data.mustHaves || [],
+      avoidances: data.avoidances || []
     };
 
     onPreferencesExtracted(preferences);

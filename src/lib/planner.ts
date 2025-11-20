@@ -42,6 +42,9 @@ interface BuildPlanParams {
   activities: Place[];
   preferences?: UserPreferences;
   learnedPreferences?: LearnedPreferences;
+  intent?: "surprise" | "specific" | "flexible";
+  noveltyLevel?: "safe" | "adventurous" | "wild";
+  userInteractionPlaceIds?: string[];
 }
 
 // Calculate distance between two points in miles using Haversine formula
@@ -113,7 +116,10 @@ function scorePlaces(
   radius: number,
   preferences: UserPreferences | undefined,
   type: 'restaurant' | 'activity',
-  learnedPreferences?: LearnedPreferences
+  learnedPreferences?: LearnedPreferences,
+  intent?: "surprise" | "specific" | "flexible",
+  noveltyLevel?: "safe" | "adventurous" | "wild",
+  userInteractionPlaceIds?: string[]
 ): Place[] {
   if (places.length === 0) return [];
   
@@ -153,13 +159,60 @@ function scorePlaces(
       }
     }
     
-    // Weighted score: 40% personal fit, 20% learned boost, 20% rating, 15% proximity, 5% popularity
-    const score = 
-      0.4 * personalFit +
-      0.2 * learnedBoost +
-      0.2 * ratingNorm +
-      0.15 * proximityNorm +
-      0.05 * popularityNorm;
+    // Calculate novelty score (for "surprise me" mode)
+    let noveltyBoost = 0;
+    if (intent === 'surprise' && userInteractionPlaceIds) {
+      // Has user seen/selected this place before?
+      const hasInteracted = userInteractionPlaceIds.includes(place.id);
+      
+      if (!hasInteracted) {
+        // Novel place - boost based on novelty level
+        if (noveltyLevel === 'wild') {
+          noveltyBoost = 0.4; // Strong boost for wild mode
+        } else if (noveltyLevel === 'adventurous') {
+          noveltyBoost = 0.25; // Moderate boost
+        } else {
+          noveltyBoost = 0.15; // Small boost for safe
+        }
+      } else {
+        // User has seen this before - penalize in surprise mode
+        noveltyBoost = -0.3;
+      }
+      
+      // In surprise mode, penalize exact cuisine/category matches
+      if (personalFit === 1) {
+        noveltyBoost -= 0.15;
+      }
+    }
+    
+    // Adjust scoring weights based on intent
+    let score = 0;
+    if (intent === 'surprise') {
+      // Surprise mode: prioritize novelty and rating over personal fit
+      score = 
+        0.35 * noveltyBoost +
+        0.25 * ratingNorm +
+        0.15 * personalFit +
+        0.15 * learnedBoost +
+        0.05 * proximityNorm +
+        0.05 * popularityNorm;
+    } else if (intent === 'specific') {
+      // Specific mode: prioritize personal fit and proximity
+      score = 
+        0.45 * personalFit +
+        0.25 * ratingNorm +
+        0.15 * proximityNorm +
+        0.10 * learnedBoost +
+        0.05 * popularityNorm;
+    } else {
+      // Flexible mode: balanced scoring (default)
+      score = 
+        0.30 * personalFit +
+        0.25 * ratingNorm +
+        0.20 * learnedBoost +
+        0.15 * proximityNorm +
+        0.10 * noveltyBoost;
+    }
     
     return { place, score, distance };
   });
@@ -184,13 +237,22 @@ export function buildPlan({
   activities,
   preferences,
   learnedPreferences,
+  intent,
+  noveltyLevel,
+  userInteractionPlaceIds,
 }: BuildPlanParams): PlanResult {
   // Score and sort restaurants by preference fit, rating, proximity, and popularity
-  const scoredRestaurants = scorePlaces(restaurants, lat, lng, radius, preferences, 'restaurant', learnedPreferences);
+  const scoredRestaurants = scorePlaces(
+    restaurants, lat, lng, radius, preferences, 'restaurant', 
+    learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds
+  );
   const restaurant = scoredRestaurants.length > 0 ? scoredRestaurants[0] : null;
 
   // Score and sort activities by preference fit, rating, proximity, and popularity
-  const scoredActivities = scorePlaces(activities, lat, lng, radius, preferences, 'activity', learnedPreferences);
+  const scoredActivities = scorePlaces(
+    activities, lat, lng, radius, preferences, 'activity', 
+    learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds
+  );
   const activity = scoredActivities.length > 0 ? scoredActivities[0] : null;
 
   // Calculate distances
