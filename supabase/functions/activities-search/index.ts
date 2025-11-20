@@ -50,13 +50,12 @@ serve(async (req) => {
 
     const radiusMeters = Math.round(radiusMiles * 1609.34);
 
-    console.log('Fetching activities:', {
-      lat,
-      lng,
-      radiusMeters,
-      keyword,
-      hasPageToken: !!pagetoken
-    });
+    console.log('=== GOOGLE PLACES REQUEST ===');
+    console.log('Keyword:', keyword);
+    console.log('Location:', { lat, lng });
+    console.log('Radius (meters):', radiusMeters);
+    console.log('Has pagetoken:', !!pagetoken);
+    console.log('============================');
 
     // If pagetoken is provided, wait 2 seconds as required by Google Places API
     if (pagetoken) {
@@ -76,6 +75,12 @@ serve(async (req) => {
 
     const response = await fetch(url.toString());
     const data = await response.json();
+
+    console.log('=== GOOGLE PLACES RESPONSE ===');
+    console.log('Results returned:', data.results?.length || 0);
+    console.log('Next page available:', !!data.next_page_token);
+    console.log('Status:', data.status);
+    console.log('==============================');
 
     if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
       console.error('Google Places API error:', data);

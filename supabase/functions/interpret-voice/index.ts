@@ -25,40 +25,47 @@ serve(async (req) => {
 ${userProfile ? `User's saved preferences: ${JSON.stringify(userProfile)}` : ''}
 
 Return a JSON object with these fields:
-- restaurantRequest: { type: string, location: string | null } - restaurant/dining venue type and its specific location if mentioned
-- activityRequest: { type: string, location: string | null } - activity/entertainment venue type and its specific location if mentioned
-- generalLocation: string | null - fallback location if no specific venue locations mentioned
-- energyLevel: "low" | "medium" | "high" (based on vibe)
-- mood: string describing the mood
-- constraints: array of any dietary restrictions or constraints mentioned
+- restaurantRequest: { type: string, location: string | null, priceLevel: string | null }
+- activityRequest: { type: string, location: string | null, priceLevel: string | null }
+- generalLocation: string | null
+- energyLevel: "low" | "medium" | "high"
+- mood: string
+- constraints: array of dietary/preference constraints
 - transcript: the original transcript
 
-CRITICAL Classification Rules:
-- Restaurants/Dining: steakhouse, Italian restaurant, sushi, taco place, bistro, cafe, pizza, burger joint, seafood, etc.
-- Activities/Entertainment: bar, whiskey bar, cocktail lounge, wine bar, comedy club, bowling, movie theater, arcade, karaoke, etc.
+CRITICAL Rules:
+1. **PRESERVE EXACT SPECIFICITY** - If user says "whiskey bar", return "whiskey bar" NOT "bar"
+2. **Restaurants/Dining:** steakhouse, Italian restaurant, sushi, taco place, bistro, cafe, pizza, seafood, etc.
+3. **Activities/Entertainment:** whiskey bar, cocktail lounge, wine bar, speakeasy, comedy club, bowling, movie theater, live music, karaoke, etc.
+4. **Price Extraction:** Detect budget indicators:
+   - "cheap", "affordable", "budget", "inexpensive" → "budget"
+   - "upscale", "fancy", "fine dining", "luxury", "high-end" → "upscale"
+   - "mid-range", "moderate" → "moderate"
+   - If not mentioned → null
 
 Examples:
+
 "steakhouse in Santa Monica and whiskey bar in Hollywood"
-→ restaurantRequest: {type: "steakhouse", location: "Santa Monica"}
-→ activityRequest: {type: "bar", location: "Hollywood"}
+→ restaurantRequest: {type: "steakhouse", location: "Santa Monica", priceLevel: null}
+→ activityRequest: {type: "whiskey bar", location: "Hollywood", priceLevel: null}
 → generalLocation: null
 
-"Italian food in Beverly Hills"
-→ restaurantRequest: {type: "italian", location: "Beverly Hills"}
-→ activityRequest: {type: "", location: null}
-→ generalLocation: null
-
-"whiskey bar in downtown LA"
-→ restaurantRequest: {type: "", location: null}
-→ activityRequest: {type: "bar", location: "downtown LA"}
-→ generalLocation: null
-
-"Mexican and bowling in Pasadena"
-→ restaurantRequest: {type: "mexican", location: null}
-→ activityRequest: {type: "bowling", location: null}
+"cheap Mexican and bowling in Pasadena"
+→ restaurantRequest: {type: "mexican", location: null, priceLevel: "budget"}
+→ activityRequest: {type: "bowling", location: null, priceLevel: null}
 → generalLocation: "Pasadena"
 
-Be flexible with language - "pasta" means Italian, "tacos" means Mexican, "drinks" means bar, etc.`;
+"find me an upscale Italian spot and a speakeasy in downtown"
+→ restaurantRequest: {type: "italian", location: null, priceLevel: "upscale"}
+→ activityRequest: {type: "speakeasy", location: "downtown", priceLevel: null}
+→ generalLocation: null
+
+"fancy steakhouse Beverly Hills"
+→ restaurantRequest: {type: "steakhouse", location: "Beverly Hills", priceLevel: "upscale"}
+→ activityRequest: {type: "", location: null, priceLevel: null}
+→ generalLocation: null
+
+Be flexible: "pasta" = Italian, "tacos" = Mexican, "drinks" = bar, BUT preserve specific bar types like "whiskey bar", "wine bar", "cocktail lounge", "speakeasy"`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -85,7 +92,16 @@ Be flexible with language - "pasta" means Italian, "tacos" means Mexican, "drink
     const data = await response.json();
     const result = JSON.parse(data.choices[0].message.content);
     
-    console.log('Interpretation result:', result);
+    console.log('=== VOICE INTERPRETATION ===');
+    console.log('Original transcript:', transcript);
+    console.log('Extracted restaurant:', result.restaurantRequest);
+    console.log('Extracted activity:', result.activityRequest);
+    console.log('General location:', result.generalLocation);
+    console.log('Price levels:', {
+      restaurant: result.restaurantRequest?.priceLevel,
+      activity: result.activityRequest?.priceLevel
+    });
+    console.log('===========================');
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

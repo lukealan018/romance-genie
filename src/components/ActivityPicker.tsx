@@ -29,8 +29,8 @@ export const ActivityPicker = ({ selected, onSelect }: ActivityPickerProps) => {
             key={activity.id}
             label={activity.label}
             icon={activity.icon}
-            isSelected={selected === activity.id}
-            onClick={() => onSelect(activity.id)}
+            isSelected={selected === activity.label}
+            onClick={() => onSelect(activity.label)}
             delay={index * 0.05}
           />
         ))}

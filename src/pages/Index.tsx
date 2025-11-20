@@ -761,7 +761,7 @@ const Index = () => {
           body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine: searchCuisine }
         }),
         supabase.functions.invoke('activities-search', {
-          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, category: searchActivity }
+          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: searchActivity }
         })
       ]);
 
@@ -773,6 +773,54 @@ const Index = () => {
 
       const restaurants = restaurantsResponse.data?.items || [];
       const activities = activitiesResponse.data?.items || [];
+
+      console.log('=== SEARCH PARAMETERS ===');
+      console.log('Cuisine search:', searchCuisine);
+      console.log('Activity search:', searchActivity);
+      console.log('Location:', { lat: searchLat, lng: searchLng, radius });
+      console.log('========================');
+
+      console.log('=== SEARCH RESULTS ===');
+      console.log('Restaurants found:', restaurants.length);
+      console.log('Activities found:', activities.length);
+      console.log('======================');
+
+      // ===== FALLBACK STRATEGY FOR ACTIVITIES =====
+      let finalActivities = activities;
+      if (activities.length === 0 && searchActivity) {
+        console.log(`⚠️ No results for "${searchActivity}", trying fallback...`);
+        
+        // Intelligent fallback map
+        const fallbackMap: Record<string, string> = {
+          'whiskey bar': 'bar',
+          'cocktail bar': 'bar',
+          'wine bar': 'bar',
+          'speakeasy': 'bar',
+          'comedy club': 'comedy',
+          'live music': 'music venue',
+          'escape room': 'entertainment',
+          'mini golf': 'golf',
+        };
+        
+        const fallbackTerm = fallbackMap[searchActivity.toLowerCase()] || searchActivity.split(' ')[0];
+        
+        if (fallbackTerm !== searchActivity) {
+          console.log(`🔄 Retrying with broader term: "${fallbackTerm}"`);
+          
+          const fallbackResponse = await supabase.functions.invoke('activities-search', {
+            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: fallbackTerm }
+          });
+          
+          if (!fallbackResponse.error && fallbackResponse.data?.items?.length > 0) {
+            finalActivities = fallbackResponse.data.items;
+            console.log(`✅ Fallback found ${finalActivities.length} results`);
+            toast({
+              title: "Search expanded",
+              description: `No ${searchActivity} found, showing ${fallbackTerm} instead`,
+            });
+          }
+        }
+      }
       
       // Sort results by preference-based scoring before storing
       const sortedRestaurants = scorePlaces(
@@ -787,7 +835,7 @@ const Index = () => {
         learnedPrefs
       );
       const sortedActivities = scorePlaces(
-        activities, 
+        finalActivities, 
         searchLat, 
         searchLng, 
         radius, 
@@ -1016,7 +1064,7 @@ const Index = () => {
       setLoading(true);
       try {
         const { data, error } = await supabase.functions.invoke('activities-search', {
-          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, category: activityCategory, pagetoken: nextActivitiesToken }
+          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: activityCategory, pagetoken: nextActivitiesToken }
         });
 
         if (error) throw error;
@@ -1105,7 +1153,7 @@ const Index = () => {
           body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine }
         }),
         supabase.functions.invoke('activities-search', {
-          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, category: activityCategory }
+          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: activityCategory }
         })
       ]);
 
@@ -1196,7 +1244,7 @@ const Index = () => {
         const functionName = searchType === "restaurants" ? "places-search" : "activities-search";
         const params = searchType === "restaurants" 
           ? { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine, pagetoken: relevantToken }
-          : { lat: searchLat, lng: searchLng, radiusMiles: radius, category: activityCategory, pagetoken: relevantToken };
+          : { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: activityCategory, pagetoken: relevantToken };
 
         const { data, error } = await supabase.functions.invoke(functionName, {
           body: params
@@ -1376,7 +1424,7 @@ const Index = () => {
           body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine: selectedCuisine }
         }),
         supabase.functions.invoke('activities-search', {
-          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, category: selectedActivity }
+          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: selectedActivity }
         })
       ]);
 
