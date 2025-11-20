@@ -7,20 +7,27 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { zipCode } = await req.json();
+    const { address, zipCode } = await req.json();
     
-    // Validate ZIP code format
-    if (!zipCode) {
+    // Support both 'address' and 'zipCode' parameters for backward compatibility
+    const locationInput = address || zipCode;
+    
+    // Validate location input
+    if (!locationInput || typeof locationInput !== 'string') {
       return new Response(
-        JSON.stringify({ error: 'ZIP code is required' }),
+        JSON.stringify({ error: 'Address or ZIP code is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const zipCodeStr = String(zipCode).trim();
-    if (!/^\d{5}$/.test(zipCodeStr)) {
+    const locationStr = String(locationInput).trim();
+    
+    // If multiple locations mentioned (e.g., "Santa Monica, Brentwood"), use the first one
+    const firstLocation = locationStr.split(',')[0].trim();
+    
+    if (!firstLocation) {
       return new Response(
-        JSON.stringify({ error: 'Invalid ZIP code format. Please enter a 5-digit US ZIP code.' }),
+        JSON.stringify({ error: 'Valid address is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -34,10 +41,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Call Google Maps Geocoding API
-    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(zipCodeStr)}&components=country:US&key=${apiKey}`;
+    // Call Google Maps Geocoding API (handles any address format)
+    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(firstLocation)}&components=country:US&key=${apiKey}`;
     
-    console.log(`Geocoding ZIP code: ${zipCodeStr}`);
+    console.log(`Geocoding location: ${firstLocation}`);
     const response = await fetch(geocodeUrl);
     
     if (!response.ok) {
@@ -54,7 +61,7 @@ Deno.serve(async (req) => {
     // Handle different Google API status codes
     if (data.status === 'ZERO_RESULTS') {
       return new Response(
-        JSON.stringify({ error: `ZIP code ${zipCodeStr} not found. Please check and try again.` }),
+        JSON.stringify({ error: `Location "${firstLocation}" not found. Please check and try again.` }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -90,7 +97,7 @@ Deno.serve(async (req) => {
       (component: any) => component.types.includes('postal_town')
     )?.long_name || 'Unknown';
 
-    console.log(`Successfully geocoded ${zipCodeStr} to:`, location, cityName);
+    console.log(`Successfully geocoded "${firstLocation}" to:`, location, cityName);
 
     return new Response(
       JSON.stringify({
