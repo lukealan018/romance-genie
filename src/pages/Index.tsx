@@ -68,7 +68,6 @@ const Index = () => {
   const [plan, setPlan] = useState<any>(null);
   const [showPickers, setShowPickers] = useState(false);
   const [showLocationDialog, setShowLocationDialog] = useState(false);
-  const [voiceSearchTrigger, setVoiceSearchTrigger] = useState(0);
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
   const locationSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -76,78 +75,178 @@ const Index = () => {
   const handlePreferencesExtracted = useCallback(async (preferences: any) => {
     console.log('Voice preferences extracted:', preferences);
     
-    // Handle location if mentioned in voice input
-    if (preferences.locationMention) {
-      console.log('Location mentioned in voice:', preferences.locationMention);
-      
-      toast({
-        title: "Setting location...",
-        description: `Looking up ${preferences.locationMention}`,
-      });
-
+    // Determine search centers for restaurant and activity
+    let restaurantLat = lat;
+    let restaurantLng = lng;
+    let activityLat = lat;
+    let activityLng = lng;
+    let needsLocationSetup = false;
+    
+    // Helper function to geocode a location
+    const geocodeLocation = async (location: string): Promise<{ lat: number; lng: number } | null> => {
       try {
-        // Geocode the mentioned location
         const { data, error } = await supabase.functions.invoke('geocode', {
-          body: { address: preferences.locationMention }
+          body: { address: location }
         });
-
+        
         if (error) throw error;
-
         if (data?.lat && data?.lng) {
-          console.log('Voice location geocoded:', data);
-          setLocation(data.lat, data.lng);
-          
-          // If it's a ZIP code, update the ZIP field
-          if (/^\d{5}$/.test(preferences.locationMention)) {
-            setFilters({ 
-              locationMode: 'zip',
-              zipCode: preferences.locationMention
-            });
-          }
-          
-          toast({
-            title: "Location set!",
-            description: `Searching in ${preferences.locationMention}`,
-          });
-        } else {
-          throw new Error('Could not find location');
+          console.log(`Geocoded "${location}":`, data);
+          return { lat: data.lat, lng: data.lng };
         }
+        return null;
       } catch (error) {
-        console.error('Error geocoding voice location:', error);
+        console.error(`Failed to geocode "${location}":`, error);
+        return null;
+      }
+    };
+    
+    // Handle restaurant-specific location
+    if (preferences.restaurantRequest?.location) {
+      toast({
+        title: "Finding restaurant location...",
+        description: `Looking up ${preferences.restaurantRequest.location}`,
+      });
+      
+      const coords = await geocodeLocation(preferences.restaurantRequest.location);
+      if (coords) {
+        restaurantLat = coords.lat;
+        restaurantLng = coords.lng;
+        needsLocationSetup = true;
+        console.log(`Restaurant search centered on ${preferences.restaurantRequest.location}`);
+      } else {
         toast({
-          title: "Couldn't find location",
-          description: `Using your default location instead of ${preferences.locationMention}`,
+          title: "Couldn't find restaurant location",
+          description: `Using default location instead of ${preferences.restaurantRequest.location}`,
           variant: "destructive"
         });
-        // Continue with existing location
       }
-    } else if (locationMode === "gps" && (!lat || !lng)) {
-      // Check if location is ready before proceeding only if no location was mentioned
+    }
+    
+    // Handle activity-specific location (could be different!)
+    if (preferences.activityRequest?.location) {
+      toast({
+        title: "Finding activity location...",
+        description: `Looking up ${preferences.activityRequest.location}`,
+      });
+      
+      const coords = await geocodeLocation(preferences.activityRequest.location);
+      if (coords) {
+        activityLat = coords.lat;
+        activityLng = coords.lng;
+        needsLocationSetup = true;
+        console.log(`Activity search centered on ${preferences.activityRequest.location}`);
+      } else {
+        toast({
+          title: "Couldn't find activity location",
+          description: `Using default location instead of ${preferences.activityRequest.location}`,
+          variant: "destructive"
+        });
+      }
+    }
+    
+    // Fallback to general location if no specific locations provided
+    if (!preferences.restaurantRequest?.location && 
+        !preferences.activityRequest?.location && 
+        preferences.generalLocation) {
+      toast({
+        title: "Setting location...",
+        description: `Looking up ${preferences.generalLocation}`,
+      });
+      
+      const coords = await geocodeLocation(preferences.generalLocation);
+      if (coords) {
+        restaurantLat = activityLat = coords.lat;
+        restaurantLng = activityLng = coords.lng;
+        needsLocationSetup = true;
+        setLocation(coords.lat, coords.lng);
+        
+        // If it's a ZIP code, update the ZIP field
+        if (/^\d{5}$/.test(preferences.generalLocation)) {
+          setFilters({ 
+            locationMode: 'zip',
+            zipCode: preferences.generalLocation
+          });
+        }
+        
+        toast({
+          title: "Location set!",
+          description: `Searching in ${preferences.generalLocation}`,
+        });
+      } else {
+        toast({
+          title: "Couldn't find location",
+          description: `Using your default location instead of ${preferences.generalLocation}`,
+          variant: "destructive"
+        });
+      }
+    }
+    
+    // Check if we need current location as fallback
+    if (!needsLocationSetup && locationMode === "gps" && (!lat || !lng)) {
       toast({
         title: "Getting your location...",
         description: "Please wait while we determine your location",
       });
       try {
         await handleUseCurrentLocation(true);
+        restaurantLat = activityLat = lat;
+        restaurantLng = activityLng = lng;
       } catch (error) {
         console.error('Failed to get location:', error);
         return;
       }
     }
     
-    // Update filters based on AI-extracted preferences
+    // Map venue types to search filters
     const updates: any = {};
     
-    // Map cuisine preferences
-    if (preferences.cuisinePreferences && preferences.cuisinePreferences.length > 0) {
-      // Take the first cuisine mentioned
-      const mappedCuisine = preferences.cuisinePreferences[0].toLowerCase();
-      updates.cuisine = mappedCuisine;
+    // Handle restaurant type
+    if (preferences.restaurantRequest?.type) {
+      const restaurantType = preferences.restaurantRequest.type.toLowerCase();
+      // Direct mapping for common terms
+      const cuisineMap: Record<string, string> = {
+        'steakhouse': 'steak',
+        'burger': 'american',
+        'burgers': 'american',
+        'pizza': 'italian',
+        'sushi': 'japanese',
+        'tacos': 'mexican',
+        'pasta': 'italian',
+      };
+      updates.cuisine = cuisineMap[restaurantType] || restaurantType;
+    } else if (preferences.cuisinePreferences && preferences.cuisinePreferences.length > 0) {
+      // Fallback to old format
+      updates.cuisine = preferences.cuisinePreferences[0].toLowerCase();
     }
     
-    // Map activity preferences
-    if (preferences.activityPreferences && preferences.activityPreferences.length > 0) {
-      // Map spoken activity to our activity IDs
+    // Handle activity type
+    if (preferences.activityRequest?.type) {
+      const activityType = preferences.activityRequest.type.toLowerCase();
+      // Map activity types
+      const activityMap: Record<string, string> = {
+        'bar': 'live_music',
+        'bars': 'live_music',
+        'whiskey bar': 'live_music',
+        'cocktail': 'live_music',
+        'cocktails': 'live_music',
+        'drinks': 'live_music',
+        'comedy': 'comedy',
+        'movie': 'movies',
+        'movies': 'movies',
+        'bowling': 'bowling',
+        'arcade': 'arcade',
+        'museum': 'museum',
+        'escape': 'escape_room',
+        'golf': 'mini_golf',
+        'hiking': 'hike',
+        'hike': 'hike',
+        'wine': 'wine',
+      };
+      updates.activityCategory = activityMap[activityType] || 'live_music';
+    } else if (preferences.activityPreferences && preferences.activityPreferences.length > 0) {
+      // Fallback to old format
+      const spokenActivity = preferences.activityPreferences[0].toLowerCase();
       const activityMap: Record<string, string> = {
         'music': 'live_music',
         'comedy': 'comedy',
@@ -162,20 +261,142 @@ const Index = () => {
         'hike': 'hike',
         'wine': 'wine',
       };
-      
-      const spokenActivity = preferences.activityPreferences[0].toLowerCase();
-      const mappedActivity = activityMap[spokenActivity] || 'live_music';
-      updates.activityCategory = mappedActivity;
+      updates.activityCategory = activityMap[spokenActivity] || 'live_music';
     }
     
-    // Apply the updates
+    // Apply filter updates
     if (Object.keys(updates).length > 0) {
       setFilters(updates);
     }
     
-    // Trigger search via state change to ensure updated filters are used
-    setVoiceSearchTrigger(prev => prev + 1);
-  }, [setFilters, setLocation, locationMode, lat, lng]);
+    // Now perform the dual-location search
+    setLoading(true);
+    try {
+      const searchCuisine = updates.cuisine || cuisine || "";
+      const searchActivity = updates.activityCategory || activityCategory;
+      
+      // Get learned preferences
+      const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
+      
+      // Search restaurants and activities at their respective locations
+      const [restaurantsResponse, activitiesResponse] = await Promise.all([
+        supabase.functions.invoke('places-search', {
+          body: { 
+            lat: restaurantLat, 
+            lng: restaurantLng, 
+            radiusMiles: radius, 
+            cuisine: searchCuisine === "🌍 Around the World" ? "" : searchCuisine
+          }
+        }),
+        supabase.functions.invoke('activities-search', {
+          body: { 
+            lat: activityLat, 
+            lng: activityLng, 
+            radiusMiles: radius, 
+            category: searchActivity 
+          }
+        })
+      ]);
+
+      console.log('Voice search - Restaurants response:', restaurantsResponse);
+      console.log('Voice search - Activities response:', activitiesResponse);
+
+      if (restaurantsResponse.error) throw restaurantsResponse.error;
+      if (activitiesResponse.error) throw activitiesResponse.error;
+
+      const restaurants = restaurantsResponse.data?.items || [];
+      const activities = activitiesResponse.data?.items || [];
+      
+      // Use the midpoint between restaurant and activity locations for plan building
+      const planLat = (restaurantLat + activityLat) / 2;
+      const planLng = (restaurantLng + activityLng) / 2;
+      
+      // Score and sort results
+      const sortedRestaurants = scorePlaces(
+        restaurants, 
+        restaurantLat,  // Score restaurants relative to their search center
+        restaurantLng, 
+        radius, 
+        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+          ? userPreferences 
+          : undefined,
+        'restaurant',
+        learnedPrefs
+      );
+      const sortedActivities = scorePlaces(
+        activities, 
+        activityLat,  // Score activities relative to their search center
+        activityLng, 
+        radius, 
+        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+          ? userPreferences 
+          : undefined,
+        'activity',
+        learnedPrefs
+      );
+      
+      setRestaurants(sortedRestaurants, restaurantsResponse.data?.nextPageToken || null);
+      setActivities(sortedActivities, activitiesResponse.data?.nextPageToken || null);
+      
+      // Record what we searched for
+      setLastSearched(searchCuisine, searchActivity);
+      
+      // Update primary location to midpoint for display purposes
+      setLocation(planLat, planLng);
+
+      // Build the plan
+      const initialPlan = buildPlan({
+        lat: planLat,
+        lng: planLng,
+        radius,
+        restaurants: sortedRestaurants,
+        activities: sortedActivities,
+        preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+          ? userPreferences 
+          : undefined,
+        learnedPreferences: learnedPrefs,
+      });
+
+      // Set indices
+      const selectedRestaurantIndex = initialPlan.restaurant 
+        ? sortedRestaurants.findIndex(r => r.id === initialPlan.restaurant?.id)
+        : 0;
+      const selectedActivityIndex = initialPlan.activity
+        ? sortedActivities.findIndex(a => a.id === initialPlan.activity?.id)
+        : 0;
+
+      setRestaurantIndex(selectedRestaurantIndex >= 0 ? selectedRestaurantIndex : 0);
+      setActivityIndex(selectedActivityIndex >= 0 ? selectedActivityIndex : 0);
+      
+      setPlan(initialPlan);
+      
+      // Track and save
+      if (initialPlan.restaurant) {
+        await trackInteraction(initialPlan.restaurant, 'restaurant', 'selected');
+      }
+      if (initialPlan.activity) {
+        await trackInteraction(initialPlan.activity, 'activity', 'selected');
+      }
+      await savePlan(initialPlan);
+      
+      toast({ 
+        title: "Found your spots!", 
+        description: `${restaurants.length} restaurants and ${activities.length} activities`,
+      });
+      
+      setLoading(false);
+      navigate("/plan");
+      
+    } catch (error) {
+      console.error('Voice search error:', error);
+      setLoading(false);
+      toast({
+        title: "Search failed",
+        description: "Could not complete your search. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [setFilters, setLocation, locationMode, lat, lng, radius, cuisine, activityCategory, userId, userPreferences, navigate, setRestaurants, setActivities, setLastSearched, setRestaurantIndex, setActivityIndex]);
 
   const { isListening, isProcessing, startListening } = useVoiceInput({
     onPreferencesExtracted: handlePreferencesExtracted,
@@ -185,51 +406,6 @@ const Index = () => {
       home_zip: zipCode,
     },
   });
-
-  // Trigger search when voice preferences are set
-  useEffect(() => {
-    if (voiceSearchTrigger > 0) {
-      // Get the current values directly from the store to avoid stale closures
-      const currentState = usePlanStore.getState();
-      console.log('Voice search triggered with:', { 
-        cuisine: currentState.cuisine, 
-        activityCategory: currentState.activityCategory, 
-        radius: currentState.radius,
-        location: { lat: currentState.lat, lng: currentState.lng }
-      });
-      
-      toast({
-        title: "Finding your perfect match...",
-        description: "🔍 Searching restaurants and activities...",
-        duration: 5000,
-      });
-      
-      // Search and navigate to results
-      const searchAndNavigate = async () => {
-        try {
-          await handleFindPlaces(currentState.cuisine, currentState.activityCategory);
-          // Navigate to plan page after search completes
-          navigate("/plan");
-          toast({
-            title: "Here's your perfect night! ✨",
-            description: "Swipe to see more options",
-          });
-        } catch (error) {
-          console.error('Voice search failed:', error);
-          toast({
-            title: "Search failed",
-            description: "Please try again or use manual selection",
-            variant: "destructive"
-          });
-        }
-      };
-      
-      // Delay to ensure geocoding completes if location was mentioned
-      setTimeout(() => {
-        searchAndNavigate();
-      }, 500);
-    }
-  }, [voiceSearchTrigger, navigate]);
 
   // Check authentication and onboarding status
   useEffect(() => {
