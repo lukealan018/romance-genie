@@ -54,6 +54,7 @@ const Index = () => {
     setActivityIdx: setActivityIndex,
     setUserPreferences,
     setLastSearched,
+    resetPlan,
   } = usePlanStore();
   
   // Local UI state only
@@ -1330,7 +1331,22 @@ const Index = () => {
               <LocationToggle
                 mode={locationMode}
                 zipCode={zipCode}
-                onModeChange={(mode) => setFilters({ locationMode: mode })}
+                onModeChange={(mode) => {
+                  // Clear stored coordinates when switching modes
+                  // This forces fresh validation and geocoding on next search
+                  setLocation(null, null);
+                  setFilters({ locationMode: mode });
+                  
+                  // Clear old search results since they're from a different location
+                  resetPlan();
+                  
+                  toast({
+                    title: mode === "gps" ? "Switched to GPS" : "Switched to ZIP Code",
+                    description: mode === "gps" 
+                      ? "Click 'Get Current Location' to use GPS" 
+                      : "Enter your ZIP code to continue",
+                  });
+                }}
                 onZipCodeChange={(value) => {
                   setFilters({ zipCode: value });
                   if (value.length === 5) {
