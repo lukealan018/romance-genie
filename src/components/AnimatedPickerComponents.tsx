@@ -1,0 +1,131 @@
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { LucideIcon } from "lucide-react";
+
+interface AnimatedPickerButtonProps {
+  label: string;
+  icon?: LucideIcon;
+  isSelected: boolean;
+  onClick: () => void;
+  delay?: number;
+}
+
+export const AnimatedPickerButton = ({
+  label,
+  icon: Icon,
+  isSelected,
+  onClick,
+  delay = 0
+}: AnimatedPickerButtonProps) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay }}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+    >
+      <Button
+        onClick={onClick}
+        variant={isSelected ? "default" : "outline"}
+        className={`
+          relative overflow-hidden transition-all duration-300
+          ${isSelected 
+            ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-transparent shadow-lg' 
+            : 'bg-slate-800/50 hover:bg-slate-700/50 border-slate-600/50 hover:border-purple-400/50 text-slate-300 hover:text-white'
+          }
+        `}
+      >
+        {/* Glow effect on selection */}
+        {isSelected && (
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-purple-400/30 to-pink-400/30"
+            animate={{
+              opacity: [0.5, 1, 0.5],
+              scale: [1, 1.05, 1],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+        )}
+        
+        {/* Hover gradient overlay */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-pink-500/20 to-purple-500/0"
+          initial={{ x: '-100%' }}
+          whileHover={{ x: '100%' }}
+          transition={{ duration: 0.6 }}
+        />
+        
+        {/* Content */}
+        <div className="relative z-10 flex items-center gap-2">
+          {Icon && <Icon className="h-4 w-4" />}
+          <span>{label}</span>
+        </div>
+      </Button>
+    </motion.div>
+  );
+};
+
+interface AnimatedPickerSectionProps {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}
+
+export const AnimatedPickerSection = ({
+  title,
+  subtitle,
+  children
+}: AnimatedPickerSectionProps) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.4, ease: "easeInOut" }}
+      className="space-y-4"
+    >
+      {/* Section Header */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        className="space-y-1"
+      >
+        <h3 className="text-xl font-semibold text-white">{title}</h3>
+        {subtitle && (
+          <p className="text-sm text-slate-400">{subtitle}</p>
+        )}
+      </motion.div>
+      
+      {/* Content */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
+      >
+        {children}
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// Stagger animation for grid of buttons
+export const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05
+    }
+  }
+};
+
+export const staggerItem = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 }
+};
