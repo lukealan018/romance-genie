@@ -75,7 +75,7 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
     let silenceTimer: NodeJS.Timeout | null = null;
     let hasSpokenYet = false;
     const INITIAL_TIMEOUT = 15000; // 15 seconds before any speech
-    const POST_SPEECH_TIMEOUT = 2000; // 2 seconds after speech detected
+    const POST_SPEECH_TIMEOUT = 5500; // 5.5 seconds after speech detected (allows natural pauses)
 
     setIsListening(true);
     setTranscript("");

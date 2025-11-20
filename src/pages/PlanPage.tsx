@@ -166,7 +166,7 @@ const PlanPage = () => {
       setLoading(true);
       try {
         const { data, error } = await supabase.functions.invoke('activities-search', {
-          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, category: activityCategory, pagetoken: nextActivitiesToken }
+          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: activityCategory, pagetoken: nextActivitiesToken }
         });
         if (error) throw error;
 
