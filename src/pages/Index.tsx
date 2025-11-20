@@ -45,6 +45,8 @@ const Index = () => {
     nextActivitiesToken,
     lastSearchedCuisine,
     lastSearchedActivity,
+    lastSearchLat,
+    lastSearchLng,
     userPreferences,
     setLocation,
     setFilters,
@@ -54,6 +56,7 @@ const Index = () => {
     setActivityIdx: setActivityIndex,
     setUserPreferences,
     setLastSearched,
+    setLastSearchLocation,
     resetPlan,
   } = usePlanStore();
   
@@ -195,44 +198,63 @@ const Index = () => {
       }
     }
     
-    // Check if we still don't have valid coordinates - get current location
+    // Check if we still don't have valid coordinates - try last search location first
     if ((!restaurantLat || !restaurantLng || !activityLat || !activityLng)) {
-      console.log('No valid coordinates, getting current location...');
-      toast({
-        title: "Getting your location...",
-        description: "Please wait while we determine your location",
-      });
-      try {
-        await handleUseCurrentLocation(true);
-        // After getting location, lat/lng state will be updated
-        // We need to use the updated values from the store
-        const currentLat = usePlanStore.getState().lat;
-        const currentLng = usePlanStore.getState().lng;
+      const { lastSearchLat, lastSearchLng } = usePlanStore.getState();
+      
+      // Try last search location first (if available)
+      if (lastSearchLat && lastSearchLng) {
+        console.log('Using last search location as fallback:', { lat: lastSearchLat, lng: lastSearchLng });
         
-        if (!currentLat || !currentLng) {
-          throw new Error('Could not get current location');
-        }
-        
-        // Use current location for any missing coordinates
         if (!restaurantLat || !restaurantLng) {
-          restaurantLat = currentLat;
-          restaurantLng = currentLng;
+          restaurantLat = lastSearchLat;
+          restaurantLng = lastSearchLng;
         }
         if (!activityLat || !activityLng) {
-          activityLat = currentLat;
-          activityLng = currentLng;
+          activityLat = lastSearchLat;
+          activityLng = lastSearchLng;
         }
         
-        console.log('Using current location:', { lat: currentLat, lng: currentLng });
-      } catch (error) {
-        console.error('Failed to get location:', error);
         toast({
-          title: "Location required",
-          description: "Please enable location services or set a ZIP code in settings",
-          variant: "destructive"
+          title: "Using previous location",
+          description: "Searching near where you last looked",
         });
-        setLoading(false);
-        return;
+      } else {
+        // Fall back to GPS if no last location
+        console.log('No last search location, getting current location...');
+        toast({
+          title: "Getting your location...",
+          description: "Please wait while we determine your location",
+        });
+        try {
+          await handleUseCurrentLocation(true);
+          const currentLat = usePlanStore.getState().lat;
+          const currentLng = usePlanStore.getState().lng;
+          
+          if (!currentLat || !currentLng) {
+            throw new Error('Could not get current location');
+          }
+          
+          if (!restaurantLat || !restaurantLng) {
+            restaurantLat = currentLat;
+            restaurantLng = currentLng;
+          }
+          if (!activityLat || !activityLng) {
+            activityLat = currentLat;
+            activityLng = currentLng;
+          }
+          
+          console.log('Using current location:', { lat: currentLat, lng: currentLng });
+        } catch (error) {
+          console.error('Failed to get location:', error);
+          toast({
+            title: "Location required",
+            description: "Please enable location services or set a ZIP code in settings",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
       }
     }
     
@@ -823,8 +845,16 @@ const Index = () => {
       console.log('Activities found:', activities.length);
       console.log('======================');
 
+      // Save this location for future fallback (if search was successful)
+      if (restaurants.length > 0 || activities.length > 0) {
+        setLastSearchLocation(searchLat, searchLng);
+        console.log('Saved search location for future fallback:', { lat: searchLat, lng: searchLng });
+      }
+
       // ===== FALLBACK STRATEGY FOR ACTIVITIES =====
       let finalActivities = activities;
+      let usedRadius = radius;
+      let usedKeyword = searchActivity;
       if (activities.length === 0 && searchActivity) {
         console.log(`⚠️ No results for "${searchActivity}", trying fallback...`);
         
@@ -844,6 +874,7 @@ const Index = () => {
         
         if (fallbackTerm !== searchActivity) {
           console.log(`🔄 Retrying with broader term: "${fallbackTerm}"`);
+          usedKeyword = fallbackTerm;
           
           const fallbackResponse = await supabase.functions.invoke('activities-search', {
             body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: fallbackTerm }
@@ -857,6 +888,47 @@ const Index = () => {
               description: `No ${searchActivity} found, showing ${fallbackTerm} instead`,
             });
           }
+        }
+      }
+      
+      // STEP 2: Radius expansion fallback
+      if (finalActivities.length === 0 && usedKeyword) {
+        console.log(`⚠️ Still no results for "${usedKeyword}" in ${radius} miles, expanding radius...`);
+        
+        // Try expanding in steps: 10 miles, then 15 miles
+        const radiusSteps = [10, 15];
+        
+        for (const expandedRadius of radiusSteps) {
+          if (expandedRadius <= radius) continue; // Skip if already searching this wide
+          
+          console.log(`🔄 Retrying with ${expandedRadius} mile radius`);
+          
+          const expandedResponse = await supabase.functions.invoke('activities-search', {
+            body: { lat: searchLat, lng: searchLng, radiusMiles: expandedRadius, keyword: usedKeyword }
+          });
+          
+          if (!expandedResponse.error && expandedResponse.data?.items?.length > 0) {
+            finalActivities = expandedResponse.data.items;
+            usedRadius = expandedRadius;
+            console.log(`✅ Found ${finalActivities.length} results at ${expandedRadius} miles`);
+            
+            toast({
+              title: "Expanded search area",
+              description: `Found ${finalActivities.length} options within ${expandedRadius} miles`,
+            });
+            
+            break; // Stop once we find results
+          }
+        }
+        
+        // If still nothing after all attempts
+        if (finalActivities.length === 0) {
+          console.log(`❌ No results found even with expanded radius`);
+          toast({
+            title: "No results nearby",
+            description: `Couldn't find any ${usedKeyword} within 15 miles. Try a different activity or location.`,
+            variant: "destructive"
+          });
         }
       }
       
@@ -876,7 +948,7 @@ const Index = () => {
         finalActivities, 
         searchLat, 
         searchLng, 
-        radius, 
+        usedRadius, // Use the radius that worked (5, 10, or 15)
         userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
           ? userPreferences 
           : undefined,
