@@ -47,6 +47,9 @@ interface PlanCardProps {
   onSwapRestaurant: () => void;
   onSwapActivity: () => void;
   onReroll: () => void;
+  onSkipRestaurant?: (restaurant: Place) => void;
+  onSkipActivity?: (activity: Place) => void;
+  onSelectPlan?: (restaurant: Place, activity: Place) => void;
   loading?: boolean;
   canSwapRestaurant?: boolean;
   canSwapActivity?: boolean;
@@ -59,6 +62,9 @@ export const PlanCard = ({
   onSwapRestaurant,
   onSwapActivity,
   onReroll,
+  onSkipRestaurant,
+  onSkipActivity,
+  onSelectPlan,
   loading = false,
   canSwapRestaurant = true,
   canSwapActivity = true,
@@ -223,6 +229,11 @@ export const PlanCard = ({
         activity_category: activity.category
       });
       
+      // Track selection for learning system
+      if (onSelectPlan) {
+        onSelectPlan(restaurant, activity);
+      }
+      
       toast({
         title: "Plan saved!",
         description: "You can view your saved plans in the history page",
@@ -351,6 +362,10 @@ export const PlanCard = ({
             restaurant_cuisine: restaurant.city,
             restaurant_price_level: restaurant.priceLevel
           });
+          // Track skip for learning system
+          if (onSkipRestaurant) {
+            onSkipRestaurant(restaurant);
+          }
           onSwapRestaurant();
         }} 
         variant="ghost" 
@@ -552,6 +567,10 @@ export const PlanCard = ({
             activity_name: activity.name,
             activity_category: activity.category
           });
+          // Track skip for learning system
+          if (onSkipActivity) {
+            onSkipActivity(activity);
+          }
           onSwapActivity();
         }} 
         variant="ghost" 

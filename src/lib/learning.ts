@@ -32,32 +32,50 @@ export async function getLearnedPreferences(
   const selectedRestaurants = interactions.filter(
     i => i.place_type === 'restaurant' && i.interaction_type === 'selected'
   );
+  const skippedRestaurants = interactions.filter(
+    i => i.place_type === 'restaurant' && i.interaction_type === 'skipped'
+  );
   const selectedActivities = interactions.filter(
     i => i.place_type === 'activity' && i.interaction_type === 'selected'
   );
+  const skippedActivities = interactions.filter(
+    i => i.place_type === 'activity' && i.interaction_type === 'skipped'
+  );
 
-  // Calculate cuisine scores
+  // Calculate cuisine scores (selections add +3, skips subtract -1)
   const cuisineScores = new Map<string, number>();
   selectedRestaurants.forEach(r => {
     if (r.cuisine) {
-      cuisineScores.set(r.cuisine, (cuisineScores.get(r.cuisine) || 0) + 1);
+      cuisineScores.set(r.cuisine, (cuisineScores.get(r.cuisine) || 0) + 3);
+    }
+  });
+  skippedRestaurants.forEach(r => {
+    if (r.cuisine) {
+      cuisineScores.set(r.cuisine, (cuisineScores.get(r.cuisine) || 0) - 1);
     }
   });
 
   const favoriteCuisines = Array.from(cuisineScores.entries())
     .map(([cuisine, count]) => ({ cuisine, score: count }))
+    .filter(c => c.score > 0) // Only positive scores
     .sort((a, b) => b.score - a.score);
 
-  // Calculate activity scores
+  // Calculate activity scores (selections add +3, skips subtract -1)
   const activityScores = new Map<string, number>();
   selectedActivities.forEach(a => {
     if (a.category) {
-      activityScores.set(a.category, (activityScores.get(a.category) || 0) + 1);
+      activityScores.set(a.category, (activityScores.get(a.category) || 0) + 3);
+    }
+  });
+  skippedActivities.forEach(a => {
+    if (a.category) {
+      activityScores.set(a.category, (activityScores.get(a.category) || 0) - 1);
     }
   });
 
   const favoriteActivities = Array.from(activityScores.entries())
     .map(([category, count]) => ({ category, score: count }))
+    .filter(c => c.score > 0) // Only positive scores
     .sort((a, b) => b.score - a.score);
 
   // Calculate average rating of selected places

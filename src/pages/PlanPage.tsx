@@ -9,10 +9,12 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { buildPlanFromIndices, scorePlaces } from "@/lib/planner";
 import { usePlanStore } from "@/store/planStore";
+import { isDevModeActive } from "@/lib/dev-utils";
 
 const PlanPage = () => {
   const navigate = useNavigate();
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
+  const [userId, setUserId] = useState<string | null>(null);
 
   // Get state from global store
   const {
@@ -30,6 +32,8 @@ const PlanPage = () => {
     nextRestaurantsToken,
     nextActivitiesToken,
     userPreferences,
+    lastSearchedCuisine,
+    lastSearchedActivity,
     setRestaurants,
     setActivities,
     setRestaurantIdx: setRestaurantIndex,
@@ -38,6 +42,42 @@ const PlanPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<any>(null);
+
+  // Get user ID
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserId(session.user.id);
+      }
+    };
+    getUser();
+  }, []);
+
+  // Track user interactions
+  const trackInteraction = async (
+    place: any,
+    type: 'restaurant' | 'activity',
+    interactionType: 'viewed' | 'selected' | 'skipped'
+  ) => {
+    if (!userId || isDevModeActive()) return;
+    
+    try {
+      await supabase.from('user_interactions').insert({
+        user_id: userId,
+        place_id: place.id,
+        place_name: place.name,
+        place_type: type,
+        interaction_type: interactionType,
+        cuisine: place.cuisine,
+        category: place.category,
+        rating: place.rating,
+      });
+      console.log(`Tracked ${interactionType} for ${type}:`, place.name);
+    } catch (error) {
+      console.error('Error tracking interaction:', error);
+    }
+  };
 
   // Redirect to home if no data available
   useEffect(() => {
@@ -255,6 +295,32 @@ const PlanPage = () => {
           onSwapRestaurant={handleSwapRestaurant}
           onSwapActivity={handleSwapActivity}
           onReroll={handleReroll}
+          onSkipRestaurant={(restaurant) => {
+            trackInteraction(
+              { ...restaurant, cuisine: lastSearchedCuisine },
+              'restaurant',
+              'skipped'
+            );
+          }}
+          onSkipActivity={(activity) => {
+            trackInteraction(
+              { ...activity, category: lastSearchedActivity },
+              'activity',
+              'skipped'
+            );
+          }}
+          onSelectPlan={(restaurant, activity) => {
+            trackInteraction(
+              { ...restaurant, cuisine: lastSearchedCuisine },
+              'restaurant',
+              'selected'
+            );
+            trackInteraction(
+              { ...activity, category: lastSearchedActivity },
+              'activity',
+              'selected'
+            );
+          }}
           loading={loading}
           canSwapRestaurant={restaurantIndex + 1 < restaurantResults.length || !!nextRestaurantsToken}
           canSwapActivity={activityIndex + 1 < activityResults.length || !!nextActivitiesToken}
