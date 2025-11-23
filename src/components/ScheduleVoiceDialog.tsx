@@ -182,27 +182,38 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-8 sm:p-10">
-        <DialogHeader className="space-y-4 mb-2">
-          <DialogTitle>Schedule This Plan</DialogTitle>
+        <DialogHeader className="space-y-3 pb-6">
+          <DialogTitle className="text-2xl">Schedule This Plan</DialogTitle>
           <DialogDescription>
             Use voice or manual entry to schedule your date night
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {!parsedDateTime && !showManualPicker && (
-            <div className="text-center space-y-4">
+            <div className="space-y-6">
               <Button
                 size="lg"
                 onClick={startVoiceRecording}
                 disabled={isListening || isProcessing}
-                className="w-full py-4"
+                className="w-full py-6 text-lg"
               >
                 {isListening ? <Mic className="w-4 h-4 mr-2 animate-pulse" /> : <Mic className="w-4 h-4 mr-2" />}
-                {isListening ? 'Listening...' : isProcessing ? 'Processing...' : 'Use Voice'}
+                {isListening ? 'Listening...' : isProcessing ? 'Processing...' : 'Schedule with Voice 🎤'}
               </Button>
-              {transcript && <p className="text-sm text-muted-foreground">"{transcript}"</p>}
-              <Button size="lg" variant="outline" onClick={() => setShowManualPicker(true)} className="w-full py-4">
+              {transcript && <p className="text-sm text-muted-foreground text-center">"{transcript}"</p>}
+              
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-background text-muted-foreground">or enter manually</span>
+                </div>
+              </div>
+              
+              <Button size="lg" variant="outline" onClick={() => setShowManualPicker(true)} className="w-full py-6 text-lg">
                 <Calendar className="w-4 h-4 mr-2" /> Manual Entry
               </Button>
             </div>
@@ -228,23 +239,29 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
           )}
 
           {(parsedDateTime?.date || showManualPicker) && !parsedDateTime?.ambiguous && (
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <Label>Date</Label>
+            <div className="space-y-8">
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Date
+                </Label>
                 <Input
                   type="date"
                   value={parsedDateTime?.date || manualDate}
                   onChange={(e) => setManualDate(e.target.value)}
-                  className="h-14 text-lg"
+                  className="h-14 text-base"
                 />
               </div>
-              <div className="space-y-4">
-                <Label>Time</Label>
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Time
+                </Label>
                 <Input
                   type="time"
                   value={parsedDateTime?.time || manualTime}
                   onChange={(e) => setManualTime(e.target.value)}
-                  className="h-14 text-lg"
+                  className="h-14 text-base"
                 />
               </div>
 
@@ -256,8 +273,8 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
                 </div>
               )}
 
-              <div className="space-y-4 mt-2">
-                <Label>Confirmation Numbers (Optional)</Label>
+              <div className="space-y-4 pt-4 border-t border-border">
+                <p className="text-sm font-medium">Confirmation Numbers (Optional)</p>
                 <Input
                   placeholder="Restaurant confirmation"
                   value={confirmationNumbers.restaurant}
@@ -272,7 +289,7 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
                 />
               </div>
 
-              <Button size="lg" onClick={handleSchedule} disabled={isProcessing} className="w-full h-14 text-lg">
+              <Button size="lg" onClick={handleSchedule} disabled={isProcessing} className="w-full py-6 text-lg mt-8">
                 {isProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Clock className="w-4 h-4 mr-2" />}
                 Schedule Plan
               </Button>
