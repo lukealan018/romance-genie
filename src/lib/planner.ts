@@ -45,6 +45,10 @@ interface BuildPlanParams {
   intent?: "surprise" | "specific" | "flexible";
   noveltyLevel?: "safe" | "adventurous" | "wild";
   userInteractionPlaceIds?: string[];
+  contextualHints?: {
+    indoorPreference?: number; // -1 to 1 scale
+    energyLevel?: 'low' | 'medium' | 'high';
+  };
 }
 
 // Calculate distance between two points in miles using Haversine formula
@@ -119,7 +123,11 @@ function scorePlaces(
   learnedPreferences?: LearnedPreferences,
   intent?: "surprise" | "specific" | "flexible",
   noveltyLevel?: "safe" | "adventurous" | "wild",
-  userInteractionPlaceIds?: string[]
+  userInteractionPlaceIds?: string[],
+  contextualHints?: {
+    indoorPreference?: number;
+    energyLevel?: 'low' | 'medium' | 'high';
+  }
 ): Place[] {
   if (places.length === 0) return [];
   
@@ -185,6 +193,43 @@ function scorePlaces(
       }
     }
     
+    // Calculate contextual boost based on weather/energy
+    let contextualBoost = 0;
+    if (contextualHints && type === 'activity') {
+      // Indoor/outdoor preference based on weather
+      if (contextualHints.indoorPreference !== undefined) {
+        const isIndoorActivity = place.category && 
+          ['museum', 'theater', 'arcade', 'bowling', 'spa', 'mall'].some(indoor =>
+            place.category?.toLowerCase().includes(indoor)
+          );
+        const isOutdoorActivity = place.category &&
+          ['park', 'hiking', 'mini golf', 'outdoor'].some(outdoor =>
+            place.category?.toLowerCase().includes(outdoor)
+          );
+        
+        if (contextualHints.indoorPreference > 0 && isIndoorActivity) {
+          contextualBoost += 0.2 * contextualHints.indoorPreference;
+        } else if (contextualHints.indoorPreference < 0 && isOutdoorActivity) {
+          contextualBoost += 0.2 * Math.abs(contextualHints.indoorPreference);
+        }
+      }
+      
+      // Energy level adjustments
+      if (contextualHints.energyLevel === 'low') {
+        const isRelaxing = place.category &&
+          ['spa', 'wine bar', 'theater', 'museum'].some(calm =>
+            place.category?.toLowerCase().includes(calm)
+          );
+        if (isRelaxing) contextualBoost += 0.15;
+      } else if (contextualHints.energyLevel === 'high') {
+        const isEnergetic = place.category &&
+          ['arcade', 'mini golf', 'karaoke', 'bowling', 'sports'].some(active =>
+            place.category?.toLowerCase().includes(active)
+          );
+        if (isEnergetic) contextualBoost += 0.15;
+      }
+    }
+    
     // Adjust scoring weights based on intent
     let score = 0;
     if (intent === 'surprise') {
@@ -193,25 +238,26 @@ function scorePlaces(
         0.35 * noveltyBoost +
         0.25 * ratingNorm +
         0.15 * personalFit +
-        0.15 * learnedBoost +
-        0.05 * proximityNorm +
-        0.05 * popularityNorm;
+        0.10 * contextualBoost +
+        0.10 * learnedBoost +
+        0.05 * proximityNorm;
     } else if (intent === 'specific') {
       // Specific mode: prioritize personal fit and proximity
       score = 
-        0.45 * personalFit +
+        0.40 * personalFit +
         0.25 * ratingNorm +
         0.15 * proximityNorm +
-        0.10 * learnedBoost +
-        0.05 * popularityNorm;
+        0.10 * contextualBoost +
+        0.10 * learnedBoost;
     } else {
       // Flexible mode: balanced scoring (default)
       score = 
-        0.30 * personalFit +
-        0.25 * ratingNorm +
+        0.25 * personalFit +
+        0.20 * ratingNorm +
         0.20 * learnedBoost +
+        0.15 * contextualBoost +
         0.15 * proximityNorm +
-        0.10 * noveltyBoost;
+        0.05 * noveltyBoost;
     }
     
     return { place, score, distance };
@@ -240,18 +286,19 @@ export function buildPlan({
   intent,
   noveltyLevel,
   userInteractionPlaceIds,
+  contextualHints,
 }: BuildPlanParams): PlanResult {
   // Score and sort restaurants by preference fit, rating, proximity, and popularity
   const scoredRestaurants = scorePlaces(
     restaurants, lat, lng, radius, preferences, 'restaurant', 
-    learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds
+    learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds, contextualHints
   );
   const restaurant = scoredRestaurants.length > 0 ? scoredRestaurants[0] : null;
 
   // Score and sort activities by preference fit, rating, proximity, and popularity
   const scoredActivities = scorePlaces(
     activities, lat, lng, radius, preferences, 'activity', 
-    learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds
+    learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds, contextualHints
   );
   const activity = scoredActivities.length > 0 ? scoredActivities[0] : null;
 

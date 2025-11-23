@@ -95,20 +95,110 @@ export async function getLearnedPreferences(
   };
 }
 
-export function getContextualSuggestions() {
+export interface WeatherData {
+  temperature: number;
+  feelsLike: number;
+  description: string;
+  icon: string;
+  humidity: number;
+  windSpeed: number;
+}
+
+export interface ContextualSuggestionsInput {
+  weather?: WeatherData | null;
+  occasion?: string | null;
+  energyLevel?: 'low' | 'medium' | 'high';
+}
+
+export function getContextualSuggestions(input: ContextualSuggestionsInput = {}) {
   const now = new Date();
   const hour = now.getHours();
   const day = now.getDay();
+  const { weather, occasion, energyLevel = 'medium' } = input;
   
   const suggestions = {
     cuisine: '',
     activityCategory: '',
     message: '',
+    indoorPreference: 0, // -1 = prefer outdoor, 0 = neutral, 1 = prefer indoor
   };
   
+  // Weather-based adjustments
+  if (weather) {
+    const temp = weather.feelsLike;
+    const desc = weather.description.toLowerCase();
+    
+    // Temperature-based suggestions
+    if (temp < 40) {
+      suggestions.indoorPreference = 1;
+      suggestions.activityCategory = 'Museums';
+      suggestions.cuisine = 'Hot Pot,Ramen,Soup';
+      suggestions.message = `It's ${temp}°F! 🥶 How about something cozy indoors?`;
+      return suggestions;
+    } else if (temp > 85) {
+      suggestions.indoorPreference = 1;
+      suggestions.activityCategory = 'Movie Theater,Bowling';
+      suggestions.cuisine = 'Ice Cream,Frozen Yogurt';
+      suggestions.message = `Hot out there at ${temp}°F! ☀️ Let's stay cool inside.`;
+      return suggestions;
+    }
+    
+    // Weather condition-based
+    if (desc.includes('rain') || desc.includes('storm')) {
+      suggestions.indoorPreference = 1;
+      suggestions.activityCategory = 'Museums,Arcades,Movie Theater';
+      suggestions.message = `Rainy day! 🌧️ Perfect for indoor adventures.`;
+      return suggestions;
+    } else if (desc.includes('snow')) {
+      suggestions.indoorPreference = 0.5; // Some people love winter activities!
+      suggestions.cuisine = 'Hot Chocolate,Comfort Food';
+      suggestions.message = `Snowy vibes! ❄️ Cozy or adventurous?`;
+      return suggestions;
+    } else if (desc.includes('clear') || desc.includes('sun')) {
+      if (temp >= 60 && temp <= 80) {
+        suggestions.indoorPreference = -1;
+        suggestions.activityCategory = 'Parks,Mini Golf,Hiking';
+        suggestions.message = `Beautiful day! 🌤️ Perfect for outdoor fun.`;
+        return suggestions;
+      }
+    }
+  }
+  
+  // Special occasion overrides
+  if (occasion) {
+    const occasionLower = occasion.toLowerCase();
+    if (occasionLower.includes('anniversary') || occasionLower.includes('romantic')) {
+      suggestions.cuisine = 'Fine Dining,Italian,French';
+      suggestions.activityCategory = 'Live Music,Wine Bar,Rooftop Bar';
+      suggestions.message = `Special occasion! 💕 Let's make it memorable.`;
+      return suggestions;
+    } else if (occasionLower.includes('birthday')) {
+      suggestions.activityCategory = 'Karaoke,Bowling,Arcades';
+      suggestions.message = `Birthday celebration! 🎂 Time for something fun!`;
+      return suggestions;
+    } else if (occasionLower.includes('date')) {
+      suggestions.cuisine = 'Italian,Tapas,Sushi';
+      suggestions.activityCategory = 'Comedy Club,Mini Golf,Wine Bar';
+      suggestions.message = `Date night! 💫 Let's find the perfect vibe.`;
+      return suggestions;
+    }
+  }
+  
+  // Energy level adjustments
+  if (energyLevel === 'low') {
+    suggestions.activityCategory = 'Movie Theater,Wine Bar,Spa';
+    suggestions.message = "Feeling chill? Let's keep it relaxed. 😌";
+    return suggestions;
+  } else if (energyLevel === 'high') {
+    suggestions.activityCategory = 'Arcades,Mini Golf,Karaoke,Bowling';
+    suggestions.message = "Got energy? Let's do something active! 🎉";
+    return suggestions;
+  }
+  
+  // Time-based defaults (if no weather/occasion)
   // Friday/Saturday night
   if ((day === 5 || day === 6) && hour >= 18) {
-    suggestions.activityCategory = 'Live Music';
+    suggestions.activityCategory = 'Live Music,Bars';
     suggestions.message = "It's the weekend! 🎉 How about something lively?";
   }
   // Sunday brunch
