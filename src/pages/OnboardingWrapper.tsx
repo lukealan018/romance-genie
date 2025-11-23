@@ -42,7 +42,6 @@ export default function OnboardingWrapper() {
       };
 
       const { error } = await supabase.functions.invoke('profile', {
-        method: 'POST',
         body: profileData,
       });
 

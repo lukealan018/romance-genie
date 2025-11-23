@@ -734,11 +734,13 @@ const Index = () => {
       
       // Check if profile is complete (only nickname and home_zip required)
       try {
-        const { data: profile } = await supabase.functions.invoke('profile', {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        });
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('nickname, home_zip, cuisines, activities, default_radius_mi, profile_picture_url, voice_notes')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        if (error) throw error;
         
         if (!profile || !profile.nickname || !profile.home_zip) {
           navigate("/onboarding");
