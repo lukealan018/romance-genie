@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Heart, RefreshCw, Loader2, User } from "lucide-react";
+import { Heart, RefreshCw, Loader2, User, Calendar as CalendarIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -1987,6 +1987,9 @@ const Index = () => {
           />
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <Button variant="ghost" size="icon" onClick={() => navigate('/calendar')} title="Calendar">
+              <CalendarIcon className="w-5 h-5" />
+            </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/history')} title="Saved Plans">
               <Heart className="w-5 h-5" />
             </Button>
