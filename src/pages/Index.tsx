@@ -24,6 +24,20 @@ import { getLearnedPreferences, getContextualSuggestions } from "@/lib/learning"
 import { usePlanStore } from "@/store/planStore";
 import { isDevModeActive, getDevUserId, getMockProfile, logDevMode } from "@/lib/dev-utils";
 
+// Helper function to calculate distance between two coordinates (Haversine formula)
+const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 3959; // Earth's radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+
 const Index = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
@@ -76,7 +90,12 @@ const Index = () => {
 
   // Initialize voice input hook
   const handlePreferencesExtracted = useCallback(async (preferences: any) => {
-    console.log('Voice preferences extracted:', preferences);
+    console.log('=== VOICE PREFERENCES EXTRACTION START ===');
+    console.log('Raw preferences:', preferences);
+    console.log('Original transcript:', preferences.transcript);
+    console.log('Restaurant location from AI:', preferences.restaurantRequest?.location);
+    console.log('Activity location from AI:', preferences.activityRequest?.location);
+    console.log('General location from AI:', preferences.generalLocation);
     
     // Determine search centers for restaurant and activity
     // Start with current location if available, otherwise will get location later
@@ -198,6 +217,24 @@ const Index = () => {
       }
     }
     
+    // Distance validation: warn if venues are far apart
+    if (restaurantLat && restaurantLng && activityLat && activityLng) {
+      const distance = calculateDistance(restaurantLat, restaurantLng, activityLat, activityLng);
+      
+      console.log('=== LOCATION VALIDATION ===');
+      console.log(`Restaurant coords: (${restaurantLat}, ${restaurantLng})`);
+      console.log(`Activity coords: (${activityLat}, ${activityLng})`);
+      console.log(`Distance between venues: ${distance.toFixed(1)} miles`);
+      console.log('===========================');
+      
+      if (distance > 50) {
+        toast({
+          title: "Large distance detected",
+          description: `Restaurant and activity are ${Math.round(distance)} miles apart. Consider adjusting search radius.`,
+        });
+      }
+    }
+    
     // Check if we still don't have valid coordinates - try last search location first
     if ((!restaurantLat || !restaurantLng || !activityLat || !activityLng)) {
       const { lastSearchLat, lastSearchLng } = usePlanStore.getState();
@@ -257,6 +294,19 @@ const Index = () => {
         }
       }
     }
+    
+    // Debug: Log final location assignments before search
+    console.log('=== FINAL LOCATION ASSIGNMENT ===');
+    console.log('Restaurant search center:', { lat: restaurantLat, lng: restaurantLng });
+    console.log('Activity search center:', { lat: activityLat, lng: activityLng });
+    console.log('Location from:', preferences.restaurantRequest?.location 
+      ? `restaurant-specific (${preferences.restaurantRequest.location})`
+      : preferences.activityRequest?.location
+      ? `activity-specific (${preferences.activityRequest.location})`
+      : preferences.generalLocation
+      ? `general location (${preferences.generalLocation})`
+      : 'default/current location');
+    console.log('=================================');
     
     // Map venue types to search filters
     const updates: any = {};
