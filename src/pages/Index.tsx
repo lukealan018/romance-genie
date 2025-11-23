@@ -494,6 +494,28 @@ const Index = () => {
       const planLat = (restaurantLat + activityLat) / 2;
       const planLng = (restaurantLng + activityLng) / 2;
       
+      // Fetch weather for contextual suggestions
+      let weatherData = null;
+      try {
+        const { data: weather, error: weatherError } = await supabase.functions.invoke('weather', {
+          body: { lat: planLat, lng: planLng }
+        });
+        
+        if (!weatherError && weather) {
+          weatherData = weather;
+          console.log('Weather data:', weatherData);
+        }
+      } catch (weatherError) {
+        console.error('Failed to fetch weather:', weatherError);
+      }
+      
+      // Get contextual suggestions
+      const contextual = getContextualSuggestions({ 
+        weather: weatherData,
+        occasion: preferences.occasion,
+      });
+      console.log('Contextual suggestions:', contextual);
+      
       // Score and sort results
       const sortedRestaurants = scorePlaces(
         restaurants, 
@@ -547,6 +569,14 @@ const Index = () => {
         intent: preferences.intent,
         noveltyLevel: preferences.noveltyLevel,
         userInteractionPlaceIds,
+        contextualHints: {
+          indoorPreference: contextual.indoorPreference,
+          energyLevel: contextual.message.toLowerCase().includes('chill') || contextual.message.toLowerCase().includes('unwind')
+            ? 'low'
+            : contextual.message.toLowerCase().includes('lively') || contextual.message.toLowerCase().includes('active')
+            ? 'high'
+            : 'medium',
+        },
       });
 
       // Set indices
@@ -973,6 +1003,26 @@ const Index = () => {
 
     setLoading(true);
     try {
+      // Fetch weather for contextual suggestions
+      let weatherData = null;
+      try {
+        const { data: weather, error: weatherError } = await supabase.functions.invoke('weather', {
+          body: { lat: searchLat, lng: searchLng }
+        });
+        
+        if (!weatherError && weather) {
+          weatherData = weather;
+          console.log('Weather data:', weatherData);
+        }
+      } catch (weatherError) {
+        console.error('Failed to fetch weather:', weatherError);
+        // Continue without weather - it's not critical
+      }
+      
+      // Get contextual suggestions based on weather, time, etc.
+      const contextual = getContextualSuggestions({ weather: weatherData });
+      console.log('Contextual suggestions:', contextual);
+      
       // Get learned preferences
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
       
@@ -1137,6 +1187,14 @@ const Index = () => {
           ? userPreferences 
           : undefined,
         learnedPreferences: learnedPrefs,
+        contextualHints: {
+          indoorPreference: contextual.indoorPreference,
+          energyLevel: contextual.message.toLowerCase().includes('chill') || contextual.message.toLowerCase().includes('unwind') 
+            ? 'low' 
+            : contextual.message.toLowerCase().includes('lively') || contextual.message.toLowerCase().includes('active')
+            ? 'high'
+            : 'medium',
+        },
       });
 
       // Find the indices of the selected restaurant and activity in the sorted arrays
@@ -1686,6 +1744,25 @@ const Index = () => {
       const searchLat = lat;
       const searchLng = lng;
 
+      // Fetch weather for contextual suggestions
+      let weatherData = null;
+      try {
+        const { data: weather, error: weatherError } = await supabase.functions.invoke('weather', {
+          body: { lat: searchLat, lng: searchLng }
+        });
+        
+        if (!weatherError && weather) {
+          weatherData = weather;
+          console.log('Weather data:', weatherData);
+        }
+      } catch (weatherError) {
+        console.error('Failed to fetch weather:', weatherError);
+      }
+      
+      // Get contextual suggestions
+      const contextual = getContextualSuggestions({ weather: weatherData });
+      console.log('Contextual suggestions:', contextual);
+
       // Get learned preferences
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
       
@@ -1745,6 +1822,14 @@ const Index = () => {
         preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
           ? userPreferences 
           : undefined,
+        contextualHints: {
+          indoorPreference: contextual.indoorPreference,
+          energyLevel: contextual.message.toLowerCase().includes('chill') || contextual.message.toLowerCase().includes('unwind')
+            ? 'low'
+            : contextual.message.toLowerCase().includes('lively') || contextual.message.toLowerCase().includes('active')
+            ? 'high'
+            : 'medium',
+        },
       });
 
       // Find the indices of the selected items
