@@ -23,3 +23,12 @@ verify_jwt = true
 
 [functions.weather]
 verify_jwt = false
+
+[functions.interpret-schedule-voice]
+verify_jwt = false
+
+[functions.check-availability]
+verify_jwt = false
+
+[functions.fetch-weather-forecast]
+verify_jwt = false

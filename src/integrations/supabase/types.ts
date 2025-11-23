@@ -125,6 +125,93 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_plans: {
+        Row: {
+          activity_address: string | null
+          activity_category: string | null
+          activity_hours: Json | null
+          activity_id: string
+          activity_lat: number | null
+          activity_lng: number | null
+          activity_name: string
+          availability_status: string | null
+          confirmation_numbers: Json | null
+          conflict_warnings: Json | null
+          created_at: string | null
+          id: string
+          restaurant_address: string | null
+          restaurant_cuisine: string | null
+          restaurant_hours: Json | null
+          restaurant_id: string
+          restaurant_lat: number | null
+          restaurant_lng: number | null
+          restaurant_name: string
+          scheduled_date: string
+          scheduled_time: string
+          search_params: Json | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          weather_forecast: Json | null
+        }
+        Insert: {
+          activity_address?: string | null
+          activity_category?: string | null
+          activity_hours?: Json | null
+          activity_id: string
+          activity_lat?: number | null
+          activity_lng?: number | null
+          activity_name: string
+          availability_status?: string | null
+          confirmation_numbers?: Json | null
+          conflict_warnings?: Json | null
+          created_at?: string | null
+          id?: string
+          restaurant_address?: string | null
+          restaurant_cuisine?: string | null
+          restaurant_hours?: Json | null
+          restaurant_id: string
+          restaurant_lat?: number | null
+          restaurant_lng?: number | null
+          restaurant_name: string
+          scheduled_date: string
+          scheduled_time: string
+          search_params?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          weather_forecast?: Json | null
+        }
+        Update: {
+          activity_address?: string | null
+          activity_category?: string | null
+          activity_hours?: Json | null
+          activity_id?: string
+          activity_lat?: number | null
+          activity_lng?: number | null
+          activity_name?: string
+          availability_status?: string | null
+          confirmation_numbers?: Json | null
+          conflict_warnings?: Json | null
+          created_at?: string | null
+          id?: string
+          restaurant_address?: string | null
+          restaurant_cuisine?: string | null
+          restaurant_hours?: Json | null
+          restaurant_id?: string
+          restaurant_lat?: number | null
+          restaurant_lng?: number | null
+          restaurant_name?: string
+          scheduled_date?: string
+          scheduled_time?: string
+          search_params?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          weather_forecast?: Json | null
+        }
+        Relationships: []
+      }
       user_activity: {
         Row: {
           action_type: string

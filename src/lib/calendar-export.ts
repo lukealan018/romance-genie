@@ -1,0 +1,88 @@
+export interface ScheduledPlan {
+  id: string;
+  scheduled_date: string;
+  scheduled_time: string;
+  restaurant_name: string;
+  restaurant_address?: string;
+  restaurant_cuisine?: string;
+  activity_name: string;
+  activity_address?: string;
+  activity_category?: string;
+  confirmation_numbers?: {
+    restaurant?: string;
+    activity?: string;
+  };
+}
+
+export function generateICSFile(plan: ScheduledPlan): string {
+  const dateTime = new Date(`${plan.scheduled_date}T${plan.scheduled_time}`);
+  
+  // Format date for ICS (YYYYMMDDTHHMMSS)
+  const formatICSDate = (date: Date) => {
+    return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  };
+
+  const startTime = formatICSDate(dateTime);
+  
+  // Add 4 hours for duration (dinner + activity + travel)
+  const endDate = new Date(dateTime.getTime() + 4 * 60 * 60 * 1000);
+  const endTime = formatICSDate(endDate);
+
+  // Build description
+  let description = `Date Night Plan\\n\\n`;
+  description += `🍽️ Dinner: ${plan.restaurant_name}`;
+  if (plan.restaurant_cuisine) description += ` (${plan.restaurant_cuisine})`;
+  if (plan.restaurant_address) description += `\\n   ${plan.restaurant_address}`;
+  if (plan.confirmation_numbers?.restaurant) {
+    description += `\\n   Confirmation: ${plan.confirmation_numbers.restaurant}`;
+  }
+  
+  description += `\\n\\n🎭 Activity: ${plan.activity_name}`;
+  if (plan.activity_category) description += ` (${plan.activity_category})`;
+  if (plan.activity_address) description += `\\n   ${plan.activity_address}`;
+  if (plan.confirmation_numbers?.activity) {
+    description += `\\n   Confirmation: ${plan.confirmation_numbers.activity}`;
+  }
+
+  const icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Date Night Planner//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${plan.id}@datenightplanner.app`,
+    `DTSTAMP:${formatICSDate(new Date())}`,
+    `DTSTART:${startTime}`,
+    `DTEND:${endTime}`,
+    `SUMMARY:Date Night: ${plan.restaurant_name} + ${plan.activity_name}`,
+    `DESCRIPTION:${description}`,
+    `LOCATION:${plan.restaurant_address || plan.restaurant_name}`,
+    'STATUS:CONFIRMED',
+    'BEGIN:VALARM',
+    'TRIGGER:-P1D',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Date night tomorrow!',
+    'END:VALARM',
+    'BEGIN:VALARM',
+    'TRIGGER:-PT2H',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Date night in 2 hours!',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+
+  return icsContent;
+}
+
+export function downloadICS(icsContent: string, filename: string) {
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+}

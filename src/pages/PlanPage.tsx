@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { buildPlanFromIndices, scorePlaces } from "@/lib/planner";
 import { usePlanStore } from "@/store/planStore";
 import { isDevModeActive } from "@/lib/dev-utils";
+import { ScheduleVoiceDialog } from "@/components/ScheduleVoiceDialog";
 
 const PlanPage = () => {
   const navigate = useNavigate();
@@ -42,6 +43,7 @@ const PlanPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<any>(null);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
 
   // Get user ID
   useEffect(() => {
@@ -343,7 +345,26 @@ const PlanPage = () => {
             {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Swap Activity"}
           </CustomButton>
         </div>
+
+        {/* Schedule Button */}
+        <CustomButton
+          variant="primary"
+          onClick={() => setShowScheduleDialog(true)}
+          full
+        >
+          Schedule This Plan
+        </CustomButton>
       </div>
+
+      {/* Schedule Dialog */}
+      <ScheduleVoiceDialog
+        open={showScheduleDialog}
+        onOpenChange={setShowScheduleDialog}
+        planDetails={{
+          restaurant: plan?.restaurant,
+          activity: plan?.activity
+        }}
+      />
     </div>
   );
 };
