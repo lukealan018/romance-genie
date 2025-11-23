@@ -133,6 +133,7 @@ export default function ProfileEdit() {
       };
 
       const { error } = await supabase.functions.invoke('profile', {
+        method: 'POST',
         body: profileData,
       });
 
