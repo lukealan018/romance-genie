@@ -181,8 +181,8 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-6 sm:p-8">
-        <DialogHeader>
+      <DialogContent className="max-w-md p-8 sm:p-10">
+        <DialogHeader className="space-y-4 mb-2">
           <DialogTitle>Schedule This Plan</DialogTitle>
           <DialogDescription>
             Use voice or manual entry to schedule your date night
@@ -196,18 +196,13 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
                 size="lg"
                 onClick={startVoiceRecording}
                 disabled={isListening || isProcessing}
-                className="w-full"
+                className="w-full py-4"
               >
-                {isListening ? (
-                  <><Mic className="w-5 h-5 mr-2 animate-pulse" /> Listening...</>
-                ) : isProcessing ? (
-                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Processing...</>
-                ) : (
-                  <><Mic className="w-5 h-5 mr-2" /> Schedule with Voice</>
-                )}
+                {isListening ? <Mic className="w-4 h-4 mr-2 animate-pulse" /> : <Mic className="w-4 h-4 mr-2" />}
+                {isListening ? 'Listening...' : isProcessing ? 'Processing...' : 'Use Voice'}
               </Button>
               {transcript && <p className="text-sm text-muted-foreground">"{transcript}"</p>}
-              <Button size="lg" variant="outline" onClick={() => setShowManualPicker(true)} className="w-full">
+              <Button size="lg" variant="outline" onClick={() => setShowManualPicker(true)} className="w-full py-4">
                 <Calendar className="w-4 h-4 mr-2" /> Manual Entry
               </Button>
             </div>
@@ -234,7 +229,7 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
 
           {(parsedDateTime?.date || showManualPicker) && !parsedDateTime?.ambiguous && (
             <div className="space-y-6">
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Label>Date</Label>
                 <Input
                   type="date"
@@ -243,7 +238,7 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
                   className="h-14 text-lg"
                 />
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Label>Time</Label>
                 <Input
                   type="time"
@@ -261,7 +256,7 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
                 </div>
               )}
 
-              <div className="space-y-3">
+              <div className="space-y-4 mt-2">
                 <Label>Confirmation Numbers (Optional)</Label>
                 <Input
                   placeholder="Restaurant confirmation"
