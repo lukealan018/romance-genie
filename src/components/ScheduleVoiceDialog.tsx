@@ -181,7 +181,7 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md p-6 sm:p-8">
         <DialogHeader>
           <DialogTitle>Schedule This Plan</DialogTitle>
           <DialogDescription>
@@ -189,7 +189,7 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {!parsedDateTime && !showManualPicker && (
             <div className="text-center space-y-4">
               <Button
@@ -207,14 +207,14 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
                 )}
               </Button>
               {transcript && <p className="text-sm text-muted-foreground">"{transcript}"</p>}
-              <Button variant="outline" onClick={() => setShowManualPicker(true)} className="w-full">
+              <Button size="lg" variant="outline" onClick={() => setShowManualPicker(true)} className="w-full">
                 <Calendar className="w-4 h-4 mr-2" /> Manual Entry
               </Button>
             </div>
           )}
 
           {parsedDateTime?.ambiguous && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Did you mean?</Label>
               {parsedDateTime.options.map((option: any, idx: number) => (
                 <Button
@@ -233,21 +233,23 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
           )}
 
           {(parsedDateTime?.date || showManualPicker) && !parsedDateTime?.ambiguous && (
-            <div className="space-y-4">
-              <div className="space-y-2">
+            <div className="space-y-6">
+              <div className="space-y-3">
                 <Label>Date</Label>
                 <Input
                   type="date"
                   value={parsedDateTime?.date || manualDate}
                   onChange={(e) => setManualDate(e.target.value)}
+                  className="h-14 text-lg"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Time</Label>
                 <Input
                   type="time"
                   value={parsedDateTime?.time || manualTime}
                   onChange={(e) => setManualTime(e.target.value)}
+                  className="h-14 text-lg"
                 />
               </div>
 
@@ -259,21 +261,23 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
                 </div>
               )}
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Confirmation Numbers (Optional)</Label>
                 <Input
                   placeholder="Restaurant confirmation"
                   value={confirmationNumbers.restaurant}
                   onChange={(e) => setConfirmationNumbers(prev => ({ ...prev, restaurant: e.target.value }))}
+                  className="h-12"
                 />
                 <Input
                   placeholder="Activity confirmation"
                   value={confirmationNumbers.activity}
                   onChange={(e) => setConfirmationNumbers(prev => ({ ...prev, activity: e.target.value }))}
+                  className="h-12"
                 />
               </div>
 
-              <Button onClick={handleSchedule} disabled={isProcessing} className="w-full">
+              <Button size="lg" onClick={handleSchedule} disabled={isProcessing} className="w-full h-14 text-lg">
                 {isProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Clock className="w-4 h-4 mr-2" />}
                 Schedule Plan
               </Button>
