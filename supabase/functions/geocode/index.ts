@@ -41,10 +41,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Debug logging for multi-location detection
+    console.log(`=== GEOCODING DEBUG ===`);
+    console.log(`Input: "${locationStr}"`);
+    console.log(`Processing: "${firstLocation}" (extracted from input)`);
+    if (locationStr.includes(',')) {
+      console.log(`⚠️ Multiple locations detected in input, using first one: "${firstLocation}"`);
+    }
+
     // Call Google Maps Geocoding API (handles any address format)
     const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(firstLocation)}&components=country:US&key=${apiKey}`;
-    
-    console.log(`Geocoding location: ${firstLocation}`);
     const response = await fetch(geocodeUrl);
     
     if (!response.ok) {

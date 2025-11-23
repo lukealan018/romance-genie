@@ -22,6 +22,25 @@ serve(async (req) => {
 
     const systemPrompt = `You are a date night planning assistant. Parse natural language and extract structured information.
 
+CRITICAL INSTRUCTION: Extract location PER venue type, not a general location.
+- restaurantRequest.location should ONLY contain the restaurant's city/neighborhood
+- activityRequest.location should ONLY contain the activity's city/neighborhood  
+- Only use generalLocation if BOTH venues are explicitly in the same place
+- When user mentions multiple locations, separate them by venue type
+
+VOICE RECOGNITION ERROR HANDLING:
+Common voice-to-text errors to ignore or correct:
+- Filler words: "nice", "good", "great", "app", "scan", "something", "somewhere"
+- Navigation words: "then", "after", "before", "driving to", "going to", "and also"
+- Phonetic errors: "Beverley" → "Beverly", "whisky" → "whiskey"
+- Focus ONLY on: [venue type] [price level] [location] patterns
+
+When parsing:
+1. Ignore all filler/navigation words
+2. Extract venue types from the lists below
+3. Extract locations that follow "in [location]" patterns
+4. Match each location to its closest venue mention
+
 VENUE TYPES TO RECOGNIZE:
 
 RESTAURANTS (maintain exact type, don't simplify):
@@ -73,7 +92,62 @@ NOVELTY LEVEL:
 "adventurous" → something different, new, try something, explore, discover
 "wild" → surprise me, blow my mind, craziest, wildest, most unique, never been
 
-Examples (50+):
+Examples - MULTI-LOCATION PARSING (CRITICAL):
+
+DIFFERENT LOCATIONS PER VENUE:
+1. "Fancy steakhouse in Beverly Hills whiskey bar in West Hollywood" 
+   → { restaurantRequest: { type: "steakhouse", location: "Beverly Hills", priceLevel: "upscale" }, activityRequest: { type: "whiskey bar", location: "West Hollywood" } }
+
+2. "Sushi in Santa Monica then cocktails in Venice"
+   → { restaurantRequest: { type: "sushi", location: "Santa Monica" }, activityRequest: { type: "cocktail bar", location: "Venice" } }
+
+3. "Italian restaurant in Hollywood then bowling in Pasadena"
+   → { restaurantRequest: { type: "italian", location: "Hollywood" }, activityRequest: { type: "bowling", location: "Pasadena" } }
+
+4. "Dinner in downtown LA bar in West Hollywood"
+   → { restaurantRequest: { location: "downtown LA" }, activityRequest: { type: "bar", location: "West Hollywood" } }
+
+5. "Steakhouse in Beverly Hills comedy club in Hollywood"
+   → { restaurantRequest: { type: "steakhouse", location: "Beverly Hills" }, activityRequest: { type: "comedy club", location: "Hollywood" } }
+
+6. "Ramen in Little Tokyo karaoke in Koreatown"
+   → { restaurantRequest: { type: "ramen", location: "Little Tokyo" }, activityRequest: { type: "karaoke bar", location: "Koreatown" } }
+
+7. "Pizza in Venice Beach arcade in Santa Monica"
+   → { restaurantRequest: { type: "pizza", location: "Venice Beach" }, activityRequest: { type: "arcade", location: "Santa Monica" } }
+
+8. "Tacos in downtown then rooftop bar in Hollywood"
+   → { restaurantRequest: { type: "tacos", location: "downtown" }, activityRequest: { type: "rooftop bar", location: "Hollywood" } }
+
+SAME LOCATION FOR BOTH:
+9. "Italian and bowling in Hollywood"
+   → { restaurantRequest: { type: "italian" }, activityRequest: { type: "bowling" }, generalLocation: "Hollywood" }
+
+10. "Sushi and karaoke in Little Tokyo"
+    → { restaurantRequest: { type: "sushi" }, activityRequest: { type: "karaoke bar" }, generalLocation: "Little Tokyo" }
+
+ONLY RESTAURANT WITH LOCATION:
+11. "Italian in Hollywood" → { restaurantRequest: { type: "italian", location: "Hollywood" } }
+12. "Steakhouse in Beverly Hills" → { restaurantRequest: { type: "steakhouse", location: "Beverly Hills" } }
+
+ONLY ACTIVITY WITH LOCATION:
+13. "Bar in West Hollywood" → { activityRequest: { type: "bar", location: "West Hollywood" } }
+14. "Comedy club downtown" → { activityRequest: { type: "comedy club", location: "downtown" } }
+
+VOICE ERROR EXAMPLES (test filler word removal):
+15. "nice app scan fancy steakhouse in Beverly Hills"
+   → { restaurantRequest: { type: "steakhouse", location: "Beverly Hills", priceLevel: "upscale" } }
+
+16. "good Italian somewhere in Santa Monica"
+   → { restaurantRequest: { type: "italian", location: "Santa Monica" } }
+
+17. "something great whiskey bar and also nice in West Hollywood"
+   → { activityRequest: { type: "whiskey bar", location: "West Hollywood" } }
+
+MORE STANDARD EXAMPLES:
+18. "Upscale lounge bar" → { activityRequest: { type: "lounge bar", priceLevel: "upscale" }, intent: "specific" }
+19. "Cheap tacos" → { restaurantRequest: { type: "tacos", priceLevel: "budget" }, intent: "specific" }
+20. "Hidden gem sushi omakase" → { restaurantRequest: { type: "omakase" }, intent: "surprise", noveltyLevel: "adventurous" }
 
 1. "Upscale lounge bar" → { activityRequest: { type: "lounge bar", priceLevel: "upscale" }, intent: "specific" }
 2. "High-end restaurant in Brentwood" → { location: "Brentwood", restaurantRequest: { type: "restaurant", priceLevel: "upscale" }, intent: "specific" }
