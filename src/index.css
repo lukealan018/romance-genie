@@ -210,21 +210,21 @@ All colors MUST be HSL.
 
 /* Prevent mobile zoom on all inputs - iOS Safari fix */
 input, textarea, select {
-  font-size: 18px !important;
+  font-size: 16px;
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
 }
 
 input:focus, textarea:focus, select:focus {
-  font-size: 18px !important;
+  font-size: 16px;
 }
 
 @media screen and (min-width: 640px) {
   input, textarea, select {
-    font-size: inherit !important;
+    font-size: inherit;
   }
   
   input:focus, textarea:focus, select:focus {
-    font-size: inherit !important;
+    font-size: inherit;
   }
 }
