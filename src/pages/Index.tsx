@@ -17,6 +17,8 @@ import { RestaurantDetailsDrawer } from "@/components/RestaurantDetailsDrawer";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { HeroSection } from "@/components/hero-section";
 import { LocationDialog } from "@/components/LocationDialog";
+import { WeatherWidget } from "@/components/WeatherWidget";
+import { RecentSearches } from "@/components/RecentSearches";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { toast } from "@/hooks/use-toast";
 import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
@@ -85,8 +87,36 @@ const Index = () => {
   const [plan, setPlan] = useState<any>(null);
   const [showPickers, setShowPickers] = useState(false);
   const [showLocationDialog, setShowLocationDialog] = useState(false);
+  const [weatherData, setWeatherData] = useState<{
+    temperature?: number;
+    description?: string;
+    icon?: string;
+  } | null>(null);
+  const [loadingWeather, setLoadingWeather] = useState(false);
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
   const locationSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch weather data for the plan location
+  const fetchWeather = async (latitude: number, longitude: number) => {
+    setLoadingWeather(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('weather', {
+        body: { lat: latitude, lng: longitude }
+      });
+
+      if (error) throw error;
+
+      setWeatherData({
+        temperature: data.temperature,
+        description: data.description,
+        icon: data.icon
+      });
+    } catch (error) {
+      console.error('Error fetching weather:', error);
+    } finally {
+      setLoadingWeather(false);
+    }
+  };
 
   // Initialize voice input hook
   const handlePreferencesExtracted = useCallback(async (preferences: any) => {
@@ -628,6 +658,13 @@ const Index = () => {
       home_zip: zipCode,
     },
   });
+
+  // Fetch weather when location changes
+  useEffect(() => {
+    if (lat && lng) {
+      fetchWeather(lat, lng);
+    }
+  }, [lat, lng]);
 
   // Check authentication and onboarding status
   useEffect(() => {
@@ -1887,15 +1924,23 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       <div className="container max-w-2xl mx-auto px-4 py-8">
-        {/* Header with ThemeToggle and Profile icons */}
-        <div className="flex items-center justify-end gap-2 mb-4">
-          <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={() => navigate('/history')} title="Saved Plans">
-            <Heart className="w-5 h-5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} title="Profile">
-            <User className="w-5 h-5" />
-          </Button>
+        {/* Header with WeatherWidget and navigation buttons */}
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <WeatherWidget
+            temperature={weatherData?.temperature}
+            description={weatherData?.description}
+            icon={weatherData?.icon}
+            loading={loadingWeather}
+          />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="ghost" size="icon" onClick={() => navigate('/history')} title="Saved Plans">
+              <Heart className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} title="Profile">
+              <User className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Hero Section with Voice Input */}
