@@ -214,7 +214,15 @@ const Profile = () => {
               <p className="text-muted-foreground">Update your preferences</p>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/profile/edit')}
+            >
+              Voice Profile Editor
+            </Button>
+            <ThemeToggle />
+          </div>
         </div>
 
         <Card>

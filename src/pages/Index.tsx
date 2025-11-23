@@ -19,6 +19,7 @@ import { HeroSection } from "@/components/hero-section";
 import { LocationDialog } from "@/components/LocationDialog";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { RecentSearches } from "@/components/RecentSearches";
+import { ProfileCompletionPrompt, useProfileCompletionPrompt } from "@/components/ProfileCompletionPrompt";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { toast } from "@/hooks/use-toast";
 import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
@@ -95,6 +96,20 @@ const Index = () => {
   const [loadingWeather, setLoadingWeather] = useState(false);
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
   const locationSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Profile data for completion prompt
+  const [profileData, setProfileData] = useState<{
+    profile_picture_url?: string;
+    voice_notes?: string;
+  }>({});
+
+  // Profile completion prompt
+  const {
+    shouldShowPrompt,
+    markFirstRecommendationSeen,
+    markCompletionPromptSeen
+  } = useProfileCompletionPrompt();
+  const [showCompletionPrompt, setShowCompletionPrompt] = useState(false);
 
   // Fetch weather data for the plan location
   const fetchWeather = async (latitude: number, longitude: number) => {
@@ -622,6 +637,14 @@ const Index = () => {
       
       setPlan(initialPlan);
       
+      // Trigger profile completion prompt if first recommendation
+      if (initialPlan && !localStorage.getItem("hasSeenFirstRecommendation")) {
+        markFirstRecommendationSeen();
+        setTimeout(() => {
+          setShowCompletionPrompt(shouldShowPrompt);
+        }, 2000);
+      }
+      
       // Track and save
       if (initialPlan.restaurant) {
         await trackInteraction(initialPlan.restaurant, 'restaurant', 'selected');
@@ -709,11 +732,25 @@ const Index = () => {
       
       setUserId(session.user.id);
       
-      const hasOnboarded = localStorage.getItem("hasOnboarded");
-      if (!hasOnboarded) {
-        navigate("/onboarding");
-      } else {
+      // Check if profile is complete (only nickname and home_zip required)
+      try {
+        const { data: profile } = await supabase.functions.invoke('profile', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
+        
+        if (!profile || !profile.nickname || !profile.home_zip) {
+          navigate("/onboarding");
+          return;
+        }
+        
+        localStorage.setItem("hasOnboarded", "true");
         await fetchProfile(session.user.id);
+      } catch (error) {
+        console.error('Error checking profile:', error);
+        navigate("/onboarding");
+        return;
       }
       
       setIsCheckingOnboarding(false);
@@ -875,6 +912,12 @@ const Index = () => {
         if (profile.nickname) {
           setNickname(profile.nickname);
         }
+        
+        // Store profile data for completion prompt
+        setProfileData({
+          profile_picture_url: profile.profile_picture_url,
+          voice_notes: profile.voice_notes,
+        });
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -1247,6 +1290,14 @@ const Index = () => {
       setActivityIndex(selectedActivityIndex >= 0 ? selectedActivityIndex : 0);
       
       setPlan(initialPlan);
+      
+      // Trigger profile completion prompt if first recommendation
+      if (initialPlan && !localStorage.getItem("hasSeenFirstRecommendation")) {
+        markFirstRecommendationSeen();
+        setTimeout(() => {
+          setShowCompletionPrompt(shouldShowPrompt);
+        }, 2000);
+      }
       
       // Track selections and save plan
       if (initialPlan.restaurant) {
@@ -2171,6 +2222,22 @@ const Index = () => {
             }
           }}
         />
+
+        {showCompletionPrompt && (
+          <ProfileCompletionPrompt
+            userName={nickname}
+            hasProfilePicture={!!profileData?.profile_picture_url}
+            hasVoicePreferences={!!profileData?.voice_notes}
+            onComplete={() => {
+              markCompletionPromptSeen();
+              navigate('/profile/edit');
+            }}
+            onDismiss={() => {
+              markCompletionPromptSeen();
+              setShowCompletionPrompt(false);
+            }}
+          />
+        )}
       </div>
     </div>
   );

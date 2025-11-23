@@ -9,8 +9,9 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
-import ProfileSetup from "./pages/ProfileSetup";
+import OnboardingWrapper from "./pages/OnboardingWrapper";
 import Profile from "./pages/Profile";
+import ProfileEdit from "./pages/ProfileEdit";
 import PlanPage from "./pages/PlanPage";
 import History from "./pages/History";
 import NotFound from "./pages/NotFound";
@@ -27,10 +28,11 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/onboarding" element={<ProfileSetup />} />
+              <Route path="/onboarding" element={<OnboardingWrapper />} />
               <Route path="/login" element={<Login />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/edit" element={<ProfileEdit />} />
               <Route path="/plan" element={<PlanPage />} />
               <Route path="/history" element={<History />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

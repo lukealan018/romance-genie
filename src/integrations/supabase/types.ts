@@ -21,6 +21,7 @@ export type Database = {
           default_radius_mi: number | null
           dietary: string[] | null
           dislikes: string[] | null
+          energy_level: string | null
           home_zip: string | null
           nickname: string | null
           occasion_type: string | null
@@ -29,10 +30,12 @@ export type Database = {
           preferred_date: string | null
           preferred_time: string | null
           price_range: string | null
+          profile_picture_url: string | null
           time_preference: string | null
           updated_at: string | null
           user_id: string
           vibe: string | null
+          voice_notes: string | null
         }
         Insert: {
           activities?: string[] | null
@@ -40,6 +43,7 @@ export type Database = {
           default_radius_mi?: number | null
           dietary?: string[] | null
           dislikes?: string[] | null
+          energy_level?: string | null
           home_zip?: string | null
           nickname?: string | null
           occasion_type?: string | null
@@ -48,10 +52,12 @@ export type Database = {
           preferred_date?: string | null
           preferred_time?: string | null
           price_range?: string | null
+          profile_picture_url?: string | null
           time_preference?: string | null
           updated_at?: string | null
           user_id: string
           vibe?: string | null
+          voice_notes?: string | null
         }
         Update: {
           activities?: string[] | null
@@ -59,6 +65,7 @@ export type Database = {
           default_radius_mi?: number | null
           dietary?: string[] | null
           dislikes?: string[] | null
+          energy_level?: string | null
           home_zip?: string | null
           nickname?: string | null
           occasion_type?: string | null
@@ -67,10 +74,12 @@ export type Database = {
           preferred_date?: string | null
           preferred_time?: string | null
           price_range?: string | null
+          profile_picture_url?: string | null
           time_preference?: string | null
           updated_at?: string | null
           user_id?: string
           vibe?: string | null
+          voice_notes?: string | null
         }
         Relationships: []
       }
