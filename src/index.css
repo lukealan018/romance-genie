@@ -208,7 +208,7 @@ All colors MUST be HSL.
   }
 }
 
-/* Prevent mobile zoom on all inputs - iOS Safari fix */
+/* Comprehensive iOS Safari zoom prevention */
 input, textarea, select {
   font-size: 16px;
   touch-action: manipulation;
@@ -217,6 +217,33 @@ input, textarea, select {
 
 input:focus, textarea:focus, select:focus {
   font-size: 16px;
+}
+
+/* Force 16px minimum on mobile for all form-related text to prevent iOS zoom */
+@media screen and (max-width: 639px) {
+  /* All form-related text elements must be 16px minimum */
+  label,
+  .text-sm,
+  .text-xs,
+  input,
+  textarea,
+  select,
+  button {
+    font-size: 16px !important;
+  }
+  
+  /* Card descriptions and muted text */
+  [class*="text-muted"],
+  [class*="CardDescription"],
+  .text-muted-foreground {
+    font-size: 16px !important;
+  }
+  
+  /* Ensure badges are also 16px */
+  [class*="badge"],
+  .badge {
+    font-size: 16px !important;
+  }
 }
 
 @media screen and (min-width: 640px) {
