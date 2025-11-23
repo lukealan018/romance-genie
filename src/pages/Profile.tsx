@@ -200,8 +200,8 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4 overflow-x-hidden">
       <div className="max-w-2xl mx-auto space-y-6 py-8 w-full">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between w-full">
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
@@ -210,19 +210,12 @@ const Profile = () => {
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold truncate">Profile Settings</h1>
-              <p className="text-sm text-muted-foreground truncate">Update your preferences</p>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold">Profile Settings</h1>
+              <p className="text-sm text-muted-foreground">Update your preferences</p>
             </div>
           </div>
-          <div className="flex gap-2 shrink-0 self-start sm:self-auto">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/profile/edit')}
-              className="text-xs sm:text-sm px-3"
-            >
-              Voice Editor
-            </Button>
+          <div className="absolute top-0 right-0 sm:relative">
             <ThemeToggle />
           </div>
         </div>
@@ -270,6 +263,22 @@ const Profile = () => {
                 <span>15 mi</span>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Voice Preferences</CardTitle>
+            <CardDescription>Use voice input to update your date night preferences naturally</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="default" 
+              onClick={() => navigate('/profile/edit')}
+              className="w-full"
+            >
+              Open Voice Editor
+            </Button>
           </CardContent>
         </Card>
 
