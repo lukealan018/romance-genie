@@ -53,23 +53,6 @@ const Profile = () => {
     }
   }, [userId]);
 
-  useEffect(() => {
-    // iOS Safari zoom prevention on route navigation
-    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-      const viewportMeta = document.querySelector('meta[name="viewport"]');
-      if (viewportMeta) {
-        const content = viewportMeta.getAttribute('content') || '';
-        viewportMeta.setAttribute('content', content + ', user-scalable=no');
-        
-        // Force layout recalculation to prevent zoom
-        document.body.style.zoom = '1.0';
-        setTimeout(() => {
-          document.body.style.zoom = '';
-        }, 100);
-      }
-    }
-  }, []);
-
   const fetchProfile = async () => {
     if (!userId) return;
     
