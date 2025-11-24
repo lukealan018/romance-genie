@@ -8,7 +8,7 @@ import { ArrowLeft, Calendar as CalendarIcon, MapPin, Clock, Cloud, Trash2 } fro
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ExportCalendarButton } from "@/components/ExportCalendarButton";
 import { ConflictWarningCard } from "@/components/ConflictWarningCard";
-import { getMapUrl } from "@/lib/external-links";
+import { getMapUrl, getPlaceDetailsUrl } from "@/lib/external-links";
 import { toast } from "sonner";
 
 export default function Calendar() {
@@ -55,6 +55,18 @@ export default function Calendar() {
       plan.activity_lat ?? undefined,
       plan.activity_lng ?? undefined
     );
+    window.open(url, '_blank');
+  };
+
+  const handleRestaurantNameClick = (e: React.MouseEvent, placeId: string) => {
+    e.stopPropagation();
+    const url = getPlaceDetailsUrl(placeId);
+    window.open(url, '_blank');
+  };
+
+  const handleActivityNameClick = (e: React.MouseEvent, placeId: string) => {
+    e.stopPropagation();
+    const url = getPlaceDetailsUrl(placeId);
     window.open(url, '_blank');
   };
 
@@ -144,7 +156,12 @@ export default function Calendar() {
                         <div className="space-y-2">
                           <div className="text-sm font-semibold text-muted-foreground">🍽️ Restaurant</div>
                           <div>
-                            <div className="text-xl font-bold">{plan.restaurant_name}</div>
+                            <div 
+                              className="text-xl font-bold text-primary hover:underline cursor-pointer transition-colors"
+                              onClick={(e) => handleRestaurantNameClick(e, plan.restaurant_id)}
+                            >
+                              {plan.restaurant_name}
+                            </div>
                             {plan.restaurant_cuisine && (
                               <div className="text-sm text-muted-foreground">{plan.restaurant_cuisine}</div>
                             )}
@@ -168,7 +185,12 @@ export default function Calendar() {
                         <div className="space-y-2">
                           <div className="text-sm font-semibold text-muted-foreground">🎭 Activity</div>
                           <div>
-                            <div className="text-xl font-bold">{plan.activity_name}</div>
+                            <div 
+                              className="text-xl font-bold text-primary hover:underline cursor-pointer transition-colors"
+                              onClick={(e) => handleActivityNameClick(e, plan.activity_id)}
+                            >
+                              {plan.activity_name}
+                            </div>
                             {plan.activity_category && (
                               <div className="text-sm text-muted-foreground">{plan.activity_category}</div>
                             )}

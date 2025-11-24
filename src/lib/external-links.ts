@@ -19,6 +19,11 @@ export function getMapUrl(name: string, address?: string, lat?: number, lng?: nu
   }
 }
 
+/** Get Google Place details page URL using place_id */
+export function getPlaceDetailsUrl(placeId: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=Google&query_place_id=${placeId}`;
+}
+
 /** Legacy Google Maps URL function - kept for backwards compatibility */
 export function googleMapsUrl(name: string, lat?: number, lng?: number, address?: string) {
   if (lat != null && lng != null) {
