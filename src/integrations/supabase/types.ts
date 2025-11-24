@@ -214,6 +214,7 @@ export type Database = {
           restaurant_website: string | null
           scheduled_date: string
           scheduled_time: string
+          search_mode: string | null
           search_params: Json | null
           status: string | null
           updated_at: string | null
@@ -246,6 +247,7 @@ export type Database = {
           restaurant_website?: string | null
           scheduled_date: string
           scheduled_time: string
+          search_mode?: string | null
           search_params?: Json | null
           status?: string | null
           updated_at?: string | null
@@ -278,6 +280,7 @@ export type Database = {
           restaurant_website?: string | null
           scheduled_date?: string
           scheduled_time?: string
+          search_mode?: string | null
           search_params?: Json | null
           status?: string | null
           updated_at?: string | null

@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LocationToggle } from "@/components/LocationToggle";
 import { CuisinePicker } from "@/components/CuisinePicker";
 import { ActivityPicker } from "@/components/ActivityPicker";
+import { ModeSelection, SearchMode } from "@/components/ModeSelection";
 import { RadiusSelector } from "@/components/RadiusSelector";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { ActivityCard } from "@/components/ActivityCard";
@@ -746,6 +747,7 @@ const Index = () => {
             ? 'high'
             : 'medium',
         },
+        searchMode: voiceMode,
       });
 
       // Set indices
@@ -1270,14 +1272,26 @@ const Index = () => {
       // Get learned preferences
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
       
-      // Fetch both restaurants and activities in parallel
+      // Conditionally search based on mode
+      const currentMode = searchMode || 'both';
+      
+      // Fetch restaurants only if mode allows
+      const restaurantsPromise = (currentMode === 'both' || currentMode === 'restaurant_only')
+        ? supabase.functions.invoke('places-search', {
+            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine: searchCuisine }
+          })
+        : Promise.resolve({ data: { items: [] }, error: null });
+      
+      // Fetch activities only if mode allows
+      const activitiesPromise = (currentMode === 'both' || currentMode === 'activity_only')
+        ? supabase.functions.invoke('activities-search', {
+            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: searchActivity }
+          })
+        : Promise.resolve({ data: { items: [] }, error: null });
+      
       const [restaurantsResponse, activitiesResponse] = await Promise.all([
-        supabase.functions.invoke('places-search', {
-          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine: searchCuisine }
-        }),
-        supabase.functions.invoke('activities-search', {
-          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: searchActivity }
-        })
+        restaurantsPromise,
+        activitiesPromise
       ]);
 
       console.log('Restaurants response:', restaurantsResponse);
@@ -1439,6 +1453,7 @@ const Index = () => {
             ? 'high'
             : 'medium',
         },
+        searchMode: searchMode || 'both',
       });
 
       // Find the indices of the selected restaurant and activity in the sorted arrays
@@ -1779,6 +1794,7 @@ const Index = () => {
         preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
           ? userPreferences 
           : undefined,
+        searchMode: searchMode || 'both',
       });
 
       // Find the indices of the selected restaurant and activity in the sorted arrays
@@ -2082,6 +2098,7 @@ const Index = () => {
             ? 'high'
             : 'medium',
         },
+        searchMode: searchMode || 'both',
       });
 
       // Find the indices of the selected items
@@ -2174,19 +2191,34 @@ const Index = () => {
           onTogglePickers={() => setShowPickers(!showPickers)}
           showPickers={showPickers}
         >
-          {/* Pickers inside HeroSection */}
-          <div className="space-y-6 mt-6">
-            {/* CuisinePicker */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Choose cuisine</h2>
-              <CuisinePicker selected={cuisine} onSelect={(value) => setFilters({ cuisine: value })} />
-            </div>
+          {/* Conditional content based on mode selection */}
+          {!searchMode && (
+            <ModeSelection 
+              selectedMode={searchMode}
+              onModeSelect={(mode) => {
+                setSearchMode(mode);
+                setShowPickers(true);
+              }}
+            />
+          )}
+          
+          {searchMode && showPickers && (
+            <div className="space-y-6 mt-6">
+              {/* CuisinePicker - only show for both and restaurant_only modes */}
+              {(searchMode === 'both' || searchMode === 'restaurant_only') && (
+                <div>
+                  <h2 className="text-lg font-semibold mb-4">Choose cuisine</h2>
+                  <CuisinePicker selected={cuisine} onSelect={(value) => setFilters({ cuisine: value })} />
+                </div>
+              )}
 
-            {/* ActivityPicker */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Choose activity</h2>
-              <ActivityPicker selected={activityCategory} onSelect={(value) => setFilters({ activityCategory: value })} />
-            </div>
+              {/* ActivityPicker - only show for both and activity_only modes */}
+              {(searchMode === 'both' || searchMode === 'activity_only') && (
+                <div>
+                  <h2 className="text-lg font-semibold mb-4">Choose activity</h2>
+                  <ActivityPicker selected={activityCategory} onSelect={(value) => setFilters({ activityCategory: value })} />
+                </div>
+              )}
 
             {/* Location and Radius */}
             <div className="bg-card rounded-xl border p-6 space-y-6">
@@ -2233,11 +2265,16 @@ const Index = () => {
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Finding Spots...
                 </>
+              ) : searchMode === 'restaurant_only' ? (
+                "Find Dinner Spot"
+              ) : searchMode === 'activity_only' ? (
+                "Find Activity"
               ) : (
                 "See Tonight's Plan"
               )}
             </CustomButton>
-          </div>
+            </div>
+          )}
         </HeroSection>
 
         {/* Results section */}

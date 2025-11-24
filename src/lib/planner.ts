@@ -12,6 +12,8 @@ interface Place {
   city?: string;
 }
 
+type SearchMode = "both" | "restaurant_only" | "activity_only";
+
 interface PlanResult {
   restaurant: Place | null;
   activity: Place | null;
