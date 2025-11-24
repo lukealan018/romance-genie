@@ -1784,14 +1784,31 @@ const Index = () => {
 
     setLoading(true);
     try {
-      // Fetch both from page 1 (no pagetoken)
+      // Conditionally search based on current mode
+      const currentMode = searchMode || 'both';
+      
+      console.log('=== REROLL MODE CHECK ===');
+      console.log('Mode:', currentMode);
+      console.log('Will search restaurants?', currentMode === 'both' || currentMode === 'restaurant_only');
+      console.log('Will search activities?', currentMode === 'both' || currentMode === 'activity_only');
+      console.log('========================');
+
+      const restaurantsPromise = (currentMode === 'both' || currentMode === 'restaurant_only')
+        ? supabase.functions.invoke('places-search', {
+            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine }
+          })
+        : Promise.resolve({ data: { items: [] }, error: null });
+
+      const activitiesPromise = (currentMode === 'both' || currentMode === 'activity_only')
+        ? supabase.functions.invoke('activities-search', {
+            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: activityCategory }
+          })
+        : Promise.resolve({ data: { items: [] }, error: null });
+
+      // Fetch from page 1 (no pagetoken)
       const [restaurantsResponse, activitiesResponse] = await Promise.all([
-        supabase.functions.invoke('places-search', {
-          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine }
-        }),
-        supabase.functions.invoke('activities-search', {
-          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: activityCategory }
-        })
+        restaurantsPromise,
+        activitiesPromise
       ]);
 
       if (restaurantsResponse.error) throw restaurantsResponse.error;
@@ -2087,14 +2104,31 @@ const Index = () => {
       // Get learned preferences
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
       
-      // Fetch both restaurants and activities with the randomly selected values
+      // Conditionally search based on current mode
+      const currentMode = searchMode || 'both';
+      
+      console.log('=== SURPRISE ME MODE CHECK ===');
+      console.log('Mode:', currentMode);
+      console.log('Will search restaurants?', currentMode === 'both' || currentMode === 'restaurant_only');
+      console.log('Will search activities?', currentMode === 'both' || currentMode === 'activity_only');
+      console.log('==============================');
+
+      const restaurantsPromise = (currentMode === 'both' || currentMode === 'restaurant_only')
+        ? supabase.functions.invoke('places-search', {
+            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine: selectedCuisine }
+          })
+        : Promise.resolve({ data: { items: [] }, error: null });
+
+      const activitiesPromise = (currentMode === 'both' || currentMode === 'activity_only')
+        ? supabase.functions.invoke('activities-search', {
+            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: selectedActivity }
+          })
+        : Promise.resolve({ data: { items: [] }, error: null });
+
+      // Fetch restaurants and activities with the randomly selected values
       const [restaurantsResponse, activitiesResponse] = await Promise.all([
-        supabase.functions.invoke('places-search', {
-          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine: selectedCuisine }
-        }),
-        supabase.functions.invoke('activities-search', {
-          body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: selectedActivity }
-        })
+        restaurantsPromise,
+        activitiesPromise
       ]);
 
       if (restaurantsResponse.error) throw restaurantsResponse.error;
