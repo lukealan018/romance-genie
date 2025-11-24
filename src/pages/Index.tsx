@@ -65,6 +65,7 @@ const Index = () => {
     lastSearchLat,
     lastSearchLng,
     userPreferences,
+    searchMode,
     setLocation,
     setFilters,
     setRestaurants,
@@ -74,6 +75,7 @@ const Index = () => {
     setUserPreferences,
     setLastSearched,
     setLastSearchLocation,
+    setSearchMode,
     resetPlan,
   } = usePlanStore();
   
