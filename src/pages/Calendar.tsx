@@ -8,6 +8,7 @@ import { ArrowLeft, Calendar as CalendarIcon, MapPin, Clock, Cloud, Trash2 } fro
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ExportCalendarButton } from "@/components/ExportCalendarButton";
 import { ConflictWarningCard } from "@/components/ConflictWarningCard";
+import { googleMapsUrl } from "@/lib/external-links";
 import { toast } from "sonner";
 
 export default function Calendar() {
@@ -33,6 +34,28 @@ export default function Calendar() {
       await deleteScheduledPlan(id);
       toast.success('Date cancelled');
     }
+  };
+
+  const handleRestaurantAddressClick = (e: React.MouseEvent, plan: typeof scheduledPlans[0]) => {
+    e.stopPropagation();
+    const url = googleMapsUrl(
+      plan.restaurant_name,
+      plan.restaurant_lat ?? undefined,
+      plan.restaurant_lng ?? undefined,
+      plan.restaurant_address ?? undefined
+    );
+    window.open(url, '_blank');
+  };
+
+  const handleActivityAddressClick = (e: React.MouseEvent, plan: typeof scheduledPlans[0]) => {
+    e.stopPropagation();
+    const url = googleMapsUrl(
+      plan.activity_name,
+      plan.activity_lat ?? undefined,
+      plan.activity_lng ?? undefined,
+      plan.activity_address ?? undefined
+    );
+    window.open(url, '_blank');
   };
 
   return (
@@ -126,7 +149,10 @@ export default function Calendar() {
                               <div className="text-sm text-muted-foreground">{plan.restaurant_cuisine}</div>
                             )}
                             {plan.restaurant_address && (
-                              <div className="flex items-start gap-1 text-base text-muted-foreground mt-1">
+                              <div 
+                                className="flex items-start gap-1 text-base text-primary hover:underline cursor-pointer mt-1"
+                                onClick={(e) => handleRestaurantAddressClick(e, plan)}
+                              >
                                 <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
                                 <span>{plan.restaurant_address}</span>
                               </div>
@@ -147,7 +173,10 @@ export default function Calendar() {
                               <div className="text-sm text-muted-foreground">{plan.activity_category}</div>
                             )}
                             {plan.activity_address && (
-                              <div className="flex items-start gap-1 text-base text-muted-foreground mt-1">
+                              <div 
+                                className="flex items-start gap-1 text-base text-primary hover:underline cursor-pointer mt-1"
+                                onClick={(e) => handleActivityAddressClick(e, plan)}
+                              >
                                 <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
                                 <span>{plan.activity_address}</span>
                               </div>
