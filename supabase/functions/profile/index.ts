@@ -71,7 +71,7 @@ serve(async (req) => {
     // POST: Upsert a profile
     if (req.method === 'POST') {
       const body = await req.json();
-      const { nickname, home_zip, default_radius_mi, cuisines, activities, dietary, price_range, dislikes, party_size, vibe, planning_style, preferred_date, preferred_time } = body;
+      const { nickname, home_zip, default_radius_mi, cuisines, activities, dietary, price_range, dislikes, party_size, vibe, planning_style, preferred_date, preferred_time, theme_preference } = body;
 
       if (!nickname || !home_zip || !default_radius_mi) {
         return new Response(
@@ -124,6 +124,7 @@ serve(async (req) => {
         planning_style: planning_style || null,
         preferred_date: preferred_date || null,
         preferred_time: preferred_time || null,
+        theme_preference: theme_preference || 'dark',
       };
 
       const { data, error } = await supabaseClient

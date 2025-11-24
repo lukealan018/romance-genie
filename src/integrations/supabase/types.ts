@@ -31,6 +31,7 @@ export type Database = {
           preferred_time: string | null
           price_range: string | null
           profile_picture_url: string | null
+          theme_preference: string | null
           time_preference: string | null
           updated_at: string | null
           user_id: string
@@ -53,6 +54,7 @@ export type Database = {
           preferred_time?: string | null
           price_range?: string | null
           profile_picture_url?: string | null
+          theme_preference?: string | null
           time_preference?: string | null
           updated_at?: string | null
           user_id: string
@@ -75,6 +77,7 @@ export type Database = {
           preferred_time?: string | null
           price_range?: string | null
           profile_picture_url?: string | null
+          theme_preference?: string | null
           time_preference?: string | null
           updated_at?: string | null
           user_id?: string
