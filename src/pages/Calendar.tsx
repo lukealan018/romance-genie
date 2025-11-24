@@ -83,8 +83,8 @@ export default function Calendar() {
                     <CardContent className="p-6 space-y-4">
                       <div className="flex items-start justify-between">
                         <div>
-                          <div className="flex items-center gap-2 text-2xl font-bold">
-                            <CalendarIcon className="w-6 h-6" />
+                          <div className="flex items-center gap-2 text-lg font-semibold text-muted-foreground">
+                            <CalendarIcon className="w-5 h-5" />
                             {new Date(plan.scheduled_date).toLocaleDateString('en-US', {
                               weekday: 'long',
                               month: 'long',
@@ -92,8 +92,8 @@ export default function Calendar() {
                               year: 'numeric'
                             })}
                           </div>
-                          <div className="flex items-center gap-2 mt-1 text-muted-foreground">
-                            <Clock className="w-4 h-4" />
+                          <div className="flex items-center gap-2 mt-1 text-lg font-medium">
+                            <Clock className="w-5 h-5" />
                             {plan.scheduled_time}
                           </div>
                         </div>
@@ -121,13 +121,13 @@ export default function Calendar() {
                         <div className="space-y-2">
                           <div className="text-sm font-semibold text-muted-foreground">🍽️ Restaurant</div>
                           <div>
-                            <div className="font-medium">{plan.restaurant_name}</div>
+                            <div className="text-xl font-bold">{plan.restaurant_name}</div>
                             {plan.restaurant_cuisine && (
                               <div className="text-sm text-muted-foreground">{plan.restaurant_cuisine}</div>
                             )}
                             {plan.restaurant_address && (
-                              <div className="flex items-start gap-1 text-sm text-muted-foreground mt-1">
-                                <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+                              <div className="flex items-start gap-1 text-base text-muted-foreground mt-1">
+                                <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
                                 <span>{plan.restaurant_address}</span>
                               </div>
                             )}
@@ -142,13 +142,13 @@ export default function Calendar() {
                         <div className="space-y-2">
                           <div className="text-sm font-semibold text-muted-foreground">🎭 Activity</div>
                           <div>
-                            <div className="font-medium">{plan.activity_name}</div>
+                            <div className="text-xl font-bold">{plan.activity_name}</div>
                             {plan.activity_category && (
                               <div className="text-sm text-muted-foreground">{plan.activity_category}</div>
                             )}
                             {plan.activity_address && (
-                              <div className="flex items-start gap-1 text-sm text-muted-foreground mt-1">
-                                <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+                              <div className="flex items-start gap-1 text-base text-muted-foreground mt-1">
+                                <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
                                 <span>{plan.activity_address}</span>
                               </div>
                             )}
