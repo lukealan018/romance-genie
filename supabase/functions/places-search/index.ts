@@ -14,6 +14,46 @@ function extractCity(addressComponents: any[]): string | undefined {
   return cityComponent?.long_name;
 }
 
+// Restaurant filtering to exclude grocery stores, gas stations, and other non-restaurant venues
+function shouldExcludeRestaurant(placeTypes: string[], placeName: string = ''): boolean {
+  const name = placeName.toLowerCase();
+  
+  // PASS 1: Allowlist legitimate restaurants
+  const restaurantKeywords = [
+    'restaurant', 'bistro', 'cafe', 'steakhouse', 'trattoria', 
+    'brasserie', 'eatery', 'dining', 'grill', 'kitchen', 
+    'pizzeria', 'tavern', 'pub', 'diner', 'bar & grill'
+  ];
+  
+  // If it matches restaurant keywords, don't exclude
+  if (restaurantKeywords.some(keyword => name.includes(keyword))) {
+    return false;
+  }
+  
+  // PASS 2: Exclude grocery stores, gas stations, convenience stores
+  const excludeTypes = [
+    'grocery_store', 'supermarket', 'convenience_store', 
+    'gas_station', 'shopping_mall', 'department_store'
+  ];
+  
+  if (placeTypes.some(type => excludeTypes.includes(type))) {
+    return true;
+  }
+  
+  // Exclude by name keywords
+  const excludeKeywords = [
+    'whole foods', 'trader joe', '7-eleven', 'chevron', 
+    'shell', 'arco', 'grocery', 'market', 'walmart', 
+    'target', 'costco', 'safeway', 'ralphs', 'vons'
+  ];
+  
+  if (excludeKeywords.some(keyword => name.includes(keyword))) {
+    return true;
+  }
+  
+  return false;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -118,9 +158,14 @@ serve(async (req) => {
       );
     }
 
-    // Map response to desired format with price level filtering
+    // Map response to desired format with price level filtering and restaurant exclusion
     const items = (data.results || [])
       .filter((place: any) => {
+        // Exclude non-restaurants first
+        if (shouldExcludeRestaurant(place.types || [], place.name || '')) {
+          return false;
+        }
+        // Then apply price filtering
         if (!priceRange) return true;
         const placePrice = place.price_level || 2; // Default to moderate
         return placePrice >= priceRange.min && placePrice <= priceRange.max;
