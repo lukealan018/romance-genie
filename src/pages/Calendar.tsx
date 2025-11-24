@@ -8,7 +8,7 @@ import { ArrowLeft, Calendar as CalendarIcon, MapPin, Clock, Cloud, Trash2 } fro
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ExportCalendarButton } from "@/components/ExportCalendarButton";
 import { ConflictWarningCard } from "@/components/ConflictWarningCard";
-import { getMapUrl, getPlaceDetailsUrl } from "@/lib/external-links";
+import { getMapUrl, yelpSearchUrl } from "@/lib/external-links";
 import { toast } from "sonner";
 
 export default function Calendar() {
@@ -58,16 +58,26 @@ export default function Calendar() {
     window.open(url, '_blank');
   };
 
-  const handleRestaurantNameClick = (e: React.MouseEvent, placeId: string) => {
+  const handleRestaurantNameClick = (e: React.MouseEvent, plan: typeof scheduledPlans[0]) => {
     e.stopPropagation();
-    const url = getPlaceDetailsUrl(placeId);
-    window.open(url, '_blank');
+    
+    if (plan.restaurant_website) {
+      window.open(plan.restaurant_website, '_blank');
+    } else {
+      const yelpUrl = yelpSearchUrl(plan.restaurant_name, plan.restaurant_address ?? undefined);
+      window.open(yelpUrl, '_blank');
+    }
   };
 
-  const handleActivityNameClick = (e: React.MouseEvent, placeId: string) => {
+  const handleActivityNameClick = (e: React.MouseEvent, plan: typeof scheduledPlans[0]) => {
     e.stopPropagation();
-    const url = getPlaceDetailsUrl(placeId);
-    window.open(url, '_blank');
+    
+    if (plan.activity_website) {
+      window.open(plan.activity_website, '_blank');
+    } else {
+      const yelpUrl = yelpSearchUrl(plan.activity_name, plan.activity_address ?? undefined);
+      window.open(yelpUrl, '_blank');
+    }
   };
 
   return (
@@ -158,7 +168,7 @@ export default function Calendar() {
                           <div>
                             <div 
                               className="text-xl font-bold text-primary hover:underline cursor-pointer transition-colors"
-                              onClick={(e) => handleRestaurantNameClick(e, plan.restaurant_id)}
+                              onClick={(e) => handleRestaurantNameClick(e, plan)}
                             >
                               {plan.restaurant_name}
                             </div>
@@ -187,7 +197,7 @@ export default function Calendar() {
                           <div>
                             <div 
                               className="text-xl font-bold text-primary hover:underline cursor-pointer transition-colors"
-                              onClick={(e) => handleActivityNameClick(e, plan.activity_id)}
+                              onClick={(e) => handleActivityNameClick(e, plan)}
                             >
                               {plan.activity_name}
                             </div>

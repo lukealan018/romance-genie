@@ -137,14 +137,22 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
 
     setIsProcessing(true);
     try {
-      // Fetch weather forecast
-      const { data: weatherData } = await supabase.functions.invoke('fetch-weather-forecast', {
-        body: {
-          lat: planDetails.restaurant.lat,
-          lng: planDetails.restaurant.lng,
-          scheduledDate: finalDate
-        }
-      });
+      // Fetch weather forecast and venue details in parallel
+      const [weatherResult, restaurantResult, activityResult] = await Promise.all([
+        supabase.functions.invoke('fetch-weather-forecast', {
+          body: {
+            lat: planDetails.restaurant.lat,
+            lng: planDetails.restaurant.lng,
+            scheduledDate: finalDate
+          }
+        }),
+        supabase.functions.invoke('place-details', {
+          body: { placeId: planDetails.restaurant.id }
+        }),
+        supabase.functions.invoke('place-details', {
+          body: { placeId: planDetails.activity.id }
+        })
+      ]);
 
       const scheduledPlan = await addScheduledPlan({
         scheduled_date: finalDate,
@@ -155,13 +163,15 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
         restaurant_cuisine: planDetails.restaurant.cuisine,
         restaurant_lat: planDetails.restaurant.lat,
         restaurant_lng: planDetails.restaurant.lng,
+        restaurant_website: restaurantResult.data?.website,
         activity_id: planDetails.activity.id,
         activity_name: planDetails.activity.name,
         activity_address: planDetails.activity.address,
         activity_category: planDetails.activity.category,
         activity_lat: planDetails.activity.lat,
         activity_lng: planDetails.activity.lng,
-        weather_forecast: weatherData,
+        activity_website: activityResult.data?.website,
+        weather_forecast: weatherResult.data,
         confirmation_numbers: confirmationNumbers.restaurant || confirmationNumbers.activity ? confirmationNumbers : undefined,
         availability_status: availabilityData?.status || 'pending',
         conflict_warnings: availabilityData?.conflicts || []

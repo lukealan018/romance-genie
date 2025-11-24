@@ -13,6 +13,7 @@ export interface ScheduledPlan {
   restaurant_lat?: number;
   restaurant_lng?: number;
   restaurant_hours?: any;
+  restaurant_website?: string;
   activity_id: string;
   activity_name: string;
   activity_address?: string;
@@ -20,6 +21,7 @@ export interface ScheduledPlan {
   activity_lat?: number;
   activity_lng?: number;
   activity_hours?: any;
+  activity_website?: string;
   weather_forecast?: any;
   confirmation_numbers?: any;
   availability_status?: string;
