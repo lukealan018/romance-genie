@@ -65,6 +65,7 @@ const Index = () => {
     lastSearchLat,
     lastSearchLng,
     userPreferences,
+    searchMode,
     setLocation,
     setFilters,
     setRestaurants,
@@ -74,6 +75,7 @@ const Index = () => {
     setUserPreferences,
     setLastSearched,
     setLastSearchLocation,
+    setSearchMode,
     resetPlan,
   } = usePlanStore();
   
@@ -516,6 +518,10 @@ const Index = () => {
       // Get learned preferences and interaction history
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
       
+      // Extract mode from preferences and set it
+      const voiceMode = preferences.mode || 'both';
+      setSearchMode(voiceMode);
+      
       // Get user's interaction history (place IDs they've seen/selected before) for novelty scoring
       let userInteractionPlaceIds: string[] = [];
       if (userId && preferences.intent === 'surprise') {
@@ -534,19 +540,21 @@ const Index = () => {
         }
       }
       
-      // Search restaurants and activities at their respective locations
-      const restaurantsPromise = supabase.functions.invoke('places-search', {
-        body: { 
-          lat: restaurantLat, 
-          lng: restaurantLng, 
-          radiusMiles: radius, 
-          cuisine: searchCuisine === "🌍 Around the World" ? "" : searchCuisine,
-          priceLevel: restaurantPriceLevel
-        }
-      });
+      // Search restaurants only if mode allows
+      const restaurantsPromise = (voiceMode === 'both' || voiceMode === 'restaurant_only')
+        ? supabase.functions.invoke('places-search', {
+            body: { 
+              lat: restaurantLat, 
+              lng: restaurantLng, 
+              radiusMiles: radius, 
+              cuisine: searchCuisine === "🌍 Around the World" ? "" : searchCuisine,
+              priceLevel: restaurantPriceLevel
+            }
+          })
+        : Promise.resolve({ data: { items: [] }, error: null });
 
-      // Only search activities if we have a keyword
-      const activitiesPromise = searchActivity 
+      // Search activities only if mode allows and we have a keyword
+      const activitiesPromise = (voiceMode === 'both' || voiceMode === 'activity_only') && searchActivity
         ? supabase.functions.invoke('activities-search', {
             body: { 
               lat: activityLat, 

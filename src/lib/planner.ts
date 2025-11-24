@@ -287,19 +287,24 @@ export function buildPlan({
   noveltyLevel,
   userInteractionPlaceIds,
   contextualHints,
-}: BuildPlanParams): PlanResult {
-  // Score and sort restaurants by preference fit, rating, proximity, and popularity
-  const scoredRestaurants = scorePlaces(
-    restaurants, lat, lng, radius, preferences, 'restaurant', 
-    learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds, contextualHints
-  );
+  searchMode = 'both',
+}: BuildPlanParams & { searchMode?: SearchMode }): PlanResult {
+  // Only score restaurants if mode includes them
+  const scoredRestaurants = (searchMode === 'both' || searchMode === 'restaurant_only')
+    ? scorePlaces(
+        restaurants, lat, lng, radius, preferences, 'restaurant', 
+        learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds, contextualHints
+      )
+    : [];
   const restaurant = scoredRestaurants.length > 0 ? scoredRestaurants[0] : null;
 
-  // Score and sort activities by preference fit, rating, proximity, and popularity
-  const scoredActivities = scorePlaces(
-    activities, lat, lng, radius, preferences, 'activity', 
-    learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds, contextualHints
-  );
+  // Only score activities if mode includes them
+  const scoredActivities = (searchMode === 'both' || searchMode === 'activity_only')
+    ? scorePlaces(
+        activities, lat, lng, radius, preferences, 'activity', 
+        learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds, contextualHints
+      )
+    : [];
   const activity = scoredActivities.length > 0 ? scoredActivities[0] : null;
 
   // Calculate distances
@@ -319,12 +324,21 @@ export function buildPlan({
 }
 
 export function buildPlanFromIndices(
-  params: BuildPlanParams,
+  params: BuildPlanParams & { searchMode?: SearchMode },
   restaurantIndex: number,
   activityIndex: number
 ): PlanResult {
-  const restaurant = params.restaurants[restaurantIndex] || null;
-  const activity = params.activities[activityIndex] || null;
+  const searchMode = params.searchMode || 'both';
+  
+  // Return null for restaurant if mode doesn't include it
+  const restaurant = (searchMode === 'both' || searchMode === 'restaurant_only')
+    ? (params.restaurants[restaurantIndex] || null)
+    : null;
+  
+  // Return null for activity if mode doesn't include it
+  const activity = (searchMode === 'both' || searchMode === 'activity_only')
+    ? (params.activities[activityIndex] || null)
+    : null;
 
   const distances = {
     toRestaurant: restaurant ? calculateDistance(params.lat, params.lng, restaurant.lat, restaurant.lng) : 0,
