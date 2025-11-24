@@ -59,23 +59,39 @@ export default function Calendar() {
   };
 
   const handleRestaurantNameClick = (e: React.MouseEvent, plan: typeof scheduledPlans[0]) => {
+    e.preventDefault();
     e.stopPropagation();
     
+    console.log('Restaurant click - website:', plan.restaurant_website);
+    
     if (plan.restaurant_website) {
+      console.log('Opening website:', plan.restaurant_website);
       window.open(plan.restaurant_website, '_blank');
     } else {
-      const yelpUrl = yelpSearchUrl(plan.restaurant_name, plan.restaurant_address ?? undefined);
+      // Extract city from address for better Yelp results
+      const addressParts = plan.restaurant_address?.split(',') || [];
+      const city = addressParts.length > 1 ? addressParts[addressParts.length - 2].trim() : undefined;
+      const yelpUrl = yelpSearchUrl(plan.restaurant_name, city);
+      console.log('Opening Yelp:', yelpUrl);
       window.open(yelpUrl, '_blank');
     }
   };
 
   const handleActivityNameClick = (e: React.MouseEvent, plan: typeof scheduledPlans[0]) => {
+    e.preventDefault();
     e.stopPropagation();
     
+    console.log('Activity click - website:', plan.activity_website);
+    
     if (plan.activity_website) {
+      console.log('Opening website:', plan.activity_website);
       window.open(plan.activity_website, '_blank');
     } else {
-      const yelpUrl = yelpSearchUrl(plan.activity_name, plan.activity_address ?? undefined);
+      // Extract city from address for better Yelp results
+      const addressParts = plan.activity_address?.split(',') || [];
+      const city = addressParts.length > 1 ? addressParts[addressParts.length - 2].trim() : undefined;
+      const yelpUrl = yelpSearchUrl(plan.activity_name, city);
+      console.log('Opening Yelp:', yelpUrl);
       window.open(yelpUrl, '_blank');
     }
   };
