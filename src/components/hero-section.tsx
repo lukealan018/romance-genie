@@ -12,6 +12,7 @@ interface HeroSectionProps {
   onSurpriseMe: () => void;
   onTogglePickers: () => void;
   showPickers: boolean;
+  searchMode: "both" | "restaurant_only" | "activity_only";
   children?: React.ReactNode;
 }
 
@@ -24,8 +25,20 @@ export const HeroSection = ({
   onSurpriseMe,
   onTogglePickers,
   showPickers,
+  searchMode,
   children
 }: HeroSectionProps) => {
+  const voiceButtonText = {
+    both: "Tell me about your night 🎤",
+    restaurant_only: "What kind of food are you craving? 🍽️",
+    activity_only: "What do you want to do tonight? 🎉"
+  }[searchMode];
+
+  const toggleText = {
+    both: "prefer to choose?",
+    restaurant_only: "pick cuisine manually?",
+    activity_only: "pick activity manually?"
+  }[searchMode];
   return (
     <div className="space-y-6 pb-6">
       {/* Animated Hero Section */}
@@ -115,7 +128,7 @@ export const HeroSection = ({
                 ) : (
                   <>
                     <Mic className="h-6 w-6" />
-                    <span>Tell me about your night 🎤</span>
+                    <span>{voiceButtonText}</span>
                   </>
                 )}
               </div>
@@ -133,7 +146,7 @@ export const HeroSection = ({
               onClick={onTogglePickers}
               className="text-muted-foreground hover:text-foreground text-sm"
             >
-              <span>prefer to choose?</span>
+              <span>{toggleText}</span>
               <motion.div
                 animate={{ rotate: showPickers ? 180 : 0 }}
                 transition={{ duration: 0.3 }}
