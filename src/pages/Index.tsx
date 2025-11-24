@@ -623,8 +623,8 @@ const Index = () => {
       let usedRadius = radius;
       let usedKeyword = searchActivity;
 
-      // STEP 1: Keyword fallback
-      if (activities.length === 0 && searchActivity) {
+      // STEP 1: Keyword fallback (ONLY if mode allows activities)
+      if (activities.length === 0 && searchActivity && (voiceMode === 'both' || voiceMode === 'activity_only')) {
         console.log(`⚠️ Voice search: No results for "${searchActivity}", trying fallback...`);
         
         const fallbackMap: Record<string, string> = {
@@ -659,8 +659,8 @@ const Index = () => {
         }
       }
 
-      // STEP 2: Radius expansion fallback
-      if (finalActivities.length === 0 && usedKeyword) {
+      // STEP 2: Radius expansion fallback (ONLY if mode allows activities)
+      if (finalActivities.length === 0 && usedKeyword && (voiceMode === 'both' || voiceMode === 'activity_only')) {
         console.log(`⚠️ Voice search: Still no results for "${usedKeyword}" in ${radius} miles, expanding radius...`);
         
         const radiusSteps = [10, 15];
@@ -1374,7 +1374,8 @@ const Index = () => {
       let finalActivities = activities;
       let usedRadius = radius;
       let usedKeyword = searchActivity;
-      if (activities.length === 0 && searchActivity) {
+      // ONLY retry if mode allows activities
+      if (activities.length === 0 && searchActivity && (currentMode === 'both' || currentMode === 'activity_only')) {
         console.log(`⚠️ No results for "${searchActivity}", trying fallback...`);
         
         // Intelligent fallback map
@@ -1410,8 +1411,8 @@ const Index = () => {
         }
       }
       
-      // STEP 2: Radius expansion fallback
-      if (finalActivities.length === 0 && usedKeyword) {
+      // STEP 2: Radius expansion fallback (ONLY if mode allows activities)
+      if (finalActivities.length === 0 && usedKeyword && (currentMode === 'both' || currentMode === 'activity_only')) {
         console.log(`⚠️ Still no results for "${usedKeyword}" in ${radius} miles, expanding radius...`);
         
         // Try expanding in steps: 10 miles, then 15 miles
