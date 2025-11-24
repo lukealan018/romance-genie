@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LocationToggle } from "@/components/LocationToggle";
 import { CuisinePicker } from "@/components/CuisinePicker";
 import { ActivityPicker } from "@/components/ActivityPicker";
+import { ModeSelection, SearchMode } from "@/components/ModeSelection";
 import { RadiusSelector } from "@/components/RadiusSelector";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { ActivityCard } from "@/components/ActivityCard";
