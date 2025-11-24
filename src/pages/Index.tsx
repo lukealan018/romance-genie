@@ -197,6 +197,14 @@ const Index = () => {
         async (position) => {
           const { latitude, longitude } = position.coords;
           try {
+            // Get city name from coordinates using reverse geocoding
+            const { data: geocodeResponse, error: geocodeError } = await supabase.functions.invoke('geocode', {
+              body: { lat: latitude, lng: longitude }
+            });
+
+            if (geocodeError) throw geocodeError;
+
+            // Fetch weather data
             const { data: weatherResponse, error: weatherError } = await supabase.functions.invoke('weather', {
               body: { lat: latitude, lng: longitude }
             });
@@ -207,7 +215,7 @@ const Index = () => {
               temperature: weatherResponse.temperature,
               description: weatherResponse.description,
               icon: weatherResponse.icon,
-              cityName: "Current Location"
+              cityName: geocodeResponse.city || "Current Location"
             });
           } catch (error) {
             console.error('Error fetching current location weather:', error);
