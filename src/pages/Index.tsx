@@ -279,24 +279,30 @@ const Index = () => {
     // Helper function to geocode a location
     const geocodeLocation = async (location: string): Promise<{ lat: number; lng: number } | null> => {
       try {
+        console.log(`🌍 Attempting to geocode: "${location}"`);
         const { data, error } = await supabase.functions.invoke('geocode', {
           body: { address: location }
         });
         
-        if (error) throw error;
+        if (error) {
+          console.error(`❌ Geocoding error for "${location}":`, error);
+          throw error;
+        }
         if (data?.lat && data?.lng) {
-          console.log(`Geocoded "${location}":`, data);
+          console.log(`✅ Successfully geocoded "${location}":`, { lat: data.lat, lng: data.lng, city: data.city });
           return { lat: data.lat, lng: data.lng };
         }
+        console.warn(`⚠️ Geocoding returned no coordinates for "${location}"`);
         return null;
       } catch (error) {
-        console.error(`Failed to geocode "${location}":`, error);
+        console.error(`❌ Failed to geocode "${location}":`, error);
         return null;
       }
     };
     
     // Handle restaurant-specific location
     if (preferences.restaurantRequest?.location) {
+      console.log(`📍 Restaurant location specified: "${preferences.restaurantRequest.location}"`);
       toast({
         title: "Finding restaurant location...",
         description: `Looking up ${preferences.restaurantRequest.location}`,
@@ -307,17 +313,13 @@ const Index = () => {
         restaurantLat = coords.lat;
         restaurantLng = coords.lng;
         needsLocationSetup = true;
-        console.log(`Restaurant search centered on ${preferences.restaurantRequest.location}`);
+        console.log(`✅ Restaurant search will use: (${coords.lat}, ${coords.lng})`);
       } else {
-        // Geocoding failed - use default location if available
-        if (lat && lng) {
-          restaurantLat = lat;
-          restaurantLng = lng;
-          console.log(`Geocoding failed for ${preferences.restaurantRequest.location}, using default location`);
-        }
+        // Geocoding failed - DON'T fall back to GPS immediately, let the later fallback logic handle it
+        console.warn(`⚠️ Geocoding failed for restaurant location "${preferences.restaurantRequest.location}"`);
         toast({
           title: "Couldn't find restaurant location",
-          description: `Using your current location instead`,
+          description: `Will try to use your current location`,
           variant: "destructive"
         });
       }
@@ -325,6 +327,7 @@ const Index = () => {
     
     // Handle activity-specific location (could be different!)
     if (preferences.activityRequest?.location) {
+      console.log(`📍 Activity location specified: "${preferences.activityRequest.location}"`);
       toast({
         title: "Finding activity location...",
         description: `Looking up ${preferences.activityRequest.location}`,
@@ -335,17 +338,13 @@ const Index = () => {
         activityLat = coords.lat;
         activityLng = coords.lng;
         needsLocationSetup = true;
-        console.log(`Activity search centered on ${preferences.activityRequest.location}`);
+        console.log(`✅ Activity search will use: (${coords.lat}, ${coords.lng})`);
       } else {
-        // Geocoding failed - use default location if available
-        if (lat && lng) {
-          activityLat = lat;
-          activityLng = lng;
-          console.log(`Geocoding failed for ${preferences.activityRequest.location}, using default location`);
-        }
+        // Geocoding failed - DON'T fall back to GPS immediately, let the later fallback logic handle it
+        console.warn(`⚠️ Geocoding failed for activity location "${preferences.activityRequest.location}"`);
         toast({
           title: "Couldn't find activity location",
-          description: `Using your current location instead`,
+          description: `Will try to use your current location`,
           variant: "destructive"
         });
       }
@@ -435,67 +434,50 @@ const Index = () => {
         restaurantLng = activityLng;
         console.log('Restaurant location missing - using activity location');
       }
-      // PRIORITY 2: Fall back to last search ONLY if within 50 miles of user's current location
+      // PRIORITY 2: DO NOT use lastSearchLat/Lng as fallback - it causes wrong location issues
+      // Instead, skip straight to GPS as the final fallback
       else {
         const { lastSearchLat, lastSearchLng } = usePlanStore.getState();
-        if (lastSearchLat && lastSearchLng && lat && lng) {
-          const distanceFromCurrent = calculateDistance(lat, lng, lastSearchLat, lastSearchLng);
-          
-          if (distanceFromCurrent <= 50) {
-            if (!restaurantLat || !restaurantLng) {
-              restaurantLat = lastSearchLat;
-              restaurantLng = lastSearchLng;
-            }
-            if (!activityLat || !activityLng) {
-              activityLat = lastSearchLat;
-              activityLng = lastSearchLng;
-            }
-            console.log(`✓ Using last search location (${distanceFromCurrent.toFixed(1)} miles away)`);
-            toast({
-              title: "Using previous location",
-              description: "Searching near where you last looked",
-            });
-          } else {
-            console.log(`✗ Last search too far (${distanceFromCurrent.toFixed(1)} miles) - will use GPS`);
-          }
-        }
+        console.log(`⚠️ Skipping lastSearch fallback to prevent location errors`);
+        console.log(`lastSearch was at: (${lastSearchLat}, ${lastSearchLng})`);
+        console.log(`Will use GPS location instead for reliability`);
+      }
         
-        // PRIORITY 3: Final fallback to GPS
-        if (!restaurantLat || !restaurantLng || !activityLat || !activityLng) {
-          console.log('No valid fallback - getting current GPS location...');
-          toast({
-            title: "Getting your location...",
-            description: "Please wait while we determine your location",
-          });
-          try {
-            await handleUseCurrentLocation(true);
-            const currentLat = usePlanStore.getState().lat;
-            const currentLng = usePlanStore.getState().lng;
-            
-            if (!currentLat || !currentLng) {
-              throw new Error('Could not get current location');
-            }
-            
-            if (!restaurantLat || !restaurantLng) {
-              restaurantLat = currentLat;
-              restaurantLng = currentLng;
-            }
-            if (!activityLat || !activityLng) {
-              activityLat = currentLat;
-              activityLng = currentLng;
-            }
-            
-            console.log('✓ Using current GPS location:', { lat: currentLat, lng: currentLng });
-          } catch (error) {
-            console.error('Failed to get location:', error);
-            toast({
-              title: "Location required",
-              description: "Please enable location services or set a ZIP code in settings",
-              variant: "destructive"
-            });
-            setLoading(false);
-            return;
+      // PRIORITY 3: Final fallback to GPS
+      if (!restaurantLat || !restaurantLng || !activityLat || !activityLng) {
+        console.log('No valid fallback - getting current GPS location...');
+        toast({
+          title: "Getting your location...",
+          description: "Please wait while we determine your location",
+        });
+        try {
+          await handleUseCurrentLocation(true);
+          const currentLat = usePlanStore.getState().lat;
+          const currentLng = usePlanStore.getState().lng;
+          
+          if (!currentLat || !currentLng) {
+            throw new Error('Could not get current location');
           }
+          
+          if (!restaurantLat || !restaurantLng) {
+            restaurantLat = currentLat;
+            restaurantLng = currentLng;
+          }
+          if (!activityLat || !activityLng) {
+            activityLat = currentLat;
+            activityLng = currentLng;
+          }
+          
+          console.log('✓ Using current GPS location:', { lat: currentLat, lng: currentLng });
+        } catch (error) {
+          console.error('Failed to get location:', error);
+          toast({
+            title: "Location required",
+            description: "Please enable location services or set a ZIP code in settings",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
         }
       }
     }
