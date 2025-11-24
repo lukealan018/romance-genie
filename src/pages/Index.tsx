@@ -263,11 +263,12 @@ const Index = () => {
     console.log('General location from AI:', preferences.generalLocation);
     
     // Determine search centers for restaurant and activity
-    // Start with current location if available, otherwise will get location later
-    let restaurantLat = lat || null;
-    let restaurantLng = lng || null;
-    let activityLat = lat || null;
-    let activityLng = lng || null;
+    // Start with null - only use store location if voice explicitly extracted a location
+    // This prevents stale location data from being used when user doesn't specify location
+    let restaurantLat = null;
+    let restaurantLng = null;
+    let activityLat = null;
+    let activityLng = null;
     let needsLocationSetup = false;
     
     // Get current mode early to apply mode-aware logic
