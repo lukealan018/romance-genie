@@ -53,32 +53,50 @@ function shouldExcludeResult(placeTypes: string[], searchKeyword: string, placeN
   const keyword = searchKeyword.toLowerCase();
   const name = placeName.toLowerCase();
   
-  // If searching for bars/wine/cocktails/lounges, exclude retail stores and beauty services
+  // If searching for bars/wine/cocktails/lounges, apply filtering
   if (keyword.includes('bar') || keyword.includes('lounge') || 
       keyword.includes('wine') || keyword.includes('cocktail')) {
     
-    // Exclude beauty services and retail stores
+    // PASS 1: Explicitly ALLOW wine tasting venues (wineries, cellars, tasting rooms)
+    const wineVenueKeywords = [
+      'winery',
+      'vineyard',
+      'wine cellar',
+      'tasting room',
+      'wine tasting',
+      'estate winery',
+      'wine cave',
+      'wine estate',
+      'cellar door',
+    ];
+    
+    // If it's a wine venue, don't exclude it
+    if (wineVenueKeywords.some(venue => name.includes(venue))) {
+      return false;
+    }
+    
+    // PASS 2: EXCLUDE retail stores and beauty services
     const excludeTypes = [
       'beauty_salon', 'hair_care', 'spa', 'nail_salon', 'barber_shop',
       'hair_salon', 'salon', 'beauty', 'cosmetics',
-      'liquor_store', 'store', 'convenience_store', 'supermarket',
+      'liquor_store', 'convenience_store', 'supermarket',
       'shopping_mall', 'department_store', 'home_goods_store',
     ];
     
-    // Check place types first
+    // Check place types
     if (placeTypes.some(type => excludeTypes.includes(type))) {
       return true;
     }
     
-    // Check name for retail indicators
+    // Check name for retail indicators (more specific keywords)
     const retailKeywords = [
       'total wine',
       'bevmo',
       'liquor store',
-      'wine shop',
-      'wine store',
-      'spirits store',
       '& more',
+      'wine + spirits',
+      'bottle shop',
+      'spirits store',
     ];
     
     if (retailKeywords.some(retail => name.includes(retail))) {
