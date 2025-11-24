@@ -35,6 +35,7 @@ const PlanPage = () => {
     userPreferences,
     lastSearchedCuisine,
     lastSearchedActivity,
+    searchMode,
     setRestaurants,
     setActivities,
     setRestaurantIdx: setRestaurantIndex,
@@ -81,18 +82,37 @@ const PlanPage = () => {
     }
   };
 
-  // Redirect to home if no data available
+  // Redirect to home if no data available (mode-aware)
   useEffect(() => {
-    if (restaurantResults.length === 0 || activityResults.length === 0) {
-      console.log('No plan data available, redirecting to home');
+    const currentMode = searchMode || 'both';
+    const needsRestaurants = currentMode === 'both' || currentMode === 'restaurant_only';
+    const needsActivities = currentMode === 'both' || currentMode === 'activity_only';
+    
+    const missingData = 
+      (needsRestaurants && restaurantResults.length === 0) ||
+      (needsActivities && activityResults.length === 0);
+    
+    if (missingData) {
+      console.log('No plan data available for current mode, redirecting to home');
       navigate('/');
     }
-  }, [restaurantResults, activityResults, navigate]);
+  }, [restaurantResults, activityResults, searchMode, navigate]);
 
-  // Build plan from current indices whenever data changes
+  // Build plan from current indices whenever data changes (mode-aware)
   useEffect(() => {
-    if (restaurantResults.length > 0 && activityResults.length > 0 && lat !== null && lng !== null) {
+    const currentMode = searchMode || 'both';
+    const hasRestaurants = restaurantResults.length > 0;
+    const hasActivities = activityResults.length > 0;
+    
+    // Check if we have the data needed for the current mode
+    const hasRequiredData = 
+      (currentMode === 'both' && hasRestaurants && hasActivities) ||
+      (currentMode === 'restaurant_only' && hasRestaurants) ||
+      (currentMode === 'activity_only' && hasActivities);
+    
+    if (hasRequiredData && lat !== null && lng !== null) {
       console.log('Building plan with:', { 
+        mode: currentMode,
         restaurantCount: restaurantResults.length, 
         activityCount: activityResults.length,
         restaurantIndex,
@@ -109,6 +129,7 @@ const PlanPage = () => {
           preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
             ? userPreferences 
             : undefined,
+          searchMode: currentMode,
         },
         restaurantIndex,
         activityIndex
@@ -117,7 +138,7 @@ const PlanPage = () => {
       console.log('Plan built:', newPlan);
       setPlan(newPlan);
     }
-  }, [restaurantResults, activityResults, restaurantIndex, activityIndex, lat, lng, radius, userPreferences]);
+  }, [restaurantResults, activityResults, restaurantIndex, activityIndex, lat, lng, radius, userPreferences, searchMode]);
 
   const handleSwapRestaurant = async () => {
     if (swapDebounceRef.current.restaurant) return;
@@ -326,25 +347,45 @@ const PlanPage = () => {
           loading={loading}
           canSwapRestaurant={restaurantIndex + 1 < restaurantResults.length || !!nextRestaurantsToken}
           canSwapActivity={activityIndex + 1 < activityResults.length || !!nextActivitiesToken}
+          searchMode={searchMode || 'both'}
         />
 
-        {/* Swap Buttons */}
-        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+        {/* Swap Buttons - Conditionally render based on mode */}
+        {(searchMode === 'both' || searchMode === 'restaurant_only' || !searchMode) && (searchMode === 'both' || searchMode === 'activity_only' || !searchMode) ? (
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+            {(searchMode !== 'activity_only') && (
+              <CustomButton
+                variant="secondary"
+                onClick={handleSwapRestaurant}
+                disabled={loading || (!restaurantResults[restaurantIndex + 1] && !nextRestaurantsToken)}
+              >
+                {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Swap Food"}
+              </CustomButton>
+            )}
+            {(searchMode !== 'restaurant_only') && (
+              <CustomButton
+                variant="secondary"
+                onClick={handleSwapActivity}
+                disabled={loading || (!activityResults[activityIndex + 1] && !nextActivitiesToken)}
+              >
+                {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Swap Activity"}
+              </CustomButton>
+            )}
+          </div>
+        ) : (
           <CustomButton
             variant="secondary"
-            onClick={handleSwapRestaurant}
-            disabled={loading || (!restaurantResults[restaurantIndex + 1] && !nextRestaurantsToken)}
+            onClick={searchMode === 'restaurant_only' ? handleSwapRestaurant : handleSwapActivity}
+            disabled={loading || (searchMode === 'restaurant_only' 
+              ? (!restaurantResults[restaurantIndex + 1] && !nextRestaurantsToken)
+              : (!activityResults[activityIndex + 1] && !nextActivitiesToken)
+            )}
+            full
           >
-            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Swap Food"}
+            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 
+              searchMode === 'restaurant_only' ? "Swap Food" : "Swap Activity"}
           </CustomButton>
-          <CustomButton
-            variant="secondary"
-            onClick={handleSwapActivity}
-            disabled={loading || (!activityResults[activityIndex + 1] && !nextActivitiesToken)}
-          >
-            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Swap Activity"}
-          </CustomButton>
-        </div>
+        )}
 
         {/* Schedule Button */}
         <CustomButton
@@ -352,7 +393,9 @@ const PlanPage = () => {
           onClick={() => setShowScheduleDialog(true)}
           full
         >
-          Schedule This Plan
+          {searchMode === 'restaurant_only' && "Schedule This Dinner"}
+          {searchMode === 'activity_only' && "Schedule This Activity"}
+          {(!searchMode || searchMode === 'both') && "Schedule This Plan"}
         </CustomButton>
       </div>
 

@@ -53,6 +53,7 @@ interface PlanCardProps {
   loading?: boolean;
   canSwapRestaurant?: boolean;
   canSwapActivity?: boolean;
+  searchMode?: "both" | "restaurant_only" | "activity_only";
 }
 
 export const PlanCard = ({
@@ -68,6 +69,7 @@ export const PlanCard = ({
   loading = false,
   canSwapRestaurant = true,
   canSwapActivity = true,
+  searchMode = 'both',
 }: PlanCardProps) => {
   const [restaurantPhone, setRestaurantPhone] = useState<string | null>(null);
   const [activityPhone, setActivityPhone] = useState<string | null>(null);
@@ -296,7 +298,7 @@ export const PlanCard = ({
               onClick={handleSavePlan}
               variant={isSaved ? "secondary" : "default"}
               size="sm"
-              disabled={savingPlan || !restaurant || !activity}
+              disabled={savingPlan || (searchMode === 'both' && (!restaurant || !activity)) || (searchMode === 'restaurant_only' && !restaurant) || (searchMode === 'activity_only' && !activity)}
               className="gap-2"
             >
               {savingPlan ? (
@@ -321,7 +323,7 @@ export const PlanCard = ({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Restaurant Section */}
-        {restaurant && (
+        {restaurant && searchMode !== 'activity_only' && (
           <div className="bg-background rounded-lg p-4 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
@@ -519,7 +521,7 @@ export const PlanCard = ({
         )}
 
         {/* Connection Arrow */}
-{restaurant && activity && (
+{restaurant && activity && searchMode === 'both' && (
   <div className="flex items-center justify-center gap-2 text-muted-foreground">
     <ArrowRight className="w-5 h-5" />
     <div className="text-center">
@@ -532,7 +534,7 @@ export const PlanCard = ({
 )}
 
         {/* Activity Section */}
-        {activity && (
+        {activity && searchMode !== 'restaurant_only' && (
           <div className="bg-background rounded-lg p-4 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
