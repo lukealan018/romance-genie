@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPin, Star, Trash2, ArrowLeft, Calendar, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -238,7 +237,6 @@ export default function History() {
               </p>
             </div>
           </div>
-          <ThemeToggle />
         </div>
 
         {/* Tabs */}

@@ -97,6 +97,7 @@ const Index = () => {
     temperature?: number;
     description?: string;
     icon?: string;
+    cityName?: string;
   } | null>(null);
   const [loadingProfileWeather, setLoadingProfileWeather] = useState(false);
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
@@ -178,7 +179,8 @@ const Index = () => {
       setProfileWeatherData({
         temperature: weatherResponse.temperature,
         description: weatherResponse.description,
-        icon: weatherResponse.icon
+        icon: weatherResponse.icon,
+        cityName: geoData.city || undefined
       });
     } catch (error) {
       console.error('Error fetching profile weather:', error);
@@ -2044,7 +2046,9 @@ const Index = () => {
             temperature={profileWeatherData?.temperature}
             description={profileWeatherData?.description}
             icon={profileWeatherData?.icon}
+            cityName={profileWeatherData?.cityName}
             loading={loadingProfileWeather}
+            onRefresh={fetchProfileWeather}
           />
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={() => navigate('/history')} title="Saved Plans">

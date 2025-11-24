@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, Calendar as CalendarIcon, MapPin, Clock, Cloud, Trash2 } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { ExportCalendarButton } from "@/components/ExportCalendarButton";
 import { ConflictWarningCard } from "@/components/ConflictWarningCard";
+import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { getMapUrl, yelpSearchUrl } from "@/lib/external-links";
 import { toast } from "sonner";
 
@@ -109,7 +109,6 @@ export default function Calendar() {
               <p className="text-sm text-muted-foreground">Your scheduled date nights</p>
             </div>
           </div>
-          <ThemeToggle />
         </div>
 
         <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
@@ -143,17 +142,20 @@ export default function Calendar() {
                   <Card key={plan.id} className="overflow-hidden">
                     <CardContent className="p-6 space-y-4">
                       <div className="flex items-start justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 text-lg font-semibold text-muted-foreground">
-                            <CalendarIcon className="w-5 h-5" />
-                            {new Date(plan.scheduled_date).toLocaleDateString('en-US', {
-                              weekday: 'long',
-                              month: 'long',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 text-lg font-semibold text-muted-foreground">
+                              <CalendarIcon className="w-5 h-5" />
+                              {new Date(plan.scheduled_date).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                month: 'long',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </div>
+                            <AvailabilityBadge status={plan.availability_status as any} />
                           </div>
-                          <div className="flex items-center gap-2 mt-1 text-lg font-medium">
+                          <div className="flex items-center gap-2 text-lg font-medium">
                             <Clock className="w-5 h-5" />
                             {plan.scheduled_time}
                           </div>
