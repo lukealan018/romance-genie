@@ -1880,16 +1880,22 @@ const Index = () => {
   };
 
   const handleSeePlan = async () => {
-    // Validation
+    // Mode-aware validation
+    const currentMode = searchMode || 'both';
+    
     if (radius <= 0) {
       toast({ title: "Error", description: "Please set a valid search radius", variant: "destructive" });
       return;
     }
-    if (!cuisine) {
+    
+    // Only validate cuisine if mode requires restaurants
+    if ((currentMode === 'both' || currentMode === 'restaurant_only') && !cuisine) {
       toast({ title: "Error", description: "Please select a cuisine", variant: "destructive" });
       return;
     }
-    if (!activityCategory) {
+    
+    // Only validate activity if mode requires activities
+    if ((currentMode === 'both' || currentMode === 'activity_only') && !activityCategory) {
       toast({ title: "Error", description: "Please select an activity", variant: "destructive" });
       return;
     }
@@ -1938,15 +1944,21 @@ const Index = () => {
     if (restaurantIndex === null || restaurantIndex === undefined) setRestaurantIndex(0);
     if (activityIndex === null || activityIndex === undefined) setActivityIndex(0);
 
-    // Check if we have results AND they match the current filters
+    // Check if we have results AND they match the current filters (mode-aware)
     const filtersChanged = 
       lastSearchedCuisine !== cuisine || 
       lastSearchedActivity !== activityCategory;
 
-    // Only reuse cached results if filters haven't changed
-    if (restaurantResults.length > 0 && 
-        activityResults.length > 0 && 
-        !filtersChanged) {
+    // Check if we have the required results for the current mode
+    const hasRestaurants = restaurantResults.length > 0;
+    const hasActivities = activityResults.length > 0;
+    const hasRequiredResults = 
+      (currentMode === 'both' && hasRestaurants && hasActivities) ||
+      (currentMode === 'restaurant_only' && hasRestaurants) ||
+      (currentMode === 'activity_only' && hasActivities);
+
+    // Only reuse cached results if filters haven't changed and we have required data
+    if (hasRequiredResults && !filtersChanged) {
       navigate("/plan");
       return;
     }
