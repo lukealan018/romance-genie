@@ -2177,70 +2177,89 @@ const Index = () => {
           onTogglePickers={() => setShowPickers(!showPickers)}
           showPickers={showPickers}
         >
-          {/* Pickers inside HeroSection */}
-          <div className="space-y-6 mt-6">
-            {/* CuisinePicker */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Choose cuisine</h2>
-              <CuisinePicker selected={cuisine} onSelect={(value) => setFilters({ cuisine: value })} />
-            </div>
-
-            {/* ActivityPicker */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Choose activity</h2>
-              <ActivityPicker selected={activityCategory} onSelect={(value) => setFilters({ activityCategory: value })} />
-            </div>
-
-            {/* Location and Radius */}
-            <div className="bg-card rounded-xl border p-6 space-y-6">
-              <LocationToggle
-                mode={locationMode}
-                zipCode={zipCode}
-                onModeChange={(mode) => {
-                  // Clear stored coordinates when switching modes
-                  // This forces fresh validation and geocoding on next search
-                  setLocation(null, null);
-                  setFilters({ locationMode: mode });
-                  
-                  // Clear old search results since they're from a different location
-                  resetPlan();
-                  
-                  toast({
-                    title: mode === "gps" ? "Switched to GPS" : "Switched to ZIP Code",
-                    description: mode === "gps" 
-                      ? "Click 'Get Current Location' to use GPS" 
-                      : "Enter your ZIP code to continue",
-                  });
-                }}
-                onZipCodeChange={(value) => {
-                  setFilters({ zipCode: value });
-                  if (value.length === 5) {
-                    debouncedSaveLocation(radius, value);
-                  }
-                }}
-                onUseCurrentLocation={() => handleUseCurrentLocation(false)}
-                locationDetected={lat !== null && lng !== null}
-                gettingLocation={gettingLocation}
-              />
-              <div className="h-px bg-border" />
-              <RadiusSelector value={radius} onChange={(value) => {
-                setFilters({ radius: value });
-                debouncedSaveLocation(value, zipCode);
-              }} />
-            </div>
-
-            {/* See Tonight's Plan Button */}
-            <CustomButton full onClick={handleSeePlan} disabled={loading} size="lg">
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Finding Spots...
-                </>
-              ) : (
-                "See Tonight's Plan"
+          {/* Mode Selection - Show when no mode selected */}
+          {!searchMode && (
+            <ModeSelection 
+              selectedMode={searchMode}
+              onModeSelect={(mode) => {
+                setSearchMode(mode);
+                setShowPickers(true);
+              }}
+            />
+          )}
+          
+          {/* Pickers - Show when mode is selected */}
+          {searchMode && (
+            <div className="space-y-6 mt-6">
+              {/* CuisinePicker - Only show for both or restaurant_only */}
+              {(searchMode === 'both' || searchMode === 'restaurant_only') && (
+                <div>
+                  <h2 className="text-lg font-semibold mb-4">Choose cuisine</h2>
+                  <CuisinePicker selected={cuisine} onSelect={(value) => setFilters({ cuisine: value })} />
+                </div>
               )}
-            </CustomButton>
-          </div>
+
+              {/* ActivityPicker - Only show for both or activity_only */}
+              {(searchMode === 'both' || searchMode === 'activity_only') && (
+                <div>
+                  <h2 className="text-lg font-semibold mb-4">Choose activity</h2>
+                  <ActivityPicker selected={activityCategory} onSelect={(value) => setFilters({ activityCategory: value })} />
+                </div>
+              )}
+
+              {/* Location and Radius */}
+              <div className="bg-card rounded-xl border p-6 space-y-6">
+                <LocationToggle
+                  mode={locationMode}
+                  zipCode={zipCode}
+                  onModeChange={(mode) => {
+                    // Clear stored coordinates when switching modes
+                    // This forces fresh validation and geocoding on next search
+                    setLocation(null, null);
+                    setFilters({ locationMode: mode });
+                    
+                    // Clear old search results since they're from a different location
+                    resetPlan();
+                    
+                    toast({
+                      title: mode === "gps" ? "Switched to GPS" : "Switched to ZIP Code",
+                      description: mode === "gps" 
+                        ? "Click 'Get Current Location' to use GPS" 
+                        : "Enter your ZIP code to continue",
+                    });
+                  }}
+                  onZipCodeChange={(value) => {
+                    setFilters({ zipCode: value });
+                    if (value.length === 5) {
+                      debouncedSaveLocation(radius, value);
+                    }
+                  }}
+                  onUseCurrentLocation={() => handleUseCurrentLocation(false)}
+                  locationDetected={lat !== null && lng !== null}
+                  gettingLocation={gettingLocation}
+                />
+                <div className="h-px bg-border" />
+                <RadiusSelector value={radius} onChange={(value) => {
+                  setFilters({ radius: value });
+                  debouncedSaveLocation(value, zipCode);
+                }} />
+              </div>
+
+              {/* See Tonight's Plan Button */}
+              <CustomButton full onClick={handleSeePlan} disabled={loading} size="lg">
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Finding Spots...
+                  </>
+                ) : (
+                  searchMode === 'restaurant_only' ? "Find Restaurant" :
+                  searchMode === 'activity_only' ? "Find Activity" :
+                  "See Tonight's Plan"
+                )}
+              </CustomButton>
+            </div>
+          )}
         </HeroSection>
 
         {/* Results section */}

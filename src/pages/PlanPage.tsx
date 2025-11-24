@@ -290,61 +290,81 @@ const PlanPage = () => {
       {/* Content */}
       <div className="container max-w-2xl py-6 space-y-6">
         {/* Plan Card */}
-        <PlanCard
-          restaurant={plan.restaurant}
-          activity={plan.activity}
-          distances={plan.distances}
-          onSwapRestaurant={handleSwapRestaurant}
-          onSwapActivity={handleSwapActivity}
-          onReroll={handleReroll}
-          onSkipRestaurant={(restaurant) => {
-            trackInteraction(
-              { ...restaurant, cuisine: lastSearchedCuisine },
-              'restaurant',
-              'skipped'
-            );
-          }}
-          onSkipActivity={(activity) => {
-            trackInteraction(
-              { ...activity, category: lastSearchedActivity },
-              'activity',
-              'skipped'
-            );
-          }}
-          onSelectPlan={(restaurant, activity) => {
-            trackInteraction(
-              { ...restaurant, cuisine: lastSearchedCuisine },
-              'restaurant',
-              'selected'
-            );
-            trackInteraction(
-              { ...activity, category: lastSearchedActivity },
-              'activity',
-              'selected'
-            );
-          }}
-          loading={loading}
-          canSwapRestaurant={restaurantIndex + 1 < restaurantResults.length || !!nextRestaurantsToken}
-          canSwapActivity={activityIndex + 1 < activityResults.length || !!nextActivitiesToken}
-        />
+        {(searchMode === 'both' || searchMode === 'restaurant_only') && plan?.restaurant && (
+          <PlanCard
+            type="restaurant"
+            place={plan.restaurant}
+            onSwap={handleSwapRestaurant}
+            onSkip={(restaurant) => {
+              trackInteraction(
+                { ...restaurant, cuisine: lastSearchedCuisine },
+                'restaurant',
+                'skipped'
+              );
+            }}
+            loading={loading}
+            canSwap={restaurantIndex + 1 < restaurantResults.length || !!nextRestaurantsToken}
+          />
+        )}
+        
+        {(searchMode === 'both' || searchMode === 'activity_only') && plan?.activity && (
+          <PlanCard
+            type="activity"
+            place={plan.activity}
+            onSwap={handleSwapActivity}
+            onSkip={(activity) => {
+              trackInteraction(
+                { ...activity, category: lastSearchedActivity },
+                'activity',
+                'skipped'
+              );
+            }}
+            loading={loading}
+            canSwap={activityIndex + 1 < activityResults.length || !!nextActivitiesToken}
+          />
+        )}
 
         {/* Swap Buttons */}
-        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+        {searchMode === 'both' && (
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+            <CustomButton
+              variant="secondary"
+              onClick={handleSwapRestaurant}
+              disabled={loading || (!restaurantResults[restaurantIndex + 1] && !nextRestaurantsToken)}
+            >
+              {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Swap Food"}
+            </CustomButton>
+            <CustomButton
+              variant="secondary"
+              onClick={handleSwapActivity}
+              disabled={loading || (!activityResults[activityIndex + 1] && !nextActivitiesToken)}
+            >
+              {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Swap Activity"}
+            </CustomButton>
+          </div>
+        )}
+        
+        {searchMode === 'restaurant_only' && (
           <CustomButton
             variant="secondary"
             onClick={handleSwapRestaurant}
             disabled={loading || (!restaurantResults[restaurantIndex + 1] && !nextRestaurantsToken)}
+            full
           >
-            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Swap Food"}
+            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Next Restaurant"}
           </CustomButton>
+        )}
+        
+        {searchMode === 'activity_only' && (
           <CustomButton
             variant="secondary"
             onClick={handleSwapActivity}
             disabled={loading || (!activityResults[activityIndex + 1] && !nextActivitiesToken)}
+            full
           >
-            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Swap Activity"}
+            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Next Activity"}
           </CustomButton>
-        </div>
+        )}
 
         {/* Schedule Button */}
         <CustomButton
@@ -352,7 +372,9 @@ const PlanPage = () => {
           onClick={() => setShowScheduleDialog(true)}
           full
         >
-          Schedule This Plan
+          {searchMode === 'restaurant_only' && "Schedule This Dinner"}
+          {searchMode === 'activity_only' && "Schedule This Activity"}
+          {searchMode === 'both' && "Schedule This Plan"}
         </CustomButton>
       </div>
 
