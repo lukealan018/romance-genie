@@ -189,6 +189,57 @@ const Index = () => {
     }
   }, [userId]);
 
+  // Refresh weather using current GPS location
+  const handleWeatherRefresh = useCallback(() => {
+    if (navigator.geolocation) {
+      setLoadingProfileWeather(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            const { data: weatherResponse, error: weatherError } = await supabase.functions.invoke('weather', {
+              body: { lat: latitude, lng: longitude }
+            });
+
+            if (weatherError) throw weatherError;
+
+            setProfileWeatherData({
+              temperature: weatherResponse.temperature,
+              description: weatherResponse.description,
+              icon: weatherResponse.icon,
+              cityName: "Current Location"
+            });
+          } catch (error) {
+            console.error('Error fetching current location weather:', error);
+            toast({
+              title: "Weather Error",
+              description: "Could not fetch weather for your location.",
+              variant: "destructive",
+            });
+          } finally {
+            setLoadingProfileWeather(false);
+          }
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          toast({
+            title: "Location Error",
+            description: "Could not access your location. Showing home weather.",
+            variant: "destructive",
+          });
+          fetchProfileWeather();
+        }
+      );
+    } else {
+      toast({
+        title: "Location Not Available",
+        description: "Your browser doesn't support location services.",
+        variant: "destructive",
+      });
+      fetchProfileWeather();
+    }
+  }, [fetchProfileWeather]);
+
   // Initialize voice input hook
   const handlePreferencesExtracted = useCallback(async (preferences: any) => {
     console.log('=== VOICE PREFERENCES EXTRACTION START ===');
@@ -2048,7 +2099,7 @@ const Index = () => {
             icon={profileWeatherData?.icon}
             cityName={profileWeatherData?.cityName}
             loading={loadingProfileWeather}
-            onRefresh={fetchProfileWeather}
+            onRefresh={handleWeatherRefresh}
           />
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={() => navigate('/history')} title="Saved Plans">
