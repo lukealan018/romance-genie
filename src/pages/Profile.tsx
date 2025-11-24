@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
 
 const CUISINES = ["italian", "mexican", "japanese", "thai", "sushi", "steakhouse", "vegan", "bbq", "burgers"];
 const ACTIVITIES = ["comedy", "live_music", "movies", "bowling", "arcade", "museum", "escape_room", "mini_golf", "hike", "wine"];
@@ -21,6 +22,7 @@ const DIETARY = ["gluten_free", "vegetarian", "vegan", "halal", "kosher"];
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -88,6 +90,11 @@ const Profile = () => {
         }
         setPreferredTime(profile.preferred_time || "");
         setPartySize(profile.party_size || 2);
+        
+        // Set theme from profile
+        if (profile.theme_preference) {
+          setTheme(profile.theme_preference);
+        }
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -153,6 +160,7 @@ const Profile = () => {
           preferred_date: preferredDate ? preferredDate.toISOString().split('T')[0] : null,
           preferred_time: preferredTime || null,
           party_size: partySize,
+          theme_preference: theme,
         },
       });
 
@@ -215,10 +223,23 @@ const Profile = () => {
               <p className="text-sm text-muted-foreground">Update your preferences</p>
             </div>
           </div>
-          <div className="absolute top-0 right-0 sm:relative">
-            <ThemeToggle />
-          </div>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Appearance</CardTitle>
+            <CardDescription>Customize how the app looks</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Theme</Label>
+                <p className="text-sm text-muted-foreground">Choose your preferred theme</p>
+              </div>
+              <ThemeToggle />
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

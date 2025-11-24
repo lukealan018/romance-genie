@@ -14,7 +14,6 @@ import { RestaurantCard } from "@/components/RestaurantCard";
 import { ActivityCard } from "@/components/ActivityCard";
 import { PlanCard } from "@/components/PlanCard";
 import { RestaurantDetailsDrawer } from "@/components/RestaurantDetailsDrawer";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { HeroSection } from "@/components/hero-section";
 import { LocationDialog } from "@/components/LocationDialog";
 import { WeatherWidget } from "@/components/WeatherWidget";
@@ -2048,12 +2047,11 @@ const Index = () => {
             loading={loadingProfileWeather}
           />
           <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="ghost" size="icon" onClick={() => navigate('/calendar')} title="Calendar">
-              <CalendarIcon className="w-5 h-5" />
-            </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/history')} title="Saved Plans">
               <Heart className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/calendar')} title="Calendar">
+              <CalendarIcon className="w-5 h-5" />
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} title="Profile">
               <User className="w-5 h-5" />
