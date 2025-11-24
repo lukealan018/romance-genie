@@ -94,6 +94,12 @@ const Index = () => {
     icon?: string;
   } | null>(null);
   const [loadingWeather, setLoadingWeather] = useState(false);
+  const [profileWeatherData, setProfileWeatherData] = useState<{
+    temperature?: number;
+    description?: string;
+    icon?: string;
+  } | null>(null);
+  const [loadingProfileWeather, setLoadingProfileWeather] = useState(false);
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
   const locationSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -132,6 +138,55 @@ const Index = () => {
       setLoadingWeather(false);
     }
   };
+
+  // Fetch weather based on user's profile ZIP code
+  const fetchProfileWeather = useCallback(async () => {
+    if (!userId) return;
+    
+    setLoadingProfileWeather(true);
+    try {
+      // Fetch user profile to get home ZIP
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('home_zip')
+        .eq('user_id', userId)
+        .single();
+
+      if (profileError) throw profileError;
+      if (!profile?.home_zip) {
+        console.log('No home ZIP code in profile');
+        return;
+      }
+
+      // Geocode the ZIP code to get coordinates
+      const { data: geoData, error: geoError } = await supabase.functions.invoke('geocode', {
+        body: { zipCode: profile.home_zip }
+      });
+
+      if (geoError) throw geoError;
+      if (!geoData?.lat || !geoData?.lng) {
+        console.error('Failed to geocode ZIP code');
+        return;
+      }
+
+      // Fetch weather for the coordinates
+      const { data: weatherResponse, error: weatherError } = await supabase.functions.invoke('weather', {
+        body: { lat: geoData.lat, lng: geoData.lng }
+      });
+
+      if (weatherError) throw weatherError;
+
+      setProfileWeatherData({
+        temperature: weatherResponse.temperature,
+        description: weatherResponse.description,
+        icon: weatherResponse.icon
+      });
+    } catch (error) {
+      console.error('Error fetching profile weather:', error);
+    } finally {
+      setLoadingProfileWeather(false);
+    }
+  }, [userId]);
 
   // Initialize voice input hook
   const handlePreferencesExtracted = useCallback(async (preferences: any) => {
@@ -837,6 +892,13 @@ const Index = () => {
       }
     }
   }, []);
+
+  // Fetch weather based on user's profile ZIP code when they log in
+  useEffect(() => {
+    if (userId) {
+      fetchProfileWeather();
+    }
+  }, [userId, fetchProfileWeather]);
 
   // Removed auto-GPS request - only request GPS when user explicitly enables it
 
@@ -1980,10 +2042,10 @@ const Index = () => {
         {/* Header with WeatherWidget and navigation buttons */}
         <div className="flex items-center justify-between gap-2 mb-4">
           <WeatherWidget
-            temperature={weatherData?.temperature}
-            description={weatherData?.description}
-            icon={weatherData?.icon}
-            loading={loadingWeather}
+            temperature={profileWeatherData?.temperature}
+            description={profileWeatherData?.description}
+            icon={profileWeatherData?.icon}
+            loading={loadingProfileWeather}
           />
           <div className="flex items-center gap-2">
             <ThemeToggle />
