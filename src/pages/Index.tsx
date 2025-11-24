@@ -533,6 +533,9 @@ const Index = () => {
     // Now perform the dual-location search
     setLoading(true);
     try {
+      console.log('🔍 VOICE SEARCH INITIATED');
+      console.log('Store searchMode BEFORE voice:', searchMode);
+      
       const searchCuisine = updates.cuisine || cuisine || "";
       const searchActivity = updates.activityCategory || activityCategory;
       const restaurantPriceLevel = preferences.restaurantRequest?.priceLevel || null;
@@ -544,7 +547,9 @@ const Index = () => {
       
       // Extract mode from preferences and set it
       const voiceMode = preferences.mode || 'both';
+      console.log('Voice detected mode:', voiceMode);
       setSearchMode(voiceMode);
+      console.log('Store searchMode AFTER setSearchMode:', voiceMode);
       
       // Get user's interaction history (place IDs they've seen/selected before) for novelty scoring
       let userInteractionPlaceIds: string[] = [];
@@ -1281,6 +1286,9 @@ const Index = () => {
 
     setLoading(true);
     try {
+      console.log('🔍 MANUAL SEARCH INITIATED');
+      console.log('Store searchMode:', searchMode);
+      
       // Fetch weather for contextual suggestions
       let weatherData = null;
       try {
@@ -1784,6 +1792,9 @@ const Index = () => {
 
     setLoading(true);
     try {
+      console.log('🔄 REROLL INITIATED');
+      console.log('Store searchMode:', searchMode);
+      
       // Conditionally search based on current mode
       const currentMode = searchMode || 'both';
       
@@ -2079,6 +2090,9 @@ const Index = () => {
     
     setLoading(true);
     try {
+      console.log('🎲 SURPRISE ME INITIATED');
+      console.log('Store searchMode:', searchMode);
+      
       const searchLat = lat;
       const searchLng = lng;
 
@@ -2242,6 +2256,18 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+      {/* DEBUG: Mode Display Badge */}
+      {searchMode && (
+        <div className="fixed top-20 right-4 z-50 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg">
+          <div className="text-xs font-medium">Current Mode:</div>
+          <div className="text-sm font-bold">
+            {searchMode === 'both' && '🍽️ + 🎉 Both'}
+            {searchMode === 'restaurant_only' && '🍽️ Restaurant Only'}
+            {searchMode === 'activity_only' && '🎉 Activity Only'}
+          </div>
+        </div>
+      )}
+      
       <div className="container max-w-2xl mx-auto px-4 py-8">
         {/* Header with WeatherWidget and navigation buttons */}
         <div className="flex items-center justify-between gap-2 mb-4">

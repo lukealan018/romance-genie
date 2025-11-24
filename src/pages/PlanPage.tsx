@@ -145,6 +145,13 @@ const PlanPage = () => {
     swapDebounceRef.current.restaurant = true;
     setTimeout(() => { swapDebounceRef.current.restaurant = false; }, 300);
 
+    // Check mode - don't swap if mode doesn't include restaurants
+    const currentMode = searchMode || 'both';
+    if (currentMode === 'activity_only') {
+      console.log('⚠️ Swap restaurant blocked: mode is activity_only');
+      return;
+    }
+
     // Use coordinates from store (already geocoded during initial search)
     if (lat === null || lng === null) return;
     const searchLat = lat;
@@ -206,6 +213,13 @@ const PlanPage = () => {
     if (swapDebounceRef.current.activity) return;
     swapDebounceRef.current.activity = true;
     setTimeout(() => { swapDebounceRef.current.activity = false; }, 300);
+
+    // Check mode - don't swap if mode doesn't include activities
+    const currentMode = searchMode || 'both';
+    if (currentMode === 'restaurant_only') {
+      console.log('⚠️ Swap activity blocked: mode is restaurant_only');
+      return;
+    }
 
     // Use coordinates from store (already geocoded during initial search)
     if (lat === null || lng === null) return;
