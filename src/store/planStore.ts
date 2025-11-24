@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+export type SearchMode = "both" | "restaurant_only" | "activity_only";
+
 interface Place {
   id: string;
   name: string;
@@ -48,6 +50,9 @@ interface PlanState {
     activities: string[];
   };
   
+  // Search mode
+  searchMode: SearchMode | null;
+  
   // Actions
   setLocation: (lat: number, lng: number) => void;
   setFilters: (filters: { radius?: number; cuisine?: string; activityCategory?: string; locationMode?: "gps" | "zip"; zipCode?: string }) => void;
@@ -58,6 +63,7 @@ interface PlanState {
   setUserPreferences: (preferences: { cuisines: string[]; activities: string[] }) => void;
   setLastSearched: (cuisine: string, activity: string) => void;
   setLastSearchLocation: (lat: number, lng: number) => void;
+  setSearchMode: (mode: SearchMode | null) => void;
   resetPlan: () => void;
 }
 
@@ -89,6 +95,8 @@ export const usePlanStore = create<PlanState>((set) => ({
     cuisines: [],
     activities: [],
   },
+  
+  searchMode: null,
   
   // Actions
   setLocation: (lat, lng) => set({ lat, lng }),
@@ -123,6 +131,8 @@ export const usePlanStore = create<PlanState>((set) => ({
     lastSearchLat: lat,
     lastSearchLng: lng
   }),
+  
+  setSearchMode: (mode) => set({ searchMode: mode }),
   
   resetPlan: () => set({
     restaurants: [],
