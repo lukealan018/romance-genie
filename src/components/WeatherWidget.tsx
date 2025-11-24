@@ -1,6 +1,4 @@
-import { Cloud, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface WeatherWidgetProps {
@@ -15,12 +13,9 @@ interface WeatherWidgetProps {
 export const WeatherWidget = ({ temperature, description, icon, loading, cityName, onRefresh }: WeatherWidgetProps) => {
   if (loading) {
     return (
-      <Card className="px-3 py-2 flex items-center gap-3 bg-card/50 border-border/50">
+      <Card className="px-3 py-1.5 flex items-center gap-2 bg-card/50 border-border/50 max-w-sm">
         <Skeleton className="w-8 h-8 rounded" />
-        <div className="space-y-1.5">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-2.5 w-16" />
-        </div>
+        <Skeleton className="h-4 flex-1" />
       </Card>
     );
   }
@@ -30,38 +25,28 @@ export const WeatherWidget = ({ temperature, description, icon, loading, cityNam
   }
 
   return (
-    <Card className="px-3 py-2 flex items-center gap-3 bg-card/50 border-border/50 group">
+    <Card 
+      className="px-3 py-1.5 flex items-center gap-2 bg-card/50 border-border/50 max-w-sm hover:bg-card/60 transition-colors cursor-pointer"
+      onClick={onRefresh}
+    >
       {icon && (
         <img
           src={`https://openweathermap.org/img/wn/${icon}.png`}
           alt={description}
-          className="w-8 h-8"
+          className="w-8 h-8 flex-shrink-0"
         />
       )}
-      <div className="flex flex-col">
-        <div className="flex items-center gap-1.5">
-          {cityName && (
-            <>
-              <span className="text-xs font-medium text-muted-foreground">{cityName}</span>
-              <span className="text-xs text-muted-foreground/50">•</span>
-            </>
-          )}
-          <span className="text-sm font-semibold text-foreground">{temperature}°F</span>
-        </div>
-        <span className="text-xs text-muted-foreground capitalize leading-tight">
-          {description}
+      <div className="flex items-center gap-1 min-w-0 flex-1">
+        {cityName && (
+          <>
+            <span className="text-base font-semibold text-slate-300 truncate">{cityName}</span>
+            <span className="text-slate-400">|</span>
+          </>
+        )}
+        <span className="text-sm text-slate-400 whitespace-nowrap">
+          {temperature}°F • <span className="capitalize">{description}</span>
         </span>
       </div>
-      {onRefresh && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={onRefresh}
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-        </Button>
-      )}
     </Card>
   );
 };
