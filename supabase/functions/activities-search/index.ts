@@ -49,59 +49,99 @@ function getActivityMapping(keyword: string): { googleType: string; keywords: st
   return activityMappings[normalized] || null;
 }
 
+// Category-specific allowlists and exclusions for comprehensive filtering
+const venueFilters: Record<string, { allowlist: string[]; excludeTypes: string[]; excludeKeywords: string[] }> = {
+  brewery: {
+    allowlist: ['brewpub', 'craft brewery', 'microbrewery', 'taproom', 'beer garden', 'brewing company', 'brewery'],
+    excludeTypes: ['liquor_store', 'convenience_store', 'supermarket', 'shopping_mall', 'department_store'],
+    excludeKeywords: ['beer store', 'total wine', 'bevmo', 'liquor store', 'bottle shop', 'beverage store']
+  },
+  
+  wine: {
+    allowlist: ['winery', 'vineyard', 'wine cellar', 'tasting room', 'wine tasting', 'estate winery', 'wine cave', 'wine estate', 'cellar door'],
+    excludeTypes: ['liquor_store', 'convenience_store', 'supermarket', 'shopping_mall', 'department_store', 'beauty_salon', 'hair_care', 'spa', 'nail_salon', 'barber_shop'],
+    excludeKeywords: ['total wine', 'bevmo', 'liquor store', 'bottle shop', 'spirits store', '& more', 'wine + spirits']
+  },
+  
+  art: {
+    allowlist: ['art gallery', 'contemporary gallery', 'fine art gallery', 'sculpture garden', 'exhibition space', 'art museum', 'gallery', 'art center'],
+    excludeTypes: ['furniture_store', 'home_goods_store', 'store', 'shopping_mall', 'department_store'],
+    excludeKeywords: ['furniture', 'home goods', 'art supplies', 'michaels', 'hobby lobby', 'craft store', 'art supply']
+  },
+  
+  golf: {
+    allowlist: ['golf course', 'driving range', 'top golf', 'topgolf', 'mini golf', 'putt-putt', 'miniature golf', 'golf club', 'golf center'],
+    excludeTypes: ['sporting_goods_store', 'store', 'shopping_mall', 'department_store'],
+    excludeKeywords: ['golf shop', 'golf store', 'sporting goods', "dick's sporting", 'golf galaxy', 'pga superstore']
+  },
+  
+  painting: {
+    allowlist: ['paint and sip', 'painting class', 'art studio', 'wine and paint', 'sip and paint', 'paint night', "painting with a twist", "pinot's palette", 'canvas and cocktails', 'paint bar'],
+    excludeTypes: ['store', 'craft_store', 'home_goods_store', 'shopping_mall'],
+    excludeKeywords: ['michaels', 'hobby lobby', 'art supplies', 'craft store', 'art supply', 'paint store']
+  },
+  
+  hookah: {
+    allowlist: ['hookah lounge', 'shisha lounge', 'hookah bar', 'shisha bar', 'hookah cafe', 'hookah spot'],
+    excludeTypes: ['store', 'shopping_mall', 'convenience_store'],
+    excludeKeywords: ['smoke shop', 'tobacco shop', 'vape shop', 'tobacco store', 'head shop']
+  },
+  
+  theater: {
+    allowlist: ['live theater', 'playhouse', 'performing arts', 'repertory', 'stage theater', 'broadway', 'community theater', 'theater company', 'theatre'],
+    excludeTypes: ['movie_theater'],
+    excludeKeywords: ['cinema', 'movie theater', 'amc', 'regal', 'cinemark', 'movies', 'imax']
+  },
+  
+  comedy: {
+    allowlist: ['comedy club', 'comedy theater', 'improv', 'stand-up comedy', 'laugh factory', 'comedy store', 'improv comedy'],
+    excludeTypes: [],
+    excludeKeywords: []
+  }
+};
+
 function shouldExcludeResult(placeTypes: string[], searchKeyword: string, placeName: string = ''): boolean {
   const keyword = searchKeyword.toLowerCase();
   const name = placeName.toLowerCase();
   
-  // If searching for bars/wine/cocktails/lounges, apply filtering
-  if (keyword.includes('bar') || keyword.includes('lounge') || 
-      keyword.includes('wine') || keyword.includes('cocktail')) {
-    
-    // PASS 1: Explicitly ALLOW wine tasting venues (wineries, cellars, tasting rooms)
-    const wineVenueKeywords = [
-      'winery',
-      'vineyard',
-      'wine cellar',
-      'tasting room',
-      'wine tasting',
-      'estate winery',
-      'wine cave',
-      'wine estate',
-      'cellar door',
-    ];
-    
-    // If it's a wine venue, don't exclude it
-    if (wineVenueKeywords.some(venue => name.includes(venue))) {
-      return false;
-    }
-    
-    // PASS 2: EXCLUDE retail stores and beauty services
-    const excludeTypes = [
-      'beauty_salon', 'hair_care', 'spa', 'nail_salon', 'barber_shop',
-      'hair_salon', 'salon', 'beauty', 'cosmetics',
-      'liquor_store', 'convenience_store', 'supermarket',
-      'shopping_mall', 'department_store', 'home_goods_store',
-    ];
-    
-    // Check place types
-    if (placeTypes.some(type => excludeTypes.includes(type))) {
-      return true;
-    }
-    
-    // Check name for retail indicators (more specific keywords)
-    const retailKeywords = [
-      'total wine',
-      'bevmo',
-      'liquor store',
-      '& more',
-      'wine + spirits',
-      'bottle shop',
-      'spirits store',
-    ];
-    
-    if (retailKeywords.some(retail => name.includes(retail))) {
-      return true;
-    }
+  // Determine which category filter to apply based on search keyword
+  let categoryFilter = null;
+  
+  if (keyword.includes('brewery') || keyword.includes('brewpub') || keyword.includes('beer')) {
+    categoryFilter = venueFilters.brewery;
+  } else if (keyword.includes('wine') || keyword.includes('bar') || keyword.includes('lounge') || keyword.includes('cocktail')) {
+    categoryFilter = venueFilters.wine;
+  } else if (keyword.includes('art') || keyword.includes('gallery') || keyword.includes('museum')) {
+    categoryFilter = venueFilters.art;
+  } else if (keyword.includes('golf')) {
+    categoryFilter = venueFilters.golf;
+  } else if (keyword.includes('paint') || keyword.includes('painting')) {
+    categoryFilter = venueFilters.painting;
+  } else if (keyword.includes('hookah') || keyword.includes('shisha')) {
+    categoryFilter = venueFilters.hookah;
+  } else if (keyword.includes('theater') || keyword.includes('theatre') || keyword.includes('play') || keyword.includes('musical')) {
+    categoryFilter = venueFilters.theater;
+  } else if (keyword.includes('comedy')) {
+    categoryFilter = venueFilters.comedy;
+  }
+  
+  // If no category filter matches, don't exclude
+  if (!categoryFilter) return false;
+  
+  // PASS 1: Check allowlist - if match found, don't exclude
+  if (categoryFilter.allowlist.some(venue => name.includes(venue))) {
+    return false;
+  }
+  
+  // PASS 2: Check exclusions
+  // Check place types
+  if (placeTypes.some(type => categoryFilter.excludeTypes.includes(type))) {
+    return true;
+  }
+  
+  // Check name keywords
+  if (categoryFilter.excludeKeywords.some(keyword => name.includes(keyword))) {
+    return true;
   }
   
   return false;
