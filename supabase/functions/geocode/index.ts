@@ -7,7 +7,60 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { address, zipCode } = await req.json();
+    const { address, zipCode, lat, lng } = await req.json();
+    
+    // Support reverse geocoding (lat/lng → city name)
+    if (lat !== undefined && lng !== undefined) {
+      const apiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+      if (!apiKey) {
+        console.error('GOOGLE_MAPS_API_KEY not configured');
+        return new Response(
+          JSON.stringify({ error: 'Geocoding service not configured. Please contact support.' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`=== REVERSE GEOCODING ===`);
+      console.log(`Coordinates: ${lat}, ${lng}`);
+
+      const reverseGeocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+      const response = await fetch(reverseGeocodeUrl);
+      
+      if (!response.ok) {
+        console.error('Google API request failed:', response.status, response.statusText);
+        return new Response(
+          JSON.stringify({ error: 'Geocoding service temporarily unavailable. Please try again.' }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const data = await response.json();
+      
+      if (data.status !== 'OK' || !data.results || data.results.length === 0) {
+        console.error('Reverse geocoding failed:', data.status, data.error_message);
+        return new Response(
+          JSON.stringify({ error: 'Unable to determine city name from coordinates.' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const cityName = data.results[0].address_components.find(
+        (component: any) => component.types.includes('locality')
+      )?.long_name || data.results[0].address_components.find(
+        (component: any) => component.types.includes('postal_town')
+      )?.long_name || 'Unknown';
+
+      console.log(`Successfully reverse geocoded to: ${cityName}`);
+
+      return new Response(
+        JSON.stringify({
+          lat,
+          lng,
+          city: cityName
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     // Support both 'address' and 'zipCode' parameters for backward compatibility
     const locationInput = address || zipCode;

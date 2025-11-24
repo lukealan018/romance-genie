@@ -44,7 +44,7 @@ export const WeatherWidget = ({ temperature, description, icon, loading, cityNam
           </>
         )}
         <span className="text-sm text-slate-400 whitespace-nowrap">
-          {temperature}°F • <span className="capitalize">{description}</span>
+          {temperature}°F
         </span>
       </div>
     </Card>
