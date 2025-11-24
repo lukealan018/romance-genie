@@ -270,6 +270,12 @@ const Index = () => {
     let activityLng = lng || null;
     let needsLocationSetup = false;
     
+    // Get current mode early to apply mode-aware logic
+    const currentMode = preferences.mode || searchMode || 'both';
+    console.log('=== MODE DETECTION ===');
+    console.log('Detected mode:', currentMode);
+    console.log('=====================');
+    
     // Helper function to geocode a location
     const geocodeLocation = async (location: string): Promise<{ lat: number; lng: number } | null> => {
       try {
@@ -345,7 +351,7 @@ const Index = () => {
       }
     }
     
-    // Fallback to general location if no specific locations provided
+    // Fallback to general location - use same location for BOTH venues in 'both' mode
     if (!preferences.restaurantRequest?.location && 
         !preferences.activityRequest?.location && 
         preferences.generalLocation) {
@@ -356,8 +362,24 @@ const Index = () => {
       
       const coords = await geocodeLocation(preferences.generalLocation);
       if (coords) {
-        restaurantLat = activityLat = coords.lat;
-        restaurantLng = activityLng = coords.lng;
+        // For 'both' mode, use same location for both venues
+        if (currentMode === 'both') {
+          restaurantLat = activityLat = coords.lat;
+          restaurantLng = activityLng = coords.lng;
+          console.log('Both mode: Using same location for restaurant and activity');
+        }
+        // For single-venue modes, only set relevant coordinates
+        else if (currentMode === 'restaurant_only') {
+          restaurantLat = coords.lat;
+          restaurantLng = coords.lng;
+          console.log('Restaurant-only mode: Setting restaurant location only');
+        }
+        else if (currentMode === 'activity_only') {
+          activityLat = coords.lat;
+          activityLng = coords.lng;
+          console.log('Activity-only mode: Setting activity location only');
+        }
+        
         needsLocationSetup = true;
         setLocation(coords.lat, coords.lng);
         
@@ -400,62 +422,80 @@ const Index = () => {
       }
     }
     
-    // Check if we still don't have valid coordinates - try last search location first
+    // Smarter fallback logic for missing coordinates
     if ((!restaurantLat || !restaurantLng || !activityLat || !activityLng)) {
-      const { lastSearchLat, lastSearchLng } = usePlanStore.getState();
-      
-      // Try last search location first (if available)
-      if (lastSearchLat && lastSearchLng) {
-        console.log('Using last search location as fallback:', { lat: lastSearchLat, lng: lastSearchLng });
-        
-        if (!restaurantLat || !restaurantLng) {
-          restaurantLat = lastSearchLat;
-          restaurantLng = lastSearchLng;
+      // PRIORITY 1: If one venue has coords, use for the other (same-location assumption for 'both' mode)
+      if (restaurantLat && restaurantLng && (!activityLat || !activityLng) && currentMode === 'both') {
+        activityLat = restaurantLat;
+        activityLng = restaurantLng;
+        console.log('Activity location missing - using restaurant location');
+      }
+      else if (activityLat && activityLng && (!restaurantLat || !restaurantLng) && currentMode === 'both') {
+        restaurantLat = activityLat;
+        restaurantLng = activityLng;
+        console.log('Restaurant location missing - using activity location');
+      }
+      // PRIORITY 2: Fall back to last search ONLY if within 50 miles of user's current location
+      else {
+        const { lastSearchLat, lastSearchLng } = usePlanStore.getState();
+        if (lastSearchLat && lastSearchLng && lat && lng) {
+          const distanceFromCurrent = calculateDistance(lat, lng, lastSearchLat, lastSearchLng);
+          
+          if (distanceFromCurrent <= 50) {
+            if (!restaurantLat || !restaurantLng) {
+              restaurantLat = lastSearchLat;
+              restaurantLng = lastSearchLng;
+            }
+            if (!activityLat || !activityLng) {
+              activityLat = lastSearchLat;
+              activityLng = lastSearchLng;
+            }
+            console.log(`✓ Using last search location (${distanceFromCurrent.toFixed(1)} miles away)`);
+            toast({
+              title: "Using previous location",
+              description: "Searching near where you last looked",
+            });
+          } else {
+            console.log(`✗ Last search too far (${distanceFromCurrent.toFixed(1)} miles) - will use GPS`);
+          }
         }
-        if (!activityLat || !activityLng) {
-          activityLat = lastSearchLat;
-          activityLng = lastSearchLng;
-        }
         
-        toast({
-          title: "Using previous location",
-          description: "Searching near where you last looked",
-        });
-      } else {
-        // Fall back to GPS if no last location
-        console.log('No last search location, getting current location...');
-        toast({
-          title: "Getting your location...",
-          description: "Please wait while we determine your location",
-        });
-        try {
-          await handleUseCurrentLocation(true);
-          const currentLat = usePlanStore.getState().lat;
-          const currentLng = usePlanStore.getState().lng;
-          
-          if (!currentLat || !currentLng) {
-            throw new Error('Could not get current location');
-          }
-          
-          if (!restaurantLat || !restaurantLng) {
-            restaurantLat = currentLat;
-            restaurantLng = currentLng;
-          }
-          if (!activityLat || !activityLng) {
-            activityLat = currentLat;
-            activityLng = currentLng;
-          }
-          
-          console.log('Using current location:', { lat: currentLat, lng: currentLng });
-        } catch (error) {
-          console.error('Failed to get location:', error);
+        // PRIORITY 3: Final fallback to GPS
+        if (!restaurantLat || !restaurantLng || !activityLat || !activityLng) {
+          console.log('No valid fallback - getting current GPS location...');
           toast({
-            title: "Location required",
-            description: "Please enable location services or set a ZIP code in settings",
-            variant: "destructive"
+            title: "Getting your location...",
+            description: "Please wait while we determine your location",
           });
-          setLoading(false);
-          return;
+          try {
+            await handleUseCurrentLocation(true);
+            const currentLat = usePlanStore.getState().lat;
+            const currentLng = usePlanStore.getState().lng;
+            
+            if (!currentLat || !currentLng) {
+              throw new Error('Could not get current location');
+            }
+            
+            if (!restaurantLat || !restaurantLng) {
+              restaurantLat = currentLat;
+              restaurantLng = currentLng;
+            }
+            if (!activityLat || !activityLng) {
+              activityLat = currentLat;
+              activityLng = currentLng;
+            }
+            
+            console.log('✓ Using current GPS location:', { lat: currentLat, lng: currentLng });
+          } catch (error) {
+            console.error('Failed to get location:', error);
+            toast({
+              title: "Location required",
+              description: "Please enable location services or set a ZIP code in settings",
+              variant: "destructive"
+            });
+            setLoading(false);
+            return;
+          }
         }
       }
     }
@@ -541,6 +581,15 @@ const Index = () => {
           console.error('Failed to load user interactions:', error);
         }
       }
+      
+      // Mode verification logging
+      console.log('=== MODE VERIFICATION ===');
+      console.log('Current mode:', voiceMode);
+      console.log('Will search restaurants?', voiceMode === 'both' || voiceMode === 'restaurant_only');
+      console.log('Will search activities?', (voiceMode === 'both' || voiceMode === 'activity_only') && !!searchActivity);
+      console.log('Restaurant coords:', { lat: restaurantLat, lng: restaurantLng });
+      console.log('Activity coords:', { lat: activityLat, lng: activityLng });
+      console.log('========================');
       
       // Search restaurants only if mode allows
       const restaurantsPromise = (voiceMode === 'both' || voiceMode === 'restaurant_only')
@@ -1275,6 +1324,15 @@ const Index = () => {
       
       // Conditionally search based on mode
       const currentMode = searchMode || 'both';
+      
+      // Mode verification logging
+      console.log('=== MANUAL SEARCH MODE CHECK ===');
+      console.log('Mode:', currentMode);
+      console.log('Will search restaurants?', currentMode === 'both' || currentMode === 'restaurant_only');
+      console.log('Will search activities?', currentMode === 'both' || currentMode === 'activity_only');
+      console.log('Search location:', { lat: searchLat, lng: searchLng });
+      console.log('Radius:', radius, 'miles');
+      console.log('================================');
       
       // Fetch restaurants only if mode allows
       const restaurantsPromise = (currentMode === 'both' || currentMode === 'restaurant_only')

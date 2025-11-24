@@ -252,7 +252,23 @@ serve(async (req) => {
         lng: place.geometry?.location?.lng || 0,
         city: extractCity(place.address_components),
         category: determineCategory(place.types || []),
-      }));
+      }))
+      .filter((item: any) => {
+        // Distance validation: filter out results >50 miles from search center
+        const R = 3959; // Earth radius in miles
+        const dLat = (item.lat - lat) * Math.PI / 180;
+        const dLng = (item.lng - lng) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat * Math.PI / 180) * Math.cos(item.lat * Math.PI / 180) *
+                  Math.sin(dLng/2) * Math.sin(dLng/2);
+        const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        
+        if (distance > 50) {
+          console.log(`❌ Filtering out ${item.name} - ${distance.toFixed(1)} miles from search center`);
+          return false;
+        }
+        return true;
+      });
 
     console.log(`Found ${items.length} activities, nextPageToken: ${!!data.next_page_token}`);
 
