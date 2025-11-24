@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Heart, RefreshCw, Loader2, User, Calendar as CalendarIcon, Bell } from "lucide-react";
+import { Heart, RefreshCw, Loader2, User, Calendar as CalendarIcon, Bell, History } from "lucide-react";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -2180,102 +2181,127 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Hero Section with Voice Input */}
-        <HeroSection
-          userName={nickname}
-          isLoggedIn={!!userId}
-          loading={loading || isProcessing}
-          isListening={isListening}
-          onVoiceInput={startListening}
-          onSurpriseMe={handleSurpriseMe}
-          onTogglePickers={() => setShowPickers(!showPickers)}
-          showPickers={showPickers}
-        >
-          {/* Conditional content based on mode selection */}
-          {!searchMode && (
+        {/* Step 1: Mode Selection - Show first if no mode selected */}
+        {!searchMode && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
             <ModeSelection 
               selectedMode={searchMode}
               onModeSelect={(mode) => {
                 setSearchMode(mode);
-                setShowPickers(true);
               }}
             />
-          )}
-          
-          {searchMode && showPickers && (
-            <div className="space-y-6 mt-6">
-              {/* CuisinePicker - only show for both and restaurant_only modes */}
-              {(searchMode === 'both' || searchMode === 'restaurant_only') && (
-                <div>
-                  <h2 className="text-lg font-semibold mb-4">Choose cuisine</h2>
-                  <CuisinePicker selected={cuisine} onSelect={(value) => setFilters({ cuisine: value })} />
-                </div>
-              )}
+          </motion.div>
+        )}
 
-              {/* ActivityPicker - only show for both and activity_only modes */}
-              {(searchMode === 'both' || searchMode === 'activity_only') && (
-                <div>
-                  <h2 className="text-lg font-semibold mb-4">Choose activity</h2>
-                  <ActivityPicker selected={activityCategory} onSelect={(value) => setFilters({ activityCategory: value })} />
-                </div>
-              )}
-
-            {/* Location and Radius */}
-            <div className="bg-card rounded-xl border p-6 space-y-6">
-              <LocationToggle
-                mode={locationMode}
-                zipCode={zipCode}
-                onModeChange={(mode) => {
-                  // Clear stored coordinates when switching modes
-                  // This forces fresh validation and geocoding on next search
-                  setLocation(null, null);
-                  setFilters({ locationMode: mode });
-                  
-                  // Clear old search results since they're from a different location
+        {/* Step 2: Hero Section - Only show after mode is selected */}
+        {searchMode && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {searchMode === 'both' && "🍽️ + 🎉 Full Date Night"}
+                  {searchMode === 'restaurant_only' && "🍽️ Just Dinner"}
+                  {searchMode === 'activity_only' && "🎉 Just Activity"}
+                </span>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  setSearchMode(null);
+                  setShowPickers(false);
                   resetPlan();
-                  
-                  toast({
-                    title: mode === "gps" ? "Switched to GPS" : "Switched to ZIP Code",
-                    description: mode === "gps" 
-                      ? "Click 'Get Current Location' to use GPS" 
-                      : "Enter your ZIP code to continue",
-                  });
                 }}
-                onZipCodeChange={(value) => {
-                  setFilters({ zipCode: value });
-                  if (value.length === 5) {
-                    debouncedSaveLocation(radius, value);
-                  }
-                }}
-                onUseCurrentLocation={() => handleUseCurrentLocation(false)}
-                locationDetected={lat !== null && lng !== null}
-                gettingLocation={gettingLocation}
-              />
-              <div className="h-px bg-border" />
-              <RadiusSelector value={radius} onChange={(value) => {
-                setFilters({ radius: value });
-                debouncedSaveLocation(value, zipCode);
-              }} />
+              >
+                Change Mode
+              </Button>
             </div>
 
-            {/* See Tonight's Plan Button */}
-            <CustomButton full onClick={handleSeePlan} disabled={loading} size="lg">
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Finding Spots...
-                </>
-              ) : searchMode === 'restaurant_only' ? (
-                "Find Dinner Spot"
-              ) : searchMode === 'activity_only' ? (
-                "Find Activity"
-              ) : (
-                "See Tonight's Plan"
+            <HeroSection
+              userName={nickname}
+              isLoggedIn={!!userId}
+              loading={loading || isProcessing}
+              isListening={isListening}
+              onVoiceInput={startListening}
+              onSurpriseMe={handleSurpriseMe}
+              onTogglePickers={() => setShowPickers(!showPickers)}
+              showPickers={showPickers}
+              searchMode={searchMode}
+            >
+              {showPickers && (
+                <div className="space-y-6 mt-6">
+                  {(searchMode === 'both' || searchMode === 'restaurant_only') && (
+                    <CuisinePicker
+                      selected={cuisine}
+                      onSelect={(value) => setFilters({ cuisine: value })}
+                    />
+                  )}
+
+                  {(searchMode === 'both' || searchMode === 'activity_only') && (
+                    <ActivityPicker
+                      selected={activityCategory}
+                      onSelect={(value) => setFilters({ activityCategory: value })}
+                    />
+                  )}
+
+                  <div className="bg-card rounded-xl border p-6 space-y-6">
+                    <LocationToggle
+                      mode={locationMode}
+                      zipCode={zipCode}
+                      onModeChange={(mode) => {
+                        setLocation(null, null);
+                        setFilters({ locationMode: mode });
+                        resetPlan();
+                        toast({
+                          title: mode === "gps" ? "Switched to GPS" : "Switched to ZIP Code",
+                          description: mode === "gps" 
+                            ? "Click 'Get Current Location' to use GPS" 
+                            : "Enter your ZIP code to continue",
+                        });
+                      }}
+                      onZipCodeChange={(value) => {
+                        setFilters({ zipCode: value });
+                        if (value.length === 5) {
+                          debouncedSaveLocation(radius, value);
+                        }
+                      }}
+                      onUseCurrentLocation={() => handleUseCurrentLocation(false)}
+                      locationDetected={lat !== null && lng !== null}
+                      gettingLocation={gettingLocation}
+                    />
+                    <div className="h-px bg-border" />
+                    <RadiusSelector 
+                      value={radius} 
+                      onChange={(value) => {
+                        setFilters({ radius: value });
+                        debouncedSaveLocation(value, zipCode);
+                      }} 
+                    />
+                  </div>
+
+                  <CustomButton full onClick={handleSeePlan} disabled={loading} size="lg">
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Finding Spots...
+                      </>
+                    ) : searchMode === 'restaurant_only' ? (
+                      "Find Dinner Spot"
+                    ) : searchMode === 'activity_only' ? (
+                      "Find Activity"
+                    ) : (
+                      "See Tonight's Plan"
+                    )}
+                  </CustomButton>
+                </div>
               )}
-            </CustomButton>
-            </div>
-          )}
-        </HeroSection>
+            </HeroSection>
+          </>
+        )}
 
         {/* Results section */}
 
