@@ -260,6 +260,12 @@ const Index = () => {
     console.log('Restaurant location from AI:', preferences.restaurantRequest?.location);
     console.log('Activity location from AI:', preferences.activityRequest?.location);
     console.log('General location from AI:', preferences.generalLocation);
+    console.log('Mode from AI:', preferences.mode);
+    
+    // Set search mode from voice preferences
+    const voiceMode = preferences.mode || 'both';
+    setSearchMode(voiceMode);
+    console.log('Search mode set to:', voiceMode);
     
     // Determine search centers for restaurant and activity
     // Start with current location if available, otherwise will get location later
@@ -538,18 +544,20 @@ const Index = () => {
       }
       
       // Search restaurants and activities at their respective locations
-      const restaurantsPromise = supabase.functions.invoke('places-search', {
-        body: { 
-          lat: restaurantLat, 
-          lng: restaurantLng, 
-          radiusMiles: radius, 
-          cuisine: searchCuisine === "🌍 Around the World" ? "" : searchCuisine,
-          priceLevel: restaurantPriceLevel
-        }
-      });
+      const restaurantsPromise = (voiceMode === 'both' || voiceMode === 'restaurant_only')
+        ? supabase.functions.invoke('places-search', {
+            body: { 
+              lat: restaurantLat, 
+              lng: restaurantLng, 
+              radiusMiles: radius, 
+              cuisine: searchCuisine === "🌍 Around the World" ? "" : searchCuisine,
+              priceLevel: restaurantPriceLevel
+            }
+          })
+        : Promise.resolve({ data: { items: [] }, error: null });
 
-      // Only search activities if we have a keyword
-      const activitiesPromise = searchActivity 
+      // Only search activities if we have a keyword AND mode allows
+      const activitiesPromise = (voiceMode === 'both' || voiceMode === 'activity_only') && searchActivity 
         ? supabase.functions.invoke('activities-search', {
             body: { 
               lat: activityLat, 
