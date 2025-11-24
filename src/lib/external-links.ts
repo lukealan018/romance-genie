@@ -1,3 +1,25 @@
+/** Detect iOS devices for Apple Maps integration */
+function isIOS(): boolean {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+/** Device-aware map URL that prioritizes address over coordinates */
+export function getMapUrl(name: string, address?: string, lat?: number, lng?: number): string {
+  // Prioritize address over coordinates for human-readable URLs
+  const query = address || (lat != null && lng != null ? `${lat},${lng}` : name);
+  const encodedQuery = encodeURIComponent(query);
+  
+  if (isIOS()) {
+    // Apple Maps format for iOS devices
+    return `http://maps.apple.com/?address=${encodedQuery}`;
+  } else {
+    // Google Maps format for Android and other devices
+    return `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
+  }
+}
+
+/** Legacy Google Maps URL function - kept for backwards compatibility */
 export function googleMapsUrl(name: string, lat?: number, lng?: number, address?: string) {
   if (lat != null && lng != null) {
     // Most precise - drops pin at exact coordinates

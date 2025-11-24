@@ -8,7 +8,7 @@ import { ArrowLeft, Calendar as CalendarIcon, MapPin, Clock, Cloud, Trash2 } fro
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ExportCalendarButton } from "@/components/ExportCalendarButton";
 import { ConflictWarningCard } from "@/components/ConflictWarningCard";
-import { googleMapsUrl } from "@/lib/external-links";
+import { getMapUrl } from "@/lib/external-links";
 import { toast } from "sonner";
 
 export default function Calendar() {
@@ -38,22 +38,22 @@ export default function Calendar() {
 
   const handleRestaurantAddressClick = (e: React.MouseEvent, plan: typeof scheduledPlans[0]) => {
     e.stopPropagation();
-    const url = googleMapsUrl(
+    const url = getMapUrl(
       plan.restaurant_name,
+      plan.restaurant_address ?? undefined,
       plan.restaurant_lat ?? undefined,
-      plan.restaurant_lng ?? undefined,
-      plan.restaurant_address ?? undefined
+      plan.restaurant_lng ?? undefined
     );
     window.open(url, '_blank');
   };
 
   const handleActivityAddressClick = (e: React.MouseEvent, plan: typeof scheduledPlans[0]) => {
     e.stopPropagation();
-    const url = googleMapsUrl(
+    const url = getMapUrl(
       plan.activity_name,
+      plan.activity_address ?? undefined,
       plan.activity_lat ?? undefined,
-      plan.activity_lng ?? undefined,
-      plan.activity_address ?? undefined
+      plan.activity_lng ?? undefined
     );
     window.open(url, '_blank');
   };
