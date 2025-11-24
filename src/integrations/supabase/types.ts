@@ -134,6 +134,7 @@ export type Database = {
           activity_lat: number | null
           activity_lng: number | null
           activity_name: string
+          activity_website: string | null
           availability_status: string | null
           confirmation_numbers: Json | null
           conflict_warnings: Json | null
@@ -146,6 +147,7 @@ export type Database = {
           restaurant_lat: number | null
           restaurant_lng: number | null
           restaurant_name: string
+          restaurant_website: string | null
           scheduled_date: string
           scheduled_time: string
           search_params: Json | null
@@ -162,6 +164,7 @@ export type Database = {
           activity_lat?: number | null
           activity_lng?: number | null
           activity_name: string
+          activity_website?: string | null
           availability_status?: string | null
           confirmation_numbers?: Json | null
           conflict_warnings?: Json | null
@@ -174,6 +177,7 @@ export type Database = {
           restaurant_lat?: number | null
           restaurant_lng?: number | null
           restaurant_name: string
+          restaurant_website?: string | null
           scheduled_date: string
           scheduled_time: string
           search_params?: Json | null
@@ -190,6 +194,7 @@ export type Database = {
           activity_lat?: number | null
           activity_lng?: number | null
           activity_name?: string
+          activity_website?: string | null
           availability_status?: string | null
           confirmation_numbers?: Json | null
           conflict_warnings?: Json | null
@@ -202,6 +207,7 @@ export type Database = {
           restaurant_lat?: number | null
           restaurant_lng?: number | null
           restaurant_name?: string
+          restaurant_website?: string | null
           scheduled_date?: string
           scheduled_time?: string
           search_params?: Json | null
