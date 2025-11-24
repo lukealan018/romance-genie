@@ -87,6 +87,11 @@ INTENT DETECTION:
 "specific" → I want, find me, looking for, need, [specific place type], exact location mentioned, must have
 "flexible" → maybe, something like, open to, whatever, doesn't matter, any, either way, suggest
 
+MODE DETECTION (CRITICAL - determines what searches run):
+"both" → mentions BOTH restaurant/dining AND activity (e.g., "sushi and karaoke", "dinner and movie", "tacos then bar")
+"restaurant_only" → ONLY mentions restaurant/dining, no activity (e.g., "just find me tacos", "looking for pizza", "casual place to eat", "sandwich shop")
+"activity_only" → ONLY mentions activity, no restaurant (e.g., "whiskey bar", "comedy club tonight", "find a lounge", "just looking for a bar")
+
 NOVELTY LEVEL:
 "safe" → favorite, usual, reliable, tried and true, classic, popular, well known
 "adventurous" → something different, new, try something, explore, discover
@@ -205,6 +210,7 @@ Return JSON with this structure:
   "restaurantRequest": { "type": "exact venue type from lists", "location": "city or null", "priceLevel": "budget|moderate|upscale|null" },
   "activityRequest": { "type": "exact venue type from lists", "location": "city or null", "priceLevel": "budget|moderate|upscale|null" },
   "generalLocation": "city or area name or null",
+  "mode": "both|restaurant_only|activity_only",
   "energyLevel": "low|medium|high",
   "mood": "string",
   "constraints": ["dietary or preference constraints"],
@@ -213,7 +219,18 @@ Return JSON with this structure:
   "noveltyLevel": "safe|adventurous|wild",
   "mustHaves": ["required features"],
   "avoidances": ["things to avoid"]
-}`;
+}
+
+CRITICAL EXAMPLES for MODE DETECTION:
+- "sushi and karaoke" → mode: "both"
+- "dinner and bowling" → mode: "both"
+- "just find me tacos" → mode: "restaurant_only"
+- "looking for pizza" → mode: "restaurant_only"
+- "casual place to eat" → mode: "restaurant_only"
+- "I'm looking for something casual to eat" → mode: "restaurant_only"
+- "whiskey bar" → mode: "activity_only"
+- "comedy club tonight" → mode: "activity_only"
+- "find a lounge" → mode: "activity_only"`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -242,6 +259,7 @@ Return JSON with this structure:
     
     console.log('=== VOICE INTERPRETATION ===');
     console.log('Original transcript:', transcript);
+    console.log('Mode:', result.mode);
     console.log('Extracted restaurant:', result.restaurantRequest);
     console.log('Extracted activity:', result.activityRequest);
     console.log('General location:', result.generalLocation);
