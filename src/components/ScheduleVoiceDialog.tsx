@@ -29,6 +29,8 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
   const [confirmationNumbers, setConfirmationNumbers] = useState({ restaurant: "", activity: "" });
   const [availabilityData, setAvailabilityData] = useState<any>(null);
   const [voiceAttempts, setVoiceAttempts] = useState(0);
+  const [restaurantHours, setRestaurantHours] = useState<any>(null);
+  const [activityHours, setActivityHours] = useState<any>(null);
 
   const addScheduledPlan = useScheduledPlansStore((state) => state.addScheduledPlan);
 
@@ -109,10 +111,26 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Fetch place details first to get hours data
+      const [restaurantResult, activityResult] = await Promise.all([
+        supabase.functions.invoke('place-details', {
+          body: { placeId: planDetails.restaurant.id }
+        }),
+        supabase.functions.invoke('place-details', {
+          body: { placeId: planDetails.activity.id }
+        })
+      ]);
+
+      // Store hours in state for later use in handleSchedule
+      setRestaurantHours(restaurantResult.data?.opening_hours);
+      setActivityHours(activityResult.data?.opening_hours);
+      
       const { data, error } = await supabase.functions.invoke('check-availability', {
         body: {
           restaurantId: planDetails.restaurant.id,
           activityId: planDetails.activity.id,
+          restaurantHours: restaurantResult.data?.opening_hours,
+          activityHours: activityResult.data?.opening_hours,
           scheduledDate: date,
           scheduledTime: time,
           userId: user?.id
@@ -137,22 +155,51 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
 
     setIsProcessing(true);
     try {
-      // Fetch weather forecast and venue details in parallel
-      const [weatherResult, restaurantResult, activityResult] = await Promise.all([
+      // Fetch weather forecast and venue details (if not already cached from availability check)
+      const fetchPromises: Promise<any>[] = [
         supabase.functions.invoke('fetch-weather-forecast', {
           body: {
             lat: planDetails.restaurant.lat,
             lng: planDetails.restaurant.lng,
             scheduledDate: finalDate
           }
-        }),
-        supabase.functions.invoke('place-details', {
-          body: { placeId: planDetails.restaurant.id }
-        }),
-        supabase.functions.invoke('place-details', {
-          body: { placeId: planDetails.activity.id }
         })
-      ]);
+      ];
+
+      // Only fetch place details if we don't have them cached from availability check
+      if (!restaurantHours) {
+        fetchPromises.push(
+          supabase.functions.invoke('place-details', {
+            body: { placeId: planDetails.restaurant.id }
+          })
+        );
+      }
+      if (!activityHours) {
+        fetchPromises.push(
+          supabase.functions.invoke('place-details', {
+            body: { placeId: planDetails.activity.id }
+          })
+        );
+      }
+
+      const results = await Promise.all(fetchPromises);
+      const weatherResult = results[0];
+      
+      // Extract restaurant and activity results if they were fetched
+      let restaurantResult = { data: { website: null } };
+      let activityResult = { data: { website: null } };
+      
+      if (!restaurantHours && !activityHours) {
+        // Both were fetched
+        restaurantResult = results[1];
+        activityResult = results[2];
+      } else if (!restaurantHours) {
+        // Only restaurant was fetched
+        restaurantResult = results[1];
+      } else if (!activityHours) {
+        // Only activity was fetched
+        activityResult = results[1];
+      }
 
       const scheduledPlan = await addScheduledPlan({
         scheduled_date: finalDate,
@@ -164,6 +211,7 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
         restaurant_lat: planDetails.restaurant.lat,
         restaurant_lng: planDetails.restaurant.lng,
         restaurant_website: restaurantResult.data?.website,
+        restaurant_hours: restaurantHours,
         activity_id: planDetails.activity.id,
         activity_name: planDetails.activity.name,
         activity_address: planDetails.activity.address,
@@ -171,6 +219,7 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
         activity_lat: planDetails.activity.lat,
         activity_lng: planDetails.activity.lng,
         activity_website: activityResult.data?.website,
+        activity_hours: activityHours,
         weather_forecast: weatherResult.data,
         confirmation_numbers: confirmationNumbers.restaurant || confirmationNumbers.activity ? confirmationNumbers : undefined,
         availability_status: availabilityData?.status || 'pending',

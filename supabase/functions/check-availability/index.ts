@@ -12,24 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { restaurantId, activityId, scheduledDate, scheduledTime, userId } = await req.json();
-
-    const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
-    if (!GOOGLE_MAPS_API_KEY) {
-      throw new Error('GOOGLE_MAPS_API_KEY not configured');
-    }
-
-    // Fetch restaurant details
-    const restaurantResponse = await fetch(
-      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${restaurantId}&fields=opening_hours,geometry&key=${GOOGLE_MAPS_API_KEY}`
-    );
-    const restaurantData = await restaurantResponse.json();
-
-    // Fetch activity details
-    const activityResponse = await fetch(
-      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${activityId}&fields=opening_hours,geometry&key=${GOOGLE_MAPS_API_KEY}`
-    );
-    const activityData = await activityResponse.json();
+    const { restaurantId, activityId, restaurantHours, activityHours, scheduledDate, scheduledTime, userId } = await req.json();
 
     // Parse scheduled time
     const [hours, minutes] = scheduledTime.split(':').map(Number);
@@ -39,7 +22,6 @@ serve(async (req) => {
     let availabilityStatus = 'available';
 
     // Check restaurant hours
-    const restaurantHours = restaurantData.result?.opening_hours;
     if (restaurantHours?.periods) {
       const dayOfWeek = new Date(scheduledDate).getDay();
       const dayPeriod = restaurantHours.periods.find((p: any) => p.open.day === dayOfWeek);
@@ -78,7 +60,6 @@ serve(async (req) => {
     }
 
     // Check activity timing
-    const activityHours = activityData.result?.opening_hours;
     if (activityHours?.periods) {
       const dayOfWeek = new Date(scheduledDate).getDay();
       const dayPeriod = activityHours.periods.find((p: any) => p.open.day === dayOfWeek);
