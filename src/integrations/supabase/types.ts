@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      notifications: {
+        Row: {
+          created_at: string | null
+          delivery_method: string | null
+          id: string
+          message: string
+          notification_type: string
+          read_at: string | null
+          scheduled_for: string
+          scheduled_plan_id: string
+          sent_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_method?: string | null
+          id?: string
+          message: string
+          notification_type: string
+          read_at?: string | null
+          scheduled_for: string
+          scheduled_plan_id: string
+          sent_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          delivery_method?: string | null
+          id?: string
+          message?: string
+          notification_type?: string
+          read_at?: string | null
+          scheduled_for?: string
+          scheduled_plan_id?: string
+          sent_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_scheduled_plan_id_fkey"
+            columns: ["scheduled_plan_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           activities: string[] | null
@@ -24,6 +74,9 @@ export type Database = {
           energy_level: string | null
           home_zip: string | null
           nickname: string | null
+          notification_email_enabled: boolean | null
+          notification_quiet_end: string | null
+          notification_quiet_start: string | null
           occasion_type: string | null
           party_size: number | null
           planning_style: string | null
@@ -47,6 +100,9 @@ export type Database = {
           energy_level?: string | null
           home_zip?: string | null
           nickname?: string | null
+          notification_email_enabled?: boolean | null
+          notification_quiet_end?: string | null
+          notification_quiet_start?: string | null
           occasion_type?: string | null
           party_size?: number | null
           planning_style?: string | null
@@ -70,6 +126,9 @@ export type Database = {
           energy_level?: string | null
           home_zip?: string | null
           nickname?: string | null
+          notification_email_enabled?: boolean | null
+          notification_quiet_end?: string | null
+          notification_quiet_start?: string | null
           occasion_type?: string | null
           party_size?: number | null
           planning_style?: string | null
@@ -139,10 +198,12 @@ export type Database = {
           activity_name: string
           activity_website: string | null
           availability_status: string | null
+          completed_at: string | null
           confirmation_numbers: Json | null
           conflict_warnings: Json | null
           created_at: string | null
           id: string
+          rating: number | null
           restaurant_address: string | null
           restaurant_cuisine: string | null
           restaurant_hours: Json | null
@@ -169,10 +230,12 @@ export type Database = {
           activity_name: string
           activity_website?: string | null
           availability_status?: string | null
+          completed_at?: string | null
           confirmation_numbers?: Json | null
           conflict_warnings?: Json | null
           created_at?: string | null
           id?: string
+          rating?: number | null
           restaurant_address?: string | null
           restaurant_cuisine?: string | null
           restaurant_hours?: Json | null
@@ -199,10 +262,12 @@ export type Database = {
           activity_name?: string
           activity_website?: string | null
           availability_status?: string | null
+          completed_at?: string | null
           confirmation_numbers?: Json | null
           conflict_warnings?: Json | null
           created_at?: string | null
           id?: string
+          rating?: number | null
           restaurant_address?: string | null
           restaurant_cuisine?: string | null
           restaurant_hours?: Json | null
