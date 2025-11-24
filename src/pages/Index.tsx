@@ -568,7 +568,7 @@ const Index = () => {
       console.log('=== MODE VERIFICATION ===');
       console.log('Current mode:', voiceMode);
       console.log('Will search restaurants?', voiceMode === 'both' || voiceMode === 'restaurant_only');
-      console.log('Will search activities?', (voiceMode === 'both' || voiceMode === 'activity_only') && !!searchActivity);
+      console.log('Will search activities?', voiceMode === 'both' || voiceMode === 'activity_only');
       console.log('Restaurant coords:', { lat: restaurantLat, lng: restaurantLng });
       console.log('Activity coords:', { lat: activityLat, lng: activityLng });
       console.log('========================');
@@ -586,14 +586,14 @@ const Index = () => {
           })
         : Promise.resolve({ data: { items: [] }, error: null });
 
-      // Search activities only if mode allows and we have a keyword
-      const activitiesPromise = (voiceMode === 'both' || voiceMode === 'activity_only') && searchActivity
+      // Search activities only if mode allows (mode is the gate, not keyword presence)
+      const activitiesPromise = (voiceMode === 'both' || voiceMode === 'activity_only')
         ? supabase.functions.invoke('activities-search', {
             body: { 
               lat: activityLat, 
               lng: activityLng, 
               radiusMiles: radius, 
-              keyword: searchActivity 
+              keyword: searchActivity || 'fun activity' 
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
