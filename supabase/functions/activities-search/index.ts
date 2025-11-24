@@ -11,7 +11,7 @@ const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
 const activityMappings: Record<string, { googleType: string; keywords: string[] }> = {
   'whiskey bar': { googleType: 'bar', keywords: ['whiskey bar', 'whisky bar', 'bourbon bar'] },
   'cocktail bar': { googleType: 'bar', keywords: ['cocktail bar', 'mixology', 'craft cocktails'] },
-  'wine bar': { googleType: 'bar', keywords: ['wine bar', 'wine lounge'] },
+  'wine bar': { googleType: 'bar', keywords: ['wine bar', 'wine lounge', 'wine tasting room', 'vino bar', 'enoteca'] },
   'speakeasy': { googleType: 'bar', keywords: ['speakeasy', 'hidden bar', 'secret bar'] },
   'lounge bar': { googleType: 'bar', keywords: ['lounge bar', 'cocktail lounge', 'upscale lounge'] },
   'lounge': { googleType: 'bar', keywords: ['lounge', 'cocktail lounge'] },
@@ -49,16 +49,41 @@ function getActivityMapping(keyword: string): { googleType: string; keywords: st
   return activityMappings[normalized] || null;
 }
 
-function shouldExcludeResult(placeTypes: string[], searchKeyword: string): boolean {
+function shouldExcludeResult(placeTypes: string[], searchKeyword: string, placeName: string = ''): boolean {
   const keyword = searchKeyword.toLowerCase();
+  const name = placeName.toLowerCase();
   
-  // If searching for "bar" or "lounge", exclude salons, spas, beauty services
-  if (keyword.includes('bar') || keyword.includes('lounge')) {
+  // If searching for bars/wine/cocktails/lounges, exclude retail stores and beauty services
+  if (keyword.includes('bar') || keyword.includes('lounge') || 
+      keyword.includes('wine') || keyword.includes('cocktail')) {
+    
+    // Exclude beauty services and retail stores
     const excludeTypes = [
       'beauty_salon', 'hair_care', 'spa', 'nail_salon', 'barber_shop',
-      'hair_salon', 'salon', 'beauty', 'cosmetics'
+      'hair_salon', 'salon', 'beauty', 'cosmetics',
+      'liquor_store', 'store', 'convenience_store', 'supermarket',
+      'shopping_mall', 'department_store', 'home_goods_store',
     ];
-    return placeTypes.some(type => excludeTypes.includes(type));
+    
+    // Check place types first
+    if (placeTypes.some(type => excludeTypes.includes(type))) {
+      return true;
+    }
+    
+    // Check name for retail indicators
+    const retailKeywords = [
+      'total wine',
+      'bevmo',
+      'liquor store',
+      'wine shop',
+      'wine store',
+      'spirits store',
+      '& more',
+    ];
+    
+    if (retailKeywords.some(retail => name.includes(retail))) {
+      return true;
+    }
   }
   
   return false;
@@ -158,7 +183,7 @@ serve(async (req) => {
     }
 
     const items = (data.results || [])
-      .filter((place: any) => !shouldExcludeResult(place.types || [], keyword))
+      .filter((place: any) => !shouldExcludeResult(place.types || [], keyword, place.name || ''))
       .map((place: any) => ({
         id: place.place_id,
         name: place.name,
