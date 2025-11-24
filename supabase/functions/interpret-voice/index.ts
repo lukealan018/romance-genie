@@ -92,6 +92,21 @@ NOVELTY LEVEL:
 "adventurous" → something different, new, try something, explore, discover
 "wild" → surprise me, blow my mind, craziest, wildest, most unique, never been
 
+MODE DETECTION:
+Determine search mode based on user intent:
+- "both": User wants dinner AND activity (e.g., "dinner and a movie", "sushi and bowling", "italian and karaoke")
+- "restaurant_only": User ONLY mentions food/dining (e.g., "find me a steakhouse", "Italian restaurant", "sushi spot", "tacos")
+- "activity_only": User ONLY mentions activity/entertainment (e.g., "find a bar", "comedy club tonight", "bowling", "karaoke")
+
+Mode Examples:
+- "Sushi and cocktails" → mode: "both"
+- "Just find me tacos" → mode: "restaurant_only"
+- "Whiskey bar in West Hollywood" → mode: "activity_only"
+- "Dinner and a comedy show" → mode: "both"
+- "Pizza place nearby" → mode: "restaurant_only"
+- "Bowling" → mode: "activity_only"
+- "Italian and bowling" → mode: "both"
+
 Examples - MULTI-LOCATION PARSING (CRITICAL):
 
 DIFFERENT LOCATIONS PER VENUE:
@@ -212,7 +227,8 @@ Return JSON with this structure:
   "intent": "surprise|specific|flexible",
   "noveltyLevel": "safe|adventurous|wild",
   "mustHaves": ["required features"],
-  "avoidances": ["things to avoid"]
+  "avoidances": ["things to avoid"],
+  "mode": "both|restaurant_only|activity_only"
 }`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
