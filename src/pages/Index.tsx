@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Heart, RefreshCw, Loader2, User, Calendar as CalendarIcon } from "lucide-react";
+import { Heart, RefreshCw, Loader2, User, Calendar as CalendarIcon, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { LocationDialog } from "@/components/LocationDialog";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { RecentSearches } from "@/components/RecentSearches";
 import { ProfileCompletionPrompt, useProfileCompletionPrompt } from "@/components/ProfileCompletionPrompt";
+import { NotificationBell } from "@/components/NotificationBell";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { toast } from "@/hooks/use-toast";
 import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
@@ -884,6 +885,37 @@ const Index = () => {
       fetchProfile(userId);
     }
   }, [userId]);
+
+  // Real-time notification listener
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel('new-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload: any) => {
+          // Only show toast if notification was just marked as sent
+          if (payload.new.sent_at && !payload.old.sent_at) {
+            toast({
+              title: payload.new.title,
+              description: payload.new.message
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, navigate]);
 
   // Save location settings to database with debounce
   const saveLocationSettings = async (newRadius: number, newZipCode: string, showToast = false) => {
@@ -2116,6 +2148,7 @@ const Index = () => {
             <Button variant="ghost" size="icon" onClick={() => navigate('/calendar')} title="Calendar">
               <CalendarIcon className="w-5 h-5" />
             </Button>
+            <NotificationBell />
             <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} title="Profile">
               <User className="w-5 h-5" />
             </Button>
