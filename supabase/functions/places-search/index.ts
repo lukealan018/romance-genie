@@ -6,20 +6,12 @@ import {
   isLocalFavorite,
   type NoveltyMode 
 } from "../_shared/scoring.ts";
+import { getRestaurantSuggestions } from "../_shared/places-service.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
-
-function extractCity(addressComponents: any[]): string | undefined {
-  const cityComponent = addressComponents?.find((comp: any) =>
-    comp.types.includes('locality') || comp.types.includes('sublocality')
-  );
-  return cityComponent?.long_name;
-}
 
 // Calculate distance between two coordinates using Haversine formula
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -36,7 +28,6 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 function isInTargetCity(addressComponents: any[], targetCity: string): boolean {
   if (!targetCity || !addressComponents) return true;
   
-  // Method 1: Check locality component (most accurate)
   const cityComponent = addressComponents.find((comp: any) =>
     comp.types.includes('locality')
   );
@@ -45,54 +36,9 @@ function isInTargetCity(addressComponents: any[], targetCity: string): boolean {
     const placeCity = cityComponent.long_name.toLowerCase();
     const target = targetCity.toLowerCase();
     
-    // Exact match
     if (placeCity === target) return true;
-    
-    // Handle variations (e.g., "Costa Mesa" vs "Costamesa")
     if (placeCity.replace(/\s+/g, '') === target.replace(/\s+/g, '')) return true;
-    
-    // Partial match for compound city names
     if (placeCity.includes(target) || target.includes(placeCity)) return true;
-  }
-  
-  return false;
-}
-
-// Restaurant filtering to exclude grocery stores, gas stations, and other non-restaurant venues
-function shouldExcludeRestaurant(placeTypes: string[], placeName: string = ''): boolean {
-  const name = placeName.toLowerCase();
-  
-  // PASS 1: Allowlist legitimate restaurants
-  const restaurantKeywords = [
-    'restaurant', 'bistro', 'cafe', 'steakhouse', 'trattoria', 
-    'brasserie', 'eatery', 'dining', 'grill', 'kitchen', 
-    'pizzeria', 'tavern', 'pub', 'diner', 'bar & grill'
-  ];
-  
-  // If it matches restaurant keywords, don't exclude
-  if (restaurantKeywords.some(keyword => name.includes(keyword))) {
-    return false;
-  }
-  
-  // PASS 2: Exclude grocery stores, gas stations, convenience stores
-  const excludeTypes = [
-    'grocery_store', 'supermarket', 'convenience_store', 
-    'gas_station', 'shopping_mall', 'department_store'
-  ];
-  
-  if (placeTypes.some(type => excludeTypes.includes(type))) {
-    return true;
-  }
-  
-  // Exclude by name keywords
-  const excludeKeywords = [
-    'whole foods', 'trader joe', '7-eleven', 'chevron', 
-    'shell', 'arco', 'grocery', 'market', 'walmart', 
-    'target', 'costco', 'safeway', 'ralphs', 'vons'
-  ];
-  
-  if (excludeKeywords.some(keyword => name.includes(keyword))) {
-    return true;
   }
   
   return false;
@@ -105,12 +51,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!GOOGLE_MAPS_API_KEY) {
-      throw new Error('GOOGLE_MAPS_API_KEY is not configured');
-    }
-
-    // Parse request body for POST requests
-    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, pagetoken: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode;
+    // Parse request parameters
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode;
 
     if (req.method === 'POST') {
       const body = await req.json();
@@ -119,18 +61,15 @@ serve(async (req) => {
       radiusMiles = body.radiusMiles;
       cuisine = body.cuisine;
       priceLevel = body.priceLevel;
-      pagetoken = body.pagetoken;
       targetCity = body.targetCity;
       noveltyMode = body.noveltyMode || 'balanced';
     } else {
-      // Fallback to query params for GET
       const url = new URL(req.url);
       lat = parseFloat(url.searchParams.get('lat') || '');
       lng = parseFloat(url.searchParams.get('lng') || '');
       radiusMiles = parseFloat(url.searchParams.get('radiusMiles') || '');
       cuisine = url.searchParams.get('cuisine') || '';
       priceLevel = url.searchParams.get('priceLevel') || undefined;
-      pagetoken = url.searchParams.get('pagetoken') || undefined;
       targetCity = url.searchParams.get('targetCity') || undefined;
       noveltyMode = (url.searchParams.get('noveltyMode') as NoveltyMode) || 'balanced';
     }
@@ -139,7 +78,7 @@ serve(async (req) => {
     if (isNaN(lat) || isNaN(lng) || isNaN(radiusMiles)) {
       console.error('Invalid parameters:', { lat, lng, radiusMiles, cuisine });
       return new Response(
-        JSON.stringify({ error: 'Missing or invalid required parameters: lat, lng, radiusMiles, cuisine' }),
+        JSON.stringify({ error: 'Missing or invalid required parameters: lat, lng, radiusMiles' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -147,119 +86,46 @@ serve(async (req) => {
     // Convert miles to meters
     const radiusMeters = Math.round(radiusMiles * 1609.34);
 
-    // Map price level to Google's scale (1-4)
-    const priceLevelMap: Record<string, { min: number; max: number }> = {
-      'budget': { min: 1, max: 2 },
-      'moderate': { min: 2, max: 3 },
-      'upscale': { min: 3, max: 4 }
-    };
-    
-    const priceRange = priceLevel ? priceLevelMap[priceLevel] : null;
-    
-    // Add price descriptors to keyword
-    let enhancedKeyword = cuisine === 'restaurant' ? 'restaurant' : `${cuisine} restaurant`;
-    if (priceLevel === 'upscale') {
-      enhancedKeyword = `upscale ${enhancedKeyword} fine dining`;
-    } else if (priceLevel === 'budget') {
-      enhancedKeyword = `affordable ${enhancedKeyword}`;
-    }
-    
-    // Add city name to search query for precision
-    if (targetCity) {
-      enhancedKeyword = `${enhancedKeyword} in ${targetCity}`;
-    }
-
-    // If pagetoken is present, wait 2 seconds (Google requirement)
-    if (pagetoken) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-
-    // Build Google Places API request
-    const placesUrl = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json');
-    placesUrl.searchParams.set('location', `${lat},${lng}`);
-    placesUrl.searchParams.set('radius', radiusMeters.toString());
-    placesUrl.searchParams.set('keyword', enhancedKeyword);
-    placesUrl.searchParams.set('type', 'restaurant');
-    if (priceRange) {
-      placesUrl.searchParams.set('minprice', priceRange.min.toString());
-      placesUrl.searchParams.set('maxprice', priceRange.max.toString());
-    }
-    placesUrl.searchParams.set('key', GOOGLE_MAPS_API_KEY);
-    
-    if (pagetoken) {
-      placesUrl.searchParams.set('pagetoken', pagetoken);
-    }
-
-    console.log('Fetching places:', { 
+    console.log('🔍 Multi-provider restaurant search:', { 
       lat, 
       lng, 
-      radiusMeters, 
+      radiusMiles, 
       cuisine: cuisine || 'any',
       priceLevel: priceLevel || 'any',
-      enhancedKeyword,
-      hasPageToken: !!pagetoken 
+      targetCity: targetCity || 'none',
+      noveltyMode
     });
 
-    const response = await fetch(placesUrl.toString());
-    const data = await response.json();
+    // Use multi-provider service to get restaurant suggestions
+    const { items: providerResults, providerStats } = await getRestaurantSuggestions({
+      lat,
+      lng,
+      radiusMeters,
+      cuisine,
+      priceLevel,
+      targetCity,
+      noveltyMode,
+      limit: 50
+    });
 
-    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      console.error('Google Places API error:', data);
-      return new Response(
-        JSON.stringify({ error: `Google Places API error: ${data.status}` }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    console.log(`📊 Provider stats:`, providerStats);
 
-    // Map response to desired format with price level filtering and restaurant exclusion
-    const items = (data.results || [])
-      .filter((place: any) => {
-        // Exclude non-restaurants first
-        if (shouldExcludeRestaurant(place.types || [], place.name || '')) {
-          return false;
-        }
-        // Then apply price filtering
-        if (!priceRange) return true;
-        const placePrice = place.price_level || 2; // Default to moderate
-        return placePrice >= priceRange.min && placePrice <= priceRange.max;
-      })
-      .map((place: any) => {
-        const placeLat = place.geometry?.location?.lat || 0;
-        const placeLng = place.geometry?.location?.lng || 0;
-        const distance = calculateDistance(lat, lng, placeLat, placeLng);
-        
-        return {
-          id: place.place_id,
-          name: place.name,
-          rating: place.rating || 0,
-          totalRatings: place.user_ratings_total || 0,
-          priceLevel: place.price_level ? '$'.repeat(place.price_level) : '',
-          address: place.vicinity || '',
-          lat: placeLat,
-          lng: placeLng,
-          distance: distance,
-          addressComponents: place.address_components || [],
-          types: place.types || [],
-          geometry: place.geometry
-        };
-      })
+    // Apply existing scoring and filtering logic
+    const radiusMilesNum = radiusMiles;
+    const items = providerResults
       .filter((item: any) => {
-        // Distance is the PRIMARY filter
-        const maxDistance = radiusMiles * 1.5; // Allow 50% buffer beyond search radius
-        if (item.distance > maxDistance) {
-          console.log(`❌ Filtering out ${item.name} - ${item.distance.toFixed(1)} miles from search center (max: ${maxDistance})`);
+        // Distance filter with buffer
+        const maxDistance = radiusMilesNum * 1.5;
+        if (item.distance && item.distance > maxDistance) {
           return false;
         }
         
-        // City filter is a SOFT preference, not a hard boundary
-        // Only exclude if NOT in target city AND more than 5 miles away
-        if (targetCity) {
+        // City filter (soft preference)
+        if (targetCity && item.addressComponents) {
           const inTargetCity = isInTargetCity(item.addressComponents, targetCity);
-          if (!inTargetCity && item.distance > 5) {
-            console.log(`❌ Filtering out ${item.name} - not in ${targetCity} and ${item.distance.toFixed(1)} miles away`);
+          if (!inTargetCity && item.distance && item.distance > 5) {
             return false;
           }
-          // Allow places close by even if technically outside city boundary
         }
         
         return true;
@@ -270,13 +136,23 @@ serve(async (req) => {
           place_id: item.id,
           name: item.name,
           rating: item.rating,
-          user_ratings_total: item.totalRatings,
-          types: item.types,
-          geometry: item.geometry
+          user_ratings_total: item.reviewCount,
+          types: item.types || item.categories || [],
+          geometry: item.geometry || {
+            location: { lat: item.lat, lng: item.lng }
+          }
         };
         
         return {
-          ...item,
+          id: item.id,
+          name: item.name,
+          rating: item.rating,
+          totalRatings: item.reviewCount,
+          priceLevel: item.priceLevel ? '$'.repeat(item.priceLevel) : '',
+          address: item.address,
+          lat: item.lat,
+          lng: item.lng,
+          source: item.source,
           uniquenessScore: calculateUniquenessScore(placeData, noveltyMode),
           isHiddenGem: isHiddenGem(placeData),
           isNewDiscovery: isNewDiscovery(placeData),
@@ -284,24 +160,20 @@ serve(async (req) => {
         };
       })
       .sort((a: any, b: any) => {
-        // Sort by uniqueness score (highest first), with distance as tiebreaker
+        // Sort by uniqueness score (highest first), with rating as tiebreaker
         if (Math.abs(a.uniquenessScore - b.uniquenessScore) > 0.1) {
           return b.uniquenessScore - a.uniquenessScore;
         }
-        return a.distance - b.distance;
-      })
-      .map((item: any) => {
-        // Remove internal fields before returning
-        const { addressComponents, distance, types, geometry, uniquenessScore, ...cleanItem } = item;
-        return cleanItem;
+        return b.rating - a.rating;
       });
 
-    console.log(`Found ${items.length} places, nextPageToken: ${!!data.next_page_token}`);
+    console.log(`✅ Returning ${items.length} scored restaurants`);
 
     return new Response(
       JSON.stringify({
         items,
-        nextPageToken: data.next_page_token || null,
+        nextPageToken: null, // Multi-provider doesn't support pagination initially
+        providerStats // Include provider stats for debugging
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
