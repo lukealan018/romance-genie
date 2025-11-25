@@ -32,7 +32,7 @@ VOICE RECOGNITION ERROR HANDLING:
 Common voice-to-text errors to ignore or correct:
 - Filler words: "nice", "good", "great", "app", "scan", "something", "somewhere"
 - Navigation words: "then", "after", "before", "driving to", "going to", "and also"
-- Phonetic errors: "Beverley" → "Beverly", "whisky" → "whiskey"
+- Phonetic errors: "Beverley" → "Beverly", "whisky" → "whiskey", "delicate test" → "delicatessen"
 - Focus ONLY on: [venue type] [price level] [location] patterns
 
 When parsing:
@@ -58,7 +58,7 @@ Middle Eastern: middle eastern, lebanese, shawarma, falafel, ethiopian, moroccan
 Seafood: seafood, oyster bar, raw bar, lobster, crab, poke
 Dietary: vegan, vegetarian, healthy, salad
 Styles: fine dining, tasting menu, gastropub, food hall, buffet, brunch, breakfast
-Casual: cafe, coffee shop, bakery, sandwich, deli, food truck
+Casual: cafe, coffee shop, bakery, sandwich, sandwich shop, sandwich joint, deli, delicatessen, pastrami, food truck, bagel shop
 
 BARS/LOUNGES (maintain exact type):
 Specialty: whiskey bar, cocktail bar, wine bar, speakeasy, tiki bar, gin bar, rum bar, sake bar, champagne bar
@@ -81,6 +81,15 @@ PRICE DESCRIPTORS:
 budget: cheap, affordable, inexpensive, budget-friendly, value, economical, hole in the wall
 moderate: mid-range, moderate, decent, reasonable, fair price
 upscale: fancy, fine dining, high-end, luxury, upscale, expensive, premium, michelin, tasting menu, elevated, sophisticated
+
+IMMEDIACY DETECTION (determines if user wants current GPS location):
+Set "useCurrentLocation": true when user says:
+- "right now", "right here", "nearby", "around here", "close to me"
+- "near me", "where I am", "around me", "in my area"
+
+Set "useCurrentLocation": false (default) when:
+- User specifies a location (city, ZIP, neighborhood)
+- No immediacy indicator present (will use home location)
 
 INTENT DETECTION:
 "surprise" → surprise me, something different, hidden gem, never been, blow my mind, wildest, crazy, random, adventurous, new experience
@@ -211,6 +220,7 @@ Return JSON with this structure:
   "activityRequest": { "type": "exact venue type from lists", "location": "city or null", "priceLevel": "budget|moderate|upscale|null" },
   "generalLocation": "city or area name or null",
   "mode": "both|restaurant_only|activity_only",
+  "useCurrentLocation": false,
   "energyLevel": "low|medium|high",
   "mood": "string",
   "constraints": ["dietary or preference constraints"],

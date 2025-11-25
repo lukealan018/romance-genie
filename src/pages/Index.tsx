@@ -460,32 +460,12 @@ const Index = () => {
         console.log('Restaurant location missing - using activity location');
       }
         
-      // PRIORITY 2: Check if store has location from profile (home ZIP)
-      if (!restaurantLat || !restaurantLng || !activityLat || !activityLng) {
-        const storeState = usePlanStore.getState();
-        if (storeState.lat && storeState.lng) {
-          console.log('✓ Using profile location from store:', storeState.lat, storeState.lng);
-          if (!restaurantLat || !restaurantLng) {
-            restaurantLat = storeState.lat;
-            restaurantLng = storeState.lng;
-          }
-          if (!activityLat || !activityLng) {
-            activityLat = storeState.lat;
-            activityLng = storeState.lng;
-          }
-          toast({
-            title: "Using home location",
-            description: "Searching in your default area",
-          });
-        }
-      }
-        
-      // PRIORITY 3: Final fallback to GPS
-      if (!restaurantLat || !restaurantLng || !activityLat || !activityLng) {
-        console.log('No profile location - getting current GPS location...');
+      // PRIORITY 2: Check for immediacy indicator (user wants GPS right now)
+      if (preferences.useCurrentLocation && (!restaurantLat || !restaurantLng || !activityLat || !activityLng)) {
+        console.log('🎯 Immediacy detected ("right now") - getting GPS location');
         toast({
           title: "Getting your location...",
-          description: "Please wait while we determine your location",
+          description: "Finding places nearby",
         });
         try {
           await handleUseCurrentLocation(true);
@@ -515,6 +495,61 @@ const Index = () => {
           });
           setLoading(false);
           return;
+        }
+      }
+      // PRIORITY 3: Use profile home location (default for non-immediate searches)
+      else if (!restaurantLat || !restaurantLng || !activityLat || !activityLng) {
+        const storeState = usePlanStore.getState();
+        if (storeState.lat && storeState.lng) {
+          console.log('✓ Using profile home location:', storeState.lat, storeState.lng);
+          if (!restaurantLat || !restaurantLng) {
+            restaurantLat = storeState.lat;
+            restaurantLng = storeState.lng;
+          }
+          if (!activityLat || !activityLng) {
+            activityLat = storeState.lat;
+            activityLng = storeState.lng;
+          }
+          toast({
+            title: "Using home location",
+            description: "Searching in your default area",
+          });
+        } else {
+          // PRIORITY 4: Final fallback to GPS if home location not set
+          console.log('No profile location - getting current GPS location...');
+          toast({
+            title: "Getting your location...",
+            description: "Please wait while we determine your location",
+          });
+          
+          try {
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                timeout: 10000,
+                enableHighAccuracy: true
+              });
+            });
+            
+            console.log('Got GPS location:', position.coords.latitude, position.coords.longitude);
+            
+            if (!restaurantLat || !restaurantLng) {
+              restaurantLat = position.coords.latitude;
+              restaurantLng = position.coords.longitude;
+            }
+            if (!activityLat || !activityLng) {
+              activityLat = position.coords.latitude;
+              activityLng = position.coords.longitude;
+            }
+          } catch (error) {
+            console.error('Failed to get location:', error);
+            toast({
+              title: "Location required",
+              description: "Please enable location services or set a home ZIP code in your profile",
+              variant: "destructive"
+            });
+            setLoading(false);
+            return;
+          }
         }
       }
     }
