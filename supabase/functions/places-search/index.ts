@@ -110,7 +110,7 @@ serve(async (req) => {
     }
 
     // Parse request body for POST requests
-    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, pagetoken: string | undefined, targetCity: string | undefined;
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, pagetoken: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode;
 
     if (req.method === 'POST') {
       const body = await req.json();
@@ -121,6 +121,7 @@ serve(async (req) => {
       priceLevel = body.priceLevel;
       pagetoken = body.pagetoken;
       targetCity = body.targetCity;
+      noveltyMode = body.noveltyMode || 'balanced';
     } else {
       // Fallback to query params for GET
       const url = new URL(req.url);
@@ -131,6 +132,7 @@ serve(async (req) => {
       priceLevel = url.searchParams.get('priceLevel') || undefined;
       pagetoken = url.searchParams.get('pagetoken') || undefined;
       targetCity = url.searchParams.get('targetCity') || undefined;
+      noveltyMode = (url.searchParams.get('noveltyMode') as NoveltyMode) || 'balanced';
     }
 
     // Validate required parameters
@@ -237,6 +239,8 @@ serve(async (req) => {
           lng: placeLng,
           distance: distance,
           addressComponents: place.address_components || [],
+          types: place.types || [],
+          geometry: place.geometry
         };
       })
       .filter((item: any) => {
@@ -256,10 +260,35 @@ serve(async (req) => {
         }
         return true;
       })
-      .sort((a: any, b: any) => a.distance - b.distance) // Sort by distance (closest first)
+      .map((item: any) => {
+        // Calculate uniqueness score for each item
+        const placeData = {
+          place_id: item.id,
+          name: item.name,
+          rating: item.rating,
+          user_ratings_total: item.totalRatings,
+          types: item.types,
+          geometry: item.geometry
+        };
+        
+        return {
+          ...item,
+          uniquenessScore: calculateUniquenessScore(placeData, noveltyMode),
+          isHiddenGem: isHiddenGem(placeData),
+          isNewDiscovery: isNewDiscovery(placeData),
+          isLocalFavorite: isLocalFavorite(placeData)
+        };
+      })
+      .sort((a: any, b: any) => {
+        // Sort by uniqueness score (highest first), with distance as tiebreaker
+        if (Math.abs(a.uniquenessScore - b.uniquenessScore) > 0.1) {
+          return b.uniquenessScore - a.uniquenessScore;
+        }
+        return a.distance - b.distance;
+      })
       .map((item: any) => {
         // Remove internal fields before returning
-        const { addressComponents, distance, ...cleanItem } = item;
+        const { addressComponents, distance, types, geometry, uniquenessScore, ...cleanItem } = item;
         return cleanItem;
       });
 

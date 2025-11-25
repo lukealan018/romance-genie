@@ -9,6 +9,7 @@ import { User, MapPin, Camera, Mic, Save, Loader2, ArrowLeft } from "lucide-reac
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { NoveltyPreferenceSetting } from "@/components/NoveltyPreferenceSetting";
 
 export default function ProfileEdit() {
   const navigate = useNavigate();
@@ -271,6 +272,11 @@ export default function ProfileEdit() {
               )}
             </div>
           </div>
+        </Card>
+
+        {/* Discovery Style Card */}
+        <Card className="bg-slate-800/50 backdrop-blur-lg border-purple-500/20 p-6 space-y-6">
+          <NoveltyPreferenceSetting />
         </Card>
 
         {/* Voice Preferences Card */}

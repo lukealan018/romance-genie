@@ -16,6 +16,9 @@ interface ActivityCardProps {
   lng: number;
   city?: string;
   category?: 'event' | 'activity';
+  isHiddenGem?: boolean;
+  isNewDiscovery?: boolean;
+  isLocalFavorite?: boolean;
   onClick?: () => void;
 }
 
@@ -29,6 +32,9 @@ export const ActivityCard = ({
   lng,
   city,
   category = 'activity',
+  isHiddenGem = false,
+  isNewDiscovery = false,
+  isLocalFavorite = false,
   onClick,
 }: ActivityCardProps) => {
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
@@ -89,7 +95,26 @@ export const ActivityCard = ({
         </div>
       </div>
       <div className="space-y-3">
-        <h3 className="font-semibold text-lg line-clamp-1">{name}</h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-semibold text-lg line-clamp-1 flex-1">{name}</h3>
+          <div className="flex flex-wrap gap-1 justify-end">
+            {isHiddenGem && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                💎 Hidden Gem
+              </span>
+            )}
+            {isNewDiscovery && !isHiddenGem && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                🆕 New
+              </span>
+            )}
+            {isLocalFavorite && !isHiddenGem && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                🏆 Local Fav
+              </span>
+            )}
+          </div>
+        </div>
         
         <div 
           className="flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer"
