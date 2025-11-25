@@ -24,6 +24,7 @@ export interface VoicePreferences {
   noveltyLevel?: "safe" | "adventurous" | "wild";
   mustHaves?: string[];
   avoidances?: string[];
+  mode?: "both" | "restaurant_only" | "activity_only";
 }
 
 interface UseVoiceInputProps {
@@ -227,7 +228,8 @@ async function interpretVoiceInput(
       intent: data.intent || 'flexible',
       noveltyLevel: data.noveltyLevel || 'safe',
       mustHaves: data.mustHaves || [],
-      avoidances: data.avoidances || []
+      avoidances: data.avoidances || [],
+      mode: data.mode || 'both'
     };
 
     onPreferencesExtracted(preferences);
