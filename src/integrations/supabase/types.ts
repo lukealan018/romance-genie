@@ -77,6 +77,7 @@ export type Database = {
           notification_email_enabled: boolean | null
           notification_quiet_end: string | null
           notification_quiet_start: string | null
+          novelty_preference: string | null
           occasion_type: string | null
           party_size: number | null
           planning_style: string | null
@@ -103,6 +104,7 @@ export type Database = {
           notification_email_enabled?: boolean | null
           notification_quiet_end?: string | null
           notification_quiet_start?: string | null
+          novelty_preference?: string | null
           occasion_type?: string | null
           party_size?: number | null
           planning_style?: string | null
@@ -129,6 +131,7 @@ export type Database = {
           notification_email_enabled?: boolean | null
           notification_quiet_end?: string | null
           notification_quiet_start?: string | null
+          novelty_preference?: string | null
           occasion_type?: string | null
           party_size?: number | null
           planning_style?: string | null
