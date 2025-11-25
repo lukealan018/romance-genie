@@ -262,6 +262,10 @@ const Index = () => {
     console.log('Activity location from AI:', preferences.activityRequest?.location);
     console.log('General location from AI:', preferences.generalLocation);
     
+    // Clear previous search state to prevent location bleed
+    setLastSearched('', '');
+    setLastSearchLocation(null, null);
+    
     // Determine search centers for restaurant and activity
     // Start with null - only use store location if voice explicitly extracted a location
     // This prevents stale location data from being used when user doesn't specify location
@@ -269,6 +273,9 @@ const Index = () => {
     let restaurantLng = null;
     let activityLat = null;
     let activityLng = null;
+    let restaurantCity: string | undefined = undefined;
+    let activityCity: string | undefined = undefined;
+    let searchRadius = radius; // Default to user's preference
     let needsLocationSetup = false;
     
     // Get current mode early to apply mode-aware logic
@@ -278,7 +285,7 @@ const Index = () => {
     console.log('=====================');
     
     // Helper function to geocode a location
-    const geocodeLocation = async (location: string): Promise<{ lat: number; lng: number } | null> => {
+    const geocodeLocation = async (location: string): Promise<{ lat: number; lng: number; city?: string } | null> => {
       try {
         console.log(`🌍 Attempting to geocode: "${location}"`);
         const { data, error } = await supabase.functions.invoke('geocode', {
@@ -291,7 +298,7 @@ const Index = () => {
         }
         if (data?.lat && data?.lng) {
           console.log(`✅ Successfully geocoded "${location}":`, { lat: data.lat, lng: data.lng, city: data.city });
-          return { lat: data.lat, lng: data.lng };
+          return { lat: data.lat, lng: data.lng, city: data.city };
         }
         console.warn(`⚠️ Geocoding returned no coordinates for "${location}"`);
         return null;
@@ -313,8 +320,17 @@ const Index = () => {
       if (coords) {
         restaurantLat = coords.lat;
         restaurantLng = coords.lng;
+        restaurantCity = coords.city;
         needsLocationSetup = true;
-        console.log(`✅ Restaurant search will use: (${coords.lat}, ${coords.lng})`);
+        
+        // Use tighter radius for city-specific searches (not ZIP codes)
+        const isZipCode = /^\d+$/.test(preferences.restaurantRequest.location.trim());
+        if (!isZipCode) {
+          searchRadius = 3; // 3 miles for city searches
+          console.log(`🎯 City-specific search detected: using ${searchRadius} mile radius`);
+        }
+        
+        console.log(`✅ Restaurant search will use: (${coords.lat}, ${coords.lng}), city: ${restaurantCity}`);
       } else {
         // Geocoding failed - DON'T fall back to GPS immediately, let the later fallback logic handle it
         console.warn(`⚠️ Geocoding failed for restaurant location "${preferences.restaurantRequest.location}"`);
@@ -338,8 +354,17 @@ const Index = () => {
       if (coords) {
         activityLat = coords.lat;
         activityLng = coords.lng;
+        activityCity = coords.city;
         needsLocationSetup = true;
-        console.log(`✅ Activity search will use: (${coords.lat}, ${coords.lng})`);
+        
+        // Use tighter radius for city-specific searches (not ZIP codes)
+        const isZipCode = /^\d+$/.test(preferences.activityRequest.location.trim());
+        if (!isZipCode && searchRadius === radius) { // Only set if not already set by restaurant
+          searchRadius = 3; // 3 miles for city searches
+          console.log(`🎯 City-specific search detected: using ${searchRadius} mile radius`);
+        }
+        
+        console.log(`✅ Activity search will use: (${coords.lat}, ${coords.lng}), city: ${activityCity}`);
       } else {
         // Geocoding failed - DON'T fall back to GPS immediately, let the later fallback logic handle it
         console.warn(`⚠️ Geocoding failed for activity location "${preferences.activityRequest.location}"`);
@@ -585,9 +610,10 @@ const Index = () => {
             body: { 
               lat: restaurantLat, 
               lng: restaurantLng, 
-              radiusMiles: radius, 
+              radiusMiles: searchRadius, 
               cuisine: searchCuisine === "🌍 Around the World" ? "" : searchCuisine,
-              priceLevel: restaurantPriceLevel
+              priceLevel: restaurantPriceLevel,
+              targetCity: restaurantCity
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -598,8 +624,9 @@ const Index = () => {
             body: { 
               lat: activityLat, 
               lng: activityLng, 
-              radiusMiles: radius, 
-              keyword: searchActivity || 'fun activity' 
+              radiusMiles: searchRadius, 
+              keyword: searchActivity || 'fun activity',
+              targetCity: activityCity
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -620,7 +647,7 @@ const Index = () => {
       
       // ===== FALLBACK STRATEGY FOR ACTIVITIES (VOICE PATH) =====
       let finalActivities = activities;
-      let usedRadius = radius;
+      let usedRadius = searchRadius;
       let usedKeyword = searchActivity;
 
       // STEP 1: Keyword fallback (ONLY if mode allows activities)
@@ -645,7 +672,7 @@ const Index = () => {
           usedKeyword = fallbackTerm;
           
           const fallbackResponse = await supabase.functions.invoke('activities-search', {
-            body: { lat: activityLat, lng: activityLng, radiusMiles: radius, keyword: fallbackTerm }
+            body: { lat: activityLat, lng: activityLng, radiusMiles: searchRadius, keyword: fallbackTerm, targetCity: activityCity }
           });
           
           if (!fallbackResponse.error && fallbackResponse.data?.items?.length > 0) {
@@ -666,12 +693,12 @@ const Index = () => {
         const radiusSteps = [10, 15];
         
         for (const expandedRadius of radiusSteps) {
-          if (expandedRadius <= radius) continue;
+          if (expandedRadius <= searchRadius) continue;
           
           console.log(`🔄 Voice search: Retrying with ${expandedRadius} mile radius`);
           
           const expandedResponse = await supabase.functions.invoke('activities-search', {
-            body: { lat: activityLat, lng: activityLng, radiusMiles: expandedRadius, keyword: usedKeyword }
+            body: { lat: activityLat, lng: activityLng, radiusMiles: expandedRadius, keyword: usedKeyword, targetCity: activityCity }
           });
           
           if (!expandedResponse.error && expandedResponse.data?.items?.length > 0) {

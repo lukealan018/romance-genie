@@ -179,7 +179,7 @@ serve(async (req) => {
       throw new Error('GOOGLE_MAPS_API_KEY is not configured');
     }
 
-    const { lat, lng, radiusMiles, keyword, pagetoken } = await req.json();
+    const { lat, lng, radiusMiles, keyword, pagetoken, targetCity } = await req.json();
 
     if (!lat || !lng || !radiusMiles || !keyword) {
       return new Response(
@@ -193,7 +193,12 @@ serve(async (req) => {
     // Get mapped Google Place type and enhanced keywords
     const mapping = getActivityMapping(keyword);
     const googlePlaceType = mapping?.googleType || null;
-    const enhancedKeywords = mapping?.keywords.join(' ') || keyword;
+    let enhancedKeywords = mapping?.keywords.join(' ') || keyword;
+    
+    // Add city name to search query for precision
+    if (targetCity) {
+      enhancedKeywords = `${enhancedKeywords} in ${targetCity}`;
+    }
 
     console.log('=== GOOGLE PLACES REQUEST ===');
     console.log('Keyword:', keyword);
@@ -254,6 +259,16 @@ serve(async (req) => {
         category: determineCategory(place.types || []),
       }))
       .filter((item: any) => {
+        // City filter: if targetCity specified, only include results in that city
+        if (targetCity) {
+          const addressLower = item.address.toLowerCase();
+          const cityLower = targetCity.toLowerCase();
+          if (!addressLower.includes(cityLower)) {
+            console.log(`❌ Filtering out ${item.name} - not in ${targetCity} (address: ${item.address})`);
+            return false;
+          }
+        }
+        
         // Distance validation: filter out results >50 miles from search center
         const R = 3959; // Earth radius in miles
         const dLat = (item.lat - lat) * Math.PI / 180;

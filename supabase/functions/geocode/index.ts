@@ -157,6 +157,14 @@ Deno.serve(async (req) => {
     )?.long_name || 'Unknown';
 
     console.log(`Successfully geocoded "${firstLocation}" to:`, location, cityName);
+    
+    // Verify the result is actually in the target city if a city name was provided
+    // (not a ZIP code, which is numeric)
+    const isZipCode = /^\d+$/.test(firstLocation.trim());
+    if (!isZipCode && cityName.toLowerCase() !== firstLocation.toLowerCase()) {
+      console.log(`⚠️ Warning: Requested city "${firstLocation}" but geocoded to "${cityName}"`);
+      // Still return the result but log the discrepancy for awareness
+    }
 
     return new Response(
       JSON.stringify({

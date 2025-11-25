@@ -66,7 +66,7 @@ serve(async (req) => {
     }
 
     // Parse request body for POST requests
-    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, pagetoken: string | undefined;
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, pagetoken: string | undefined, targetCity: string | undefined;
 
     if (req.method === 'POST') {
       const body = await req.json();
@@ -76,6 +76,7 @@ serve(async (req) => {
       cuisine = body.cuisine;
       priceLevel = body.priceLevel;
       pagetoken = body.pagetoken;
+      targetCity = body.targetCity;
     } else {
       // Fallback to query params for GET
       const url = new URL(req.url);
@@ -85,6 +86,7 @@ serve(async (req) => {
       cuisine = url.searchParams.get('cuisine') || '';
       priceLevel = url.searchParams.get('priceLevel') || undefined;
       pagetoken = url.searchParams.get('pagetoken') || undefined;
+      targetCity = url.searchParams.get('targetCity') || undefined;
     }
 
     // Validate required parameters
@@ -114,6 +116,11 @@ serve(async (req) => {
       enhancedKeyword = `upscale ${enhancedKeyword} fine dining`;
     } else if (priceLevel === 'budget') {
       enhancedKeyword = `affordable ${enhancedKeyword}`;
+    }
+    
+    // Add city name to search query for precision
+    if (targetCity) {
+      enhancedKeyword = `${enhancedKeyword} in ${targetCity}`;
     }
 
     // If pagetoken is present, wait 2 seconds (Google requirement)
@@ -181,6 +188,16 @@ serve(async (req) => {
         lng: place.geometry?.location?.lng || 0,
       }))
       .filter((item: any) => {
+        // City filter: if targetCity specified, only include results in that city
+        if (targetCity) {
+          const addressLower = item.address.toLowerCase();
+          const cityLower = targetCity.toLowerCase();
+          if (!addressLower.includes(cityLower)) {
+            console.log(`❌ Filtering out ${item.name} - not in ${targetCity} (address: ${item.address})`);
+            return false;
+          }
+        }
+        
         // Distance validation: filter out results >50 miles from search center
         const R = 3959; // Earth radius in miles
         const dLat = (item.lat - lat) * Math.PI / 180;
