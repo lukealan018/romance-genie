@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MapPin } from "lucide-react";
 
 interface WeatherWidgetProps {
   temperature?: number;
@@ -21,7 +22,15 @@ export const WeatherWidget = ({ temperature, description, icon, loading, cityNam
   }
 
   if (!temperature || !description) {
-    return null;
+    return (
+      <Card 
+        className="px-3 py-1.5 flex items-center gap-2 bg-card/50 border-border/50 max-w-sm hover:bg-card/60 transition-colors cursor-pointer"
+        onClick={onRefresh}
+      >
+        <MapPin className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+        <span className="text-sm text-muted-foreground whitespace-nowrap">Get Weather</span>
+      </Card>
+    );
   }
 
   return (
