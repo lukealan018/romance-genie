@@ -164,6 +164,43 @@ function extractCity(addressComponents: any[]): string | undefined {
   return cityComponent?.long_name;
 }
 
+// Calculate distance between two coordinates using Haversine formula
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 3959; // Earth radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// Check if place is in target city using address_components
+function isInTargetCity(addressComponents: any[], targetCity: string): boolean {
+  if (!targetCity || !addressComponents) return true;
+  
+  // Method 1: Check locality component (most accurate)
+  const cityComponent = addressComponents.find((comp: any) =>
+    comp.types.includes('locality')
+  );
+  
+  if (cityComponent) {
+    const placeCity = cityComponent.long_name.toLowerCase();
+    const target = targetCity.toLowerCase();
+    
+    // Exact match
+    if (placeCity === target) return true;
+    
+    // Handle variations (e.g., "Costa Mesa" vs "Costamesa")
+    if (placeCity.replace(/\s+/g, '') === target.replace(/\s+/g, '')) return true;
+    
+    // Partial match for compound city names
+    if (placeCity.includes(target) || target.includes(placeCity)) return true;
+  }
+  
+  return false;
+}
+
 function determineCategory(types: string[]): 'event' | 'activity' {
   const hasEventType = types?.some(type => eventTypes.has(type));
   return hasEventType ? 'event' : 'activity';
@@ -247,42 +284,47 @@ serve(async (req) => {
 
     const items = (data.results || [])
       .filter((place: any) => !shouldExcludeResult(place.types || [], keyword, place.name || ''))
-      .map((place: any) => ({
-        id: place.place_id,
-        name: place.name,
-        rating: place.rating || 0,
-        totalRatings: place.user_ratings_total || 0,
-        address: place.vicinity || place.formatted_address || '',
-        lat: place.geometry?.location?.lat || 0,
-        lng: place.geometry?.location?.lng || 0,
-        city: extractCity(place.address_components),
-        category: determineCategory(place.types || []),
-      }))
+      .map((place: any) => {
+        const placeLat = place.geometry?.location?.lat || 0;
+        const placeLng = place.geometry?.location?.lng || 0;
+        const distance = calculateDistance(lat, lng, placeLat, placeLng);
+        
+        return {
+          id: place.place_id,
+          name: place.name,
+          rating: place.rating || 0,
+          totalRatings: place.user_ratings_total || 0,
+          address: place.vicinity || place.formatted_address || '',
+          lat: placeLat,
+          lng: placeLng,
+          city: extractCity(place.address_components),
+          category: determineCategory(place.types || []),
+          distance: distance,
+          addressComponents: place.address_components || [],
+        };
+      })
       .filter((item: any) => {
-        // City filter: if targetCity specified, only include results in that city
+        // City filter using address_components (Tier 1 precision)
         if (targetCity) {
-          const addressLower = item.address.toLowerCase();
-          const cityLower = targetCity.toLowerCase();
-          if (!addressLower.includes(cityLower)) {
-            console.log(`❌ Filtering out ${item.name} - not in ${targetCity} (address: ${item.address})`);
+          if (!isInTargetCity(item.addressComponents, targetCity)) {
+            console.log(`❌ Filtering out ${item.name} - not in ${targetCity} (locality check)`);
             return false;
           }
         }
         
-        // Distance validation: filter out results >50 miles from search center
-        const R = 3959; // Earth radius in miles
-        const dLat = (item.lat - lat) * Math.PI / 180;
-        const dLng = (item.lng - lng) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                  Math.cos(lat * Math.PI / 180) * Math.cos(item.lat * Math.PI / 180) *
-                  Math.sin(dLng/2) * Math.sin(dLng/2);
-        const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        
-        if (distance > 50) {
-          console.log(`❌ Filtering out ${item.name} - ${distance.toFixed(1)} miles from search center`);
+        // Distance validation: use search radius (converted to miles) as max distance
+        const maxDistance = radiusMiles * 1.5; // Allow 50% buffer beyond search radius
+        if (item.distance > maxDistance) {
+          console.log(`❌ Filtering out ${item.name} - ${item.distance.toFixed(1)} miles from search center (max: ${maxDistance})`);
           return false;
         }
         return true;
+      })
+      .sort((a: any, b: any) => a.distance - b.distance) // Sort by distance (closest first)
+      .map((item: any) => {
+        // Remove internal fields before returning
+        const { addressComponents, distance, ...cleanItem } = item;
+        return cleanItem;
       });
 
     console.log(`Found ${items.length} activities, nextPageToken: ${!!data.next_page_token}`);
