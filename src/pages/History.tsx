@@ -251,10 +251,18 @@ export default function History() {
             <TabsTrigger value="completed" className="px-4 py-2">
               Completed ({completedPlans.length})
             </TabsTrigger>
-            <TabsTrigger value="scheduled" onClick={() => navigate('/calendar')} className="px-4 py-2">
-              Scheduled
-            </TabsTrigger>
           </TabsList>
+
+          {/* Separate navigation button for Scheduled plans */}
+          <div className="flex justify-center mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/calendar')}
+              className="px-6 py-2"
+            >
+              📅 View Scheduled Plans
+            </Button>
+          </div>
 
           <TabsContent value="all" className="space-y-4">
             {plans.length === 0 ? (
