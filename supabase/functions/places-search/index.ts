@@ -244,20 +244,24 @@ serve(async (req) => {
         };
       })
       .filter((item: any) => {
-        // City filter using address_components (Tier 1 precision)
-        if (targetCity) {
-          if (!isInTargetCity(item.addressComponents, targetCity)) {
-            console.log(`❌ Filtering out ${item.name} - not in ${targetCity} (locality check)`);
-            return false;
-          }
-        }
-        
-        // Distance validation: use search radius (converted to miles) as max distance
+        // Distance is the PRIMARY filter
         const maxDistance = radiusMiles * 1.5; // Allow 50% buffer beyond search radius
         if (item.distance > maxDistance) {
           console.log(`❌ Filtering out ${item.name} - ${item.distance.toFixed(1)} miles from search center (max: ${maxDistance})`);
           return false;
         }
+        
+        // City filter is a SOFT preference, not a hard boundary
+        // Only exclude if NOT in target city AND more than 5 miles away
+        if (targetCity) {
+          const inTargetCity = isInTargetCity(item.addressComponents, targetCity);
+          if (!inTargetCity && item.distance > 5) {
+            console.log(`❌ Filtering out ${item.name} - not in ${targetCity} and ${item.distance.toFixed(1)} miles away`);
+            return false;
+          }
+          // Allow places close by even if technically outside city boundary
+        }
+        
         return true;
       })
       .map((item: any) => {
