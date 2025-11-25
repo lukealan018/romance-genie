@@ -236,9 +236,8 @@ const Index = () => {
         (error) => {
           console.error("Error getting location:", error);
           toast({
-            title: "Location Error",
-            description: "Could not access your location. Showing home weather.",
-            variant: "destructive",
+            title: "Using home location",
+            description: "Showing weather for your home ZIP code",
           });
           fetchProfileWeather();
         }
@@ -460,18 +459,30 @@ const Index = () => {
         restaurantLng = activityLng;
         console.log('Restaurant location missing - using activity location');
       }
-      // PRIORITY 2: DO NOT use lastSearchLat/Lng as fallback - it causes wrong location issues
-      // Instead, skip straight to GPS as the final fallback
-      else {
-        const { lastSearchLat, lastSearchLng } = usePlanStore.getState();
-        console.log(`⚠️ Skipping lastSearch fallback to prevent location errors`);
-        console.log(`lastSearch was at: (${lastSearchLat}, ${lastSearchLng})`);
-        console.log(`Will use GPS location instead for reliability`);
+        
+      // PRIORITY 2: Check if store has location from profile (home ZIP)
+      if (!restaurantLat || !restaurantLng || !activityLat || !activityLng) {
+        const storeState = usePlanStore.getState();
+        if (storeState.lat && storeState.lng) {
+          console.log('✓ Using profile location from store:', storeState.lat, storeState.lng);
+          if (!restaurantLat || !restaurantLng) {
+            restaurantLat = storeState.lat;
+            restaurantLng = storeState.lng;
+          }
+          if (!activityLat || !activityLng) {
+            activityLat = storeState.lat;
+            activityLng = storeState.lng;
+          }
+          toast({
+            title: "Using home location",
+            description: "Searching in your default area",
+          });
+        }
       }
         
       // PRIORITY 3: Final fallback to GPS
       if (!restaurantLat || !restaurantLng || !activityLat || !activityLng) {
-        console.log('No valid fallback - getting current GPS location...');
+        console.log('No profile location - getting current GPS location...');
         toast({
           title: "Getting your location...",
           description: "Please wait while we determine your location",
@@ -499,7 +510,7 @@ const Index = () => {
           console.error('Failed to get location:', error);
           toast({
             title: "Location required",
-            description: "Please enable location services or set a ZIP code in settings",
+            description: "Please enable location services or set a home ZIP code in your profile",
             variant: "destructive"
           });
           setLoading(false);
@@ -1102,7 +1113,14 @@ const Index = () => {
             
             if (!geocodeError && geocodeData?.lat && geocodeData?.lng) {
               setLocation(geocodeData.lat, geocodeData.lng);
-              console.log('Home ZIP geocoded:', geocodeData);
+              console.log('✅ Profile home ZIP geocoded successfully:', { 
+                zip: profile.home_zip, 
+                lat: geocodeData.lat, 
+                lng: geocodeData.lng, 
+                city: geocodeData.city 
+              });
+            } else {
+              console.error('❌ Failed to geocode profile home ZIP:', profile.home_zip);
             }
           } catch (geocodeError) {
             console.error('Failed to geocode home ZIP:', geocodeError);
