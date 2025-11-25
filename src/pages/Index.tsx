@@ -882,14 +882,13 @@ const Index = () => {
         }, 2000);
       }
       
-      // Track and save
+      // Track interactions for learning system
       if (initialPlan.restaurant) {
         await trackInteraction(initialPlan.restaurant, 'restaurant', 'selected');
       }
       if (initialPlan.activity) {
         await trackInteraction(initialPlan.activity, 'activity', 'selected');
       }
-      await savePlan(initialPlan);
       
       toast({ 
         title: "Found your spots!", 
@@ -1232,31 +1231,6 @@ const Index = () => {
     }
   };
 
-  // Save the current plan
-  const savePlan = async (currentPlan: any) => {
-    if (!userId || !currentPlan) return;
-    
-    try {
-      await supabase.from('saved_plans').insert({
-        user_id: userId,
-        restaurant_id: currentPlan.restaurant.id,
-        restaurant_name: currentPlan.restaurant.name,
-        restaurant_cuisine: currentPlan.restaurant.cuisine,
-        activity_id: currentPlan.activity.id,
-        activity_name: currentPlan.activity.name,
-        activity_category: currentPlan.activity.category,
-        search_params: {
-          lat,
-          lng,
-          radius,
-          cuisine,
-          activityCategory,
-        },
-      });
-    } catch (error) {
-      console.error('Error saving plan:', error);
-    }
-  };
 
   const handleUseCurrentLocation = (silent: boolean = false): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -1609,14 +1583,13 @@ const Index = () => {
         }, 2000);
       }
       
-      // Track selections and save plan
+      // Track selections for learning system
       if (initialPlan.restaurant) {
         await trackInteraction(initialPlan.restaurant, 'restaurant', 'selected');
       }
       if (initialPlan.activity) {
         await trackInteraction(initialPlan.activity, 'activity', 'selected');
       }
-      await savePlan(initialPlan);
       
       // Auto-save location settings after successful search
       await saveLocationSettings(radius, zipCode, true);
