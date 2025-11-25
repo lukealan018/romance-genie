@@ -241,17 +241,17 @@ export default function History() {
 
         {/* Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-4">
-            <TabsTrigger value="all">
+          <TabsList className="inline-flex w-full max-w-4xl mx-auto gap-2 flex-wrap justify-center">
+            <TabsTrigger value="all" className="px-4 py-2">
               All ({plans.length})
             </TabsTrigger>
-            <TabsTrigger value="upcoming">
+            <TabsTrigger value="upcoming" className="px-4 py-2">
               Upcoming ({upcomingPlans.length})
             </TabsTrigger>
-            <TabsTrigger value="completed">
+            <TabsTrigger value="completed" className="px-4 py-2">
               Completed ({completedPlans.length})
             </TabsTrigger>
-            <TabsTrigger value="scheduled" onClick={() => navigate('/calendar')}>
+            <TabsTrigger value="scheduled" onClick={() => navigate('/calendar')} className="px-4 py-2">
               Scheduled
             </TabsTrigger>
           </TabsList>
