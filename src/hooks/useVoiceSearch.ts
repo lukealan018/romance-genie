@@ -26,6 +26,7 @@ interface UseVoiceSearchProps {
   trackInteraction: (place: any, type: 'restaurant' | 'activity', interactionType: 'viewed' | 'selected' | 'skipped') => Promise<void>;
   setPlan: (plan: any) => void;
   onSearchSuccess?: () => void;
+  navigate: (path: string) => void;
 }
 
 export const useVoiceSearch = ({
@@ -35,6 +36,7 @@ export const useVoiceSearch = ({
   trackInteraction,
   setPlan,
   onSearchSuccess,
+  navigate,
 }: UseVoiceSearchProps) => {
   const {
     radius,
@@ -465,6 +467,11 @@ export const useVoiceSearch = ({
       
       // Trigger first search completion
       onSearchSuccess?.();
+      
+      // Navigate to plan page after a short delay to let store update
+      setTimeout(() => {
+        navigate("/plan");
+      }, 100);
     } catch (error) {
       console.error('Error in voice search:', error);
       toast({ 
