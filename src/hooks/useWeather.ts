@@ -2,6 +2,12 @@ import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
+const geoOptions: PositionOptions = {
+  enableHighAccuracy: true,  // Required for iOS to prompt properly
+  timeout: 10000,            // 10 second timeout
+  maximumAge: 0              // Don't use cached position
+};
+
 interface WeatherData {
   temperature?: number;
   description?: string;
@@ -101,7 +107,7 @@ export const useWeather = (userId: string | null) => {
         return;
       }
 
-      const timeout = setTimeout(() => resolve(false), 3000);
+      const timeout = setTimeout(() => resolve(false), 10000);
 
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -143,7 +149,8 @@ export const useWeather = (userId: string | null) => {
         () => {
           clearTimeout(timeout);
           resolve(false);
-        }
+        },
+        geoOptions
       );
     });
 
@@ -218,13 +225,26 @@ export const useWeather = (userId: string | null) => {
         }
       },
       (error) => {
-        console.error("GPS permission denied:", error);
+        console.error("GPS error - Code:", error.code, "Message:", error.message);
         setLoadingProfileWeather(false);
-        toast({
-          title: "GPS Permission Needed",
-          description: "Enable location access in your browser settings to use current location.",
-        });
-      }
+        
+        let title = "GPS Error";
+        let description = "Could not access your location.";
+        
+        if (error.code === 1) { // PERMISSION_DENIED
+          title = "GPS Permission Needed";
+          description = "Tap 'Allow' when prompted to use your current location.";
+        } else if (error.code === 2) { // POSITION_UNAVAILABLE
+          title = "GPS Unavailable";
+          description = "GPS signal not available. Try again outside or near a window.";
+        } else if (error.code === 3) { // TIMEOUT
+          title = "GPS Timeout";
+          description = "Location request timed out. Check your device settings.";
+        }
+        
+        toast({ title, description });
+      },
+      geoOptions
     );
   }, []);
 
