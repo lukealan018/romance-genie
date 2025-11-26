@@ -26,8 +26,6 @@ const Index = () => {
   const [plan, setPlan] = useState<any>(null);
   const [showPickers, setShowPickers] = useState(false);
   const [showLocationDialog, setShowLocationDialog] = useState(false);
-  const [showCompletionPrompt, setShowCompletionPrompt] = useState(false);
-  const locationSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     lat, lng, radius, cuisine, activityCategory, locationMode, zipCode,
@@ -42,24 +40,13 @@ const Index = () => {
   
   const voice = useVoiceSearch({
     userId: auth.userId,
-    userPreferences: usePlanStore.getState().userPreferences,
     searchMode,
     handleUseCurrentLocation: search.handleUseCurrentLocation,
     trackInteraction: search.trackInteraction,
-    setLoading: () => {},
     setPlan,
   });
 
-  const { shouldShowPrompt, markFirstRecommendationSeen, markCompletionPromptSeen } = useProfileCompletionPrompt();
-
-  const debouncedSaveLocation = (radiusVal: number, zipCodeVal: string) => {
-    if (locationSaveTimeoutRef.current) {
-      clearTimeout(locationSaveTimeoutRef.current);
-    }
-    locationSaveTimeoutRef.current = setTimeout(() => {
-      auth.saveLocationSettings(radiusVal, zipCodeVal, false);
-    }, 2000);
-  };
+  const { shouldShowPrompt, markCompletionPromptSeen } = useProfileCompletionPrompt();
 
   if (auth.isCheckingOnboarding) {
     return (
@@ -175,12 +162,12 @@ const Index = () => {
                   onZipCodeChange={(value) => {
                     setFilters({ zipCode: value });
                     if (value.length === 5) {
-                      debouncedSaveLocation(radius, value);
+                      auth.saveLocationSettings(radius, value, false);
                     }
                   }}
                   onRadiusChange={(value) => {
                     setFilters({ radius: value });
-                    debouncedSaveLocation(value, zipCode);
+                    auth.saveLocationSettings(value, zipCode, false);
                   }}
                   onUseCurrentLocation={() => search.handleUseCurrentLocation(false)}
                   onSeePlan={search.handleSeePlan}
@@ -251,7 +238,7 @@ const Index = () => {
           }}
         />
 
-        {showCompletionPrompt && (
+        {shouldShowPrompt && (
           <ProfileCompletionPrompt
             userName={auth.nickname}
             hasProfilePicture={!!auth.profileData?.profile_picture_url}
@@ -262,7 +249,6 @@ const Index = () => {
             }}
             onDismiss={() => {
               markCompletionPromptSeen();
-              setShowCompletionPrompt(false);
             }}
           />
         )}

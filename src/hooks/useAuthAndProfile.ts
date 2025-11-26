@@ -142,7 +142,7 @@ export const useAuthAndProfile = () => {
         .from('profiles')
         .select('profile_picture_url, voice_notes')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       
