@@ -110,7 +110,7 @@ const Index = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <ModeSelection 
               selectedMode={searchMode}
-              onModeSelect={(mode) => setFilters({ searchMode: mode })}
+              onModeSelect={(mode) => usePlanStore.getState().setSearchMode(mode)}
             />
           </motion.div>
         )}
@@ -129,7 +129,7 @@ const Index = () => {
                 variant="ghost" 
                 size="sm"
                 onClick={() => {
-                  setFilters({ searchMode: null });
+                  usePlanStore.getState().setSearchMode(null);
                   setShowPickers(false);
                   resetPlan();
                 }}
