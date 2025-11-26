@@ -39,13 +39,8 @@ serve(async (req) => {
   try {
     console.log('place-details function called');
     
-    if (!GOOGLE_MAPS_API_KEY) {
-      console.error('GOOGLE_MAPS_API_KEY is not configured');
-      throw new Error('GOOGLE_MAPS_API_KEY is not configured');
-    }
-
-    const { placeId } = await req.json();
-    console.log('Received placeId:', placeId);
+    const { placeId, source } = await req.json();
+    console.log('Received placeId:', placeId, 'source:', source);
 
     if (!placeId) {
       console.error('Missing placeId parameter');
@@ -53,6 +48,70 @@ serve(async (req) => {
         JSON.stringify({ error: 'Missing required parameter: placeId' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Handle Foursquare place details
+    if (source === 'foursquare') {
+      const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY')?.trim();
+      
+      if (!FOURSQUARE_API_KEY) {
+        console.error('FOURSQUARE_API_KEY is not configured');
+        throw new Error('FOURSQUARE_API_KEY is not configured');
+      }
+
+      const fsUrl = `https://places-api.foursquare.com/places/${placeId}`;
+      console.log('Fetching Foursquare place details:', fsUrl);
+
+      const response = await fetch(fsUrl, {
+        headers: {
+          'Authorization': `Bearer ${FOURSQUARE_API_KEY}`,
+          'X-Places-Api-Version': '2025-06-17',
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`❌ Foursquare Place Details API error: ${response.status} ${response.statusText}`);
+        console.error(`❌ Error body: ${errorBody}`);
+        throw new Error(`Foursquare API error: ${response.status}`);
+      }
+
+      const place = await response.json();
+      console.log('Foursquare place details received');
+
+      // Transform Foursquare response to match expected format
+      const details = {
+        name: place.name,
+        address: place.location?.formatted_address || place.location?.address || '',
+        phoneNumber: place.tel || null,
+        website: place.website || null,
+        googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + (place.location?.address || ''))}`,
+        rating: place.rating ? (place.rating / 10) * 5 : 0, // Convert from 10-point to 5-point scale
+        totalRatings: place.stats?.total_ratings || 0,
+        priceLevel: place.price ? '$'.repeat(place.price) : '',
+        hours: place.hours?.display ? [place.hours.display] : [],
+        isOpen: place.hours?.open_now ?? null,
+        lat: place.latitude || place.geocodes?.main?.latitude || 0,
+        lng: place.longitude || place.geocodes?.main?.longitude || 0,
+        photos: place.photos?.slice(0, 5).map((photo: any) => ({
+          url: photo.prefix + '800x800' + photo.suffix,
+          width: 800,
+          height: 800,
+        })) || [],
+      };
+
+      console.log('Returning Foursquare details');
+      return new Response(
+        JSON.stringify(details),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Default: Handle Google Place Details
+    if (!GOOGLE_MAPS_API_KEY) {
+      console.error('GOOGLE_MAPS_API_KEY is not configured');
+      throw new Error('GOOGLE_MAPS_API_KEY is not configured');
     }
 
     const detailsUrl = new URL('https://maps.googleapis.com/maps/api/place/details/json');

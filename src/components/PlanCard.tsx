@@ -34,6 +34,7 @@ interface Place {
   priceLevel?: string;
   city?: string;
   category?: 'event' | 'activity';
+  source?: string; // 'google' | 'foursquare'
 }
 
 interface PlanCardProps {
@@ -119,7 +120,7 @@ export const PlanCard = ({
     fetchUserPreferences();
   }, []);
 
-  const fetchPlaceDetails = async (placeId: string, type: 'restaurant' | 'activity') => {
+  const fetchPlaceDetails = async (placeId: string, type: 'restaurant' | 'activity', source?: string) => {
     const setPhone = type === 'restaurant' ? setRestaurantPhone : setActivityPhone;
     const setWebsite = type === 'restaurant' ? setRestaurantWebsite : setActivityWebsite;
     const setPhotos = type === 'restaurant' ? setRestaurantPhotos : setActivityPhotos;
@@ -128,7 +129,7 @@ export const PlanCard = ({
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('place-details', {
-        body: { placeId }
+        body: { placeId, source }
       });
 
       if (error) throw error;
@@ -257,7 +258,7 @@ export const PlanCard = ({
     if (restaurant?.id) {
       setRestaurantWebsite(null);
       setRestaurantPhotos([]);
-      fetchPlaceDetails(restaurant.id, 'restaurant');
+      fetchPlaceDetails(restaurant.id, 'restaurant', restaurant.source);
     }
   }, [restaurant?.id]);
 
@@ -265,7 +266,7 @@ export const PlanCard = ({
     if (activity?.id) {
       setActivityWebsite(null);
       setActivityPhotos([]);
-      fetchPlaceDetails(activity.id, 'activity');
+      fetchPlaceDetails(activity.id, 'activity', activity.source);
     }
   }, [activity?.id]);
 
@@ -416,7 +417,7 @@ export const PlanCard = ({
                     restaurant_id: restaurant.id,
                     restaurant_name: restaurant.name
                   });
-                  fetchPlaceDetails(restaurant.id, 'restaurant');
+                  fetchPlaceDetails(restaurant.id, 'restaurant', restaurant.source);
                 }}
                 disabled={loadingRestaurantPhone}
                 className="gap-2"
@@ -621,7 +622,7 @@ export const PlanCard = ({
                       activity_id: activity.id,
                       activity_name: activity.name
                     });
-                    fetchPlaceDetails(activity.id, 'activity');
+                    fetchPlaceDetails(activity.id, 'activity', activity.source);
                   }}
                   disabled={loadingActivityPhone}
                   className="gap-2"
