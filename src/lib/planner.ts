@@ -332,6 +332,14 @@ export function buildPlanFromIndices(
 ): PlanResult {
   const searchMode = params.searchMode || 'both';
   
+  console.log('🏗️ [buildPlanFromIndices] Called with:', {
+    mode: searchMode,
+    restaurantCount: params.restaurants.length,
+    activityCount: params.activities.length,
+    restaurantIndex,
+    activityIndex
+  });
+  
   // Return null for restaurant if mode doesn't include it
   const restaurant = (searchMode === 'both' || searchMode === 'restaurant_only')
     ? (params.restaurants[restaurantIndex] || null)
@@ -341,6 +349,13 @@ export function buildPlanFromIndices(
   const activity = (searchMode === 'both' || searchMode === 'activity_only')
     ? (params.activities[activityIndex] || null)
     : null;
+
+  console.log('✅ [buildPlanFromIndices] Returning:', {
+    hasRestaurant: !!restaurant,
+    hasActivity: !!activity,
+    restaurantName: restaurant?.name,
+    activityName: activity?.name
+  });
 
   const distances = {
     toRestaurant: restaurant ? calculateDistance(params.lat, params.lng, restaurant.lat, restaurant.lng) : 0,
