@@ -171,9 +171,8 @@ export const useWeather = (userId: string | null) => {
   const switchToGPS = useCallback(async () => {
     if (!navigator.geolocation) {
       toast({
-        title: "Location Not Available",
-        description: "Your browser doesn't support location services.",
-        variant: "destructive",
+        title: "GPS Unavailable",
+        description: "Location services not supported on this device.",
       });
       return;
     }
@@ -204,33 +203,50 @@ export const useWeather = (userId: string | null) => {
             cityName: geocodeResponse.city || "Current Location"
           });
           setLocationSource('gps');
+          toast({
+            title: "Location Updated",
+            description: `Showing weather for ${geocodeResponse.city || "your current location"}`,
+          });
         } catch (error) {
           console.error('Error fetching GPS weather:', error);
           toast({
-            title: "Weather Error",
-            description: "Could not fetch weather for your location.",
-            variant: "destructive",
+            title: "Staying on Current Location",
+            description: "Couldn't fetch GPS weather. Try again later.",
           });
         } finally {
           setLoadingProfileWeather(false);
         }
       },
       (error) => {
-        console.error("Error getting location:", error);
-        toast({
-          title: "Location Error",
-          description: "Could not access your location.",
-          variant: "destructive",
-        });
+        console.error("GPS permission denied:", error);
         setLoadingProfileWeather(false);
+        toast({
+          title: "GPS Permission Needed",
+          description: "Enable location access in your browser settings to use current location.",
+        });
       }
     );
   }, []);
 
   // Switch to home location
   const switchToHome = useCallback(async () => {
-    await fetchProfileWeather();
-    setLocationSource('home');
+    setLoadingProfileWeather(true);
+    try {
+      await fetchProfileWeather();
+      setLocationSource('home');
+      toast({
+        title: "Location Updated",
+        description: "Showing weather for your home location",
+      });
+    } catch (error) {
+      console.error('Error fetching home weather:', error);
+      toast({
+        title: "Could Not Switch",
+        description: "Unable to fetch home location weather.",
+      });
+    } finally {
+      setLoadingProfileWeather(false);
+    }
   }, [fetchProfileWeather]);
 
   return {
