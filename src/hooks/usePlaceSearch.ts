@@ -327,10 +327,18 @@ export const usePlaceSearch = (
         learnedPrefs
       );
       
+      console.log('🔍 [usePlaceSearch] Setting search results:', {
+        restaurants: sortedRestaurants.length,
+        activities: sortedActivities.length,
+        mode: searchMode || 'both'
+      });
+      
       setRestaurants(sortedRestaurants, restaurantsResponse.data?.nextPageToken || null);
       setActivities(sortedActivities, activitiesResponse.data?.nextPageToken || null);
       setLastSearched(cuisine, activityCategory);
       setLocation(searchLat, searchLng);
+      
+      console.log('✅ [usePlaceSearch] Store updated successfully');
 
       const initialPlan = buildPlan({
         lat: searchLat,
@@ -824,9 +832,17 @@ export const usePlaceSearch = (
         learnedPrefs
       );
       
+      console.log('🎉 [SurpriseMe] Setting search results:', {
+        restaurants: sortedRestaurants.length,
+        activities: sortedActivities.length,
+        mode: searchMode || 'both'
+      });
+      
       setRestaurants(sortedRestaurants, restaurantsResponse.data?.nextPageToken || null);
       setActivities(sortedActivities, activitiesResponse.data?.nextPageToken || null);
       setLastSearched(selectedCuisine, selectedActivity);
+      
+      console.log('✅ [SurpriseMe] Store updated successfully');
 
       const initialPlan = buildPlan({
         lat: searchLat,

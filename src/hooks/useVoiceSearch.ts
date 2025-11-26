@@ -401,10 +401,19 @@ export const useVoiceSearch = ({
         userInteractionPlaceIds
       );
       
+      
+      console.log('🎤 [VoiceSearch] Setting search results:', {
+        restaurants: sortedRestaurants.length,
+        activities: sortedActivities.length,
+        mode: voiceMode
+      });
+      
       setRestaurants(sortedRestaurants, restaurantsResponse.data?.nextPageToken || null);
       setActivities(sortedActivities, activitiesResponse.data?.nextPageToken || null);
       setLastSearched(searchCuisine, searchActivity);
       setLocation(planLat, planLng);
+      
+      console.log('✅ [VoiceSearch] Store updated successfully');
 
       const initialPlan = buildPlan({
         lat: planLat,

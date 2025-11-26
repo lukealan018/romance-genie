@@ -82,20 +82,35 @@ const PlanPage = () => {
     }
   };
 
-  // Redirect to home if no data available (mode-aware)
+  // Redirect to home if no data available (mode-aware) - DELAYED to allow store to populate
   useEffect(() => {
-    const currentMode = searchMode || 'both';
-    const needsRestaurants = currentMode === 'both' || currentMode === 'restaurant_only';
-    const needsActivities = currentMode === 'both' || currentMode === 'activity_only';
+    // Add delay to allow store data to populate after navigation
+    const timer = setTimeout(() => {
+      const currentMode = searchMode || 'both';
+      const needsRestaurants = currentMode === 'both' || currentMode === 'restaurant_only';
+      const needsActivities = currentMode === 'both' || currentMode === 'activity_only';
+      
+      console.log('🔍 [PlanPage] Checking data availability:', {
+        mode: currentMode,
+        restaurants: restaurantResults.length,
+        activities: activityResults.length,
+        needsRestaurants,
+        needsActivities
+      });
+      
+      const missingData = 
+        (needsRestaurants && restaurantResults.length === 0) ||
+        (needsActivities && activityResults.length === 0);
+      
+      if (missingData) {
+        console.log('❌ [PlanPage] No plan data available for current mode, redirecting to home');
+        navigate('/');
+      } else {
+        console.log('✅ [PlanPage] Data available, staying on page');
+      }
+    }, 50); // 50ms delay to allow store to populate
     
-    const missingData = 
-      (needsRestaurants && restaurantResults.length === 0) ||
-      (needsActivities && activityResults.length === 0);
-    
-    if (missingData) {
-      console.log('No plan data available for current mode, redirecting to home');
-      navigate('/');
-    }
+    return () => clearTimeout(timer);
   }, [restaurantResults, activityResults, searchMode, navigate]);
 
   // Build plan from current indices whenever data changes (mode-aware)
@@ -111,7 +126,7 @@ const PlanPage = () => {
       (currentMode === 'activity_only' && hasActivities);
     
     if (hasRequiredData && lat !== null && lng !== null) {
-      console.log('Building plan with:', { 
+      console.log('🏗️ [PlanPage] Building plan with:', { 
         mode: currentMode,
         restaurantCount: restaurantResults.length, 
         activityCount: activityResults.length,
@@ -135,8 +150,19 @@ const PlanPage = () => {
         activityIndex
       );
       
-      console.log('Plan built:', newPlan);
+      console.log('✅ [PlanPage] Plan built:', {
+        hasRestaurant: !!newPlan.restaurant,
+        hasActivity: !!newPlan.activity,
+        restaurantName: newPlan.restaurant?.name,
+        activityName: newPlan.activity?.name
+      });
       setPlan(newPlan);
+    } else {
+      console.log('⚠️ [PlanPage] Cannot build plan - missing required data:', {
+        hasRequiredData,
+        lat,
+        lng
+      });
     }
   }, [restaurantResults, activityResults, restaurantIndex, activityIndex, lat, lng, radius, userPreferences, searchMode]);
 
