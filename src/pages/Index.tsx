@@ -36,7 +36,8 @@ const Index = () => {
   // Custom hooks
   const auth = useAuthAndProfile();
   const weather = useWeather(auth.userId);
-  const search = usePlaceSearch(auth.userId, auth.saveLocationSettings);
+  const { shouldShowPrompt, markFirstRecommendationSeen, markCompletionPromptSeen } = useProfileCompletionPrompt();
+  const search = usePlaceSearch(auth.userId, auth.saveLocationSettings, markFirstRecommendationSeen);
   
   const voice = useVoiceSearch({
     userId: auth.userId,
@@ -44,9 +45,8 @@ const Index = () => {
     handleUseCurrentLocation: search.handleUseCurrentLocation,
     trackInteraction: search.trackInteraction,
     setPlan,
+    onSearchSuccess: markFirstRecommendationSeen,
   });
-
-  const { shouldShowPrompt, markCompletionPromptSeen } = useProfileCompletionPrompt();
 
   if (auth.isCheckingOnboarding) {
     return (

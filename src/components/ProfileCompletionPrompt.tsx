@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { X, Sparkles, Camera, Mic } from "lucide-react";
@@ -97,18 +98,30 @@ export const ProfileCompletionPrompt = ({
 
 // Hook to track if user has seen their first recommendation
 export const useProfileCompletionPrompt = () => {
-  const hasSeenFirstRecommendation = localStorage.getItem("hasSeenFirstRecommendation") === "true";
-  const hasSeenCompletionPrompt = localStorage.getItem("hasSeenCompletionPrompt") === "true";
+  const [shouldShowPrompt, setShouldShowPrompt] = useState(false);
 
-  const markFirstRecommendationSeen = () => {
+  // Read localStorage on mount
+  useEffect(() => {
+    const hasSeenFirst = localStorage.getItem("hasSeenFirstRecommendation") === "true";
+    const hasDismissed = localStorage.getItem("hasSeenCompletionPrompt") === "true";
+    setShouldShowPrompt(hasSeenFirst && !hasDismissed);
+  }, []);
+
+  const markFirstRecommendationSeen = useCallback(() => {
     localStorage.setItem("hasSeenFirstRecommendation", "true");
-  };
+    const hasDismissed = localStorage.getItem("hasSeenCompletionPrompt") === "true";
+    if (!hasDismissed) {
+      // 2 second delay before showing prompt
+      setTimeout(() => {
+        setShouldShowPrompt(true);
+      }, 2000);
+    }
+  }, []);
 
-  const markCompletionPromptSeen = () => {
+  const markCompletionPromptSeen = useCallback(() => {
     localStorage.setItem("hasSeenCompletionPrompt", "true");
-  };
-
-  const shouldShowPrompt = hasSeenFirstRecommendation && !hasSeenCompletionPrompt;
+    setShouldShowPrompt(false);
+  }, []);
 
   return {
     shouldShowPrompt,
