@@ -102,15 +102,22 @@ export const useWeather = (userId: string | null) => {
 
     // Try GPS first with timeout
     const tryGPS = () => new Promise<boolean>((resolve) => {
+      console.log('[GPS Init] Trying GPS on mount...');
+      
       if (!navigator.geolocation) {
+        console.log('[GPS Init] Navigator.geolocation not available');
         resolve(false);
         return;
       }
 
-      const timeout = setTimeout(() => resolve(false), 20000);
+      const timeout = setTimeout(() => {
+        console.log('[GPS Init] Timeout expired after 20s');
+        resolve(false);
+      }, 20000);
 
       navigator.geolocation.getCurrentPosition(
         async (position) => {
+          console.log('[GPS Init] SUCCESS! Got coordinates:', position.coords.latitude, position.coords.longitude);
           clearTimeout(timeout);
           const { latitude, longitude } = position.coords;
           
@@ -146,7 +153,8 @@ export const useWeather = (userId: string | null) => {
             setLoadingProfileWeather(false);
           }
         },
-        () => {
+        (error) => {
+          console.log('[GPS Init] Failed:', error.code, error.message, '- falling back to home location');
           clearTimeout(timeout);
           resolve(false);
         },
@@ -176,7 +184,10 @@ export const useWeather = (userId: string | null) => {
 
   // Switch to GPS location
   const switchToGPS = useCallback(async () => {
+    console.log('[GPS] switchToGPS called');
+    
     if (!navigator.geolocation) {
+      console.log('[GPS] Navigator.geolocation not available');
       toast({
         title: "GPS Unavailable",
         description: "Location services not supported on this device.",
@@ -184,8 +195,9 @@ export const useWeather = (userId: string | null) => {
       return;
     }
 
+    console.log('[GPS] Requesting location with options:', geoOptions);
     setLoadingProfileWeather(true);
-    setLocationSource('gps');
+    // Don't set locationSource here - wait for success
     
     toast({
       title: "📍 Getting Location...",
@@ -194,6 +206,7 @@ export const useWeather = (userId: string | null) => {
     
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        console.log('[GPS] SUCCESS! Coordinates:', position.coords.latitude, position.coords.longitude);
         const { latitude, longitude } = position.coords;
         try {
           // Get city name from coordinates
@@ -232,8 +245,9 @@ export const useWeather = (userId: string | null) => {
         }
       },
       (error) => {
-        console.error("GPS error - Code:", error.code, "Message:", error.message);
+        console.log('[GPS] FAILED! Code:', error.code, 'Message:', error.message);
         setLoadingProfileWeather(false);
+        // Don't change locationSource on failure - keep the previous value
         
         let title = "GPS Error";
         let description = "Could not access your location.";
