@@ -46,6 +46,7 @@ const Index = () => {
     trackInteraction: search.trackInteraction,
     setPlan,
     onSearchSuccess: markFirstRecommendationSeen,
+    navigate,
   });
 
   if (auth.isCheckingOnboarding) {
