@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -9,11 +9,14 @@ interface WeatherData {
   cityName?: string;
 }
 
+type LocationSource = 'gps' | 'home' | null;
+
 export const useWeather = (userId: string | null) => {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [loadingWeather, setLoadingWeather] = useState(false);
   const [profileWeatherData, setProfileWeatherData] = useState<WeatherData | null>(null);
   const [loadingProfileWeather, setLoadingProfileWeather] = useState(false);
+  const [locationSource, setLocationSource] = useState<LocationSource>(null);
 
   // Fetch weather data for a specific location
   const fetchWeather = async (latitude: number, longitude: number) => {
@@ -87,15 +90,28 @@ export const useWeather = (userId: string | null) => {
     }
   }, [userId]);
 
-  // Refresh weather using current GPS location
-  const handleWeatherRefresh = useCallback(() => {
-    if (navigator.geolocation) {
-      setLoadingProfileWeather(true);
+  // Initialize weather on mount (GPS first, fallback to home)
+  const initializeWeather = useCallback(async () => {
+    if (!userId) return;
+
+    // Try GPS first with timeout
+    const tryGPS = () => new Promise<boolean>((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(false);
+        return;
+      }
+
+      const timeout = setTimeout(() => resolve(false), 3000);
+
       navigator.geolocation.getCurrentPosition(
         async (position) => {
+          clearTimeout(timeout);
           const { latitude, longitude } = position.coords;
+          
           try {
-            // Get city name from coordinates using reverse geocoding
+            setLoadingProfileWeather(true);
+            
+            // Get city name from coordinates
             const { data: geocodeResponse, error: geocodeError } = await supabase.functions.invoke('geocode', {
               body: { lat: latitude, lng: longitude }
             });
@@ -115,34 +131,106 @@ export const useWeather = (userId: string | null) => {
               icon: weatherResponse.icon,
               cityName: geocodeResponse.city || "Current Location"
             });
+            setLocationSource('gps');
+            resolve(true);
           } catch (error) {
-            console.error('Error fetching current location weather:', error);
-            toast({
-              title: "Weather Error",
-              description: "Could not fetch weather for your location.",
-              variant: "destructive",
-            });
+            console.error('Error fetching GPS weather:', error);
+            resolve(false);
           } finally {
             setLoadingProfileWeather(false);
           }
         },
-        (error) => {
-          console.error("Error getting location:", error);
-          toast({
-            title: "Using home location",
-            description: "Showing weather for your home ZIP code",
-          });
-          fetchProfileWeather();
+        () => {
+          clearTimeout(timeout);
+          resolve(false);
         }
       );
-    } else {
+    });
+
+    const gpsSuccess = await tryGPS();
+    
+    // Fallback to home location if GPS failed
+    if (!gpsSuccess) {
+      try {
+        await fetchProfileWeather();
+        setLocationSource('home');
+      } catch (error) {
+        console.error('Failed to fetch home weather:', error);
+      }
+    }
+  }, [userId, fetchProfileWeather]);
+
+  // Auto-initialize on mount
+  useEffect(() => {
+    if (userId) {
+      initializeWeather();
+    }
+  }, [userId]); // Only run on userId change, not on initializeWeather change
+
+  // Switch to GPS location
+  const switchToGPS = useCallback(async () => {
+    if (!navigator.geolocation) {
       toast({
         title: "Location Not Available",
         description: "Your browser doesn't support location services.",
         variant: "destructive",
       });
-      fetchProfileWeather();
+      return;
     }
+
+    setLoadingProfileWeather(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          // Get city name from coordinates
+          const { data: geocodeResponse, error: geocodeError } = await supabase.functions.invoke('geocode', {
+            body: { lat: latitude, lng: longitude }
+          });
+
+          if (geocodeError) throw geocodeError;
+
+          // Fetch weather data
+          const { data: weatherResponse, error: weatherError } = await supabase.functions.invoke('weather', {
+            body: { lat: latitude, lng: longitude }
+          });
+
+          if (weatherError) throw weatherError;
+
+          setProfileWeatherData({
+            temperature: weatherResponse.temperature,
+            description: weatherResponse.description,
+            icon: weatherResponse.icon,
+            cityName: geocodeResponse.city || "Current Location"
+          });
+          setLocationSource('gps');
+        } catch (error) {
+          console.error('Error fetching GPS weather:', error);
+          toast({
+            title: "Weather Error",
+            description: "Could not fetch weather for your location.",
+            variant: "destructive",
+          });
+        } finally {
+          setLoadingProfileWeather(false);
+        }
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        toast({
+          title: "Location Error",
+          description: "Could not access your location.",
+          variant: "destructive",
+        });
+        setLoadingProfileWeather(false);
+      }
+    );
+  }, []);
+
+  // Switch to home location
+  const switchToHome = useCallback(async () => {
+    await fetchProfileWeather();
+    setLocationSource('home');
   }, [fetchProfileWeather]);
 
   return {
@@ -150,8 +238,10 @@ export const useWeather = (userId: string | null) => {
     profileWeatherData,
     loadingWeather,
     loadingProfileWeather,
+    locationSource,
     fetchWeather,
     fetchProfileWeather,
-    handleWeatherRefresh
+    switchToGPS,
+    switchToHome
   };
 };
