@@ -14,6 +14,10 @@ interface Place {
   cuisine?: string;
   category?: 'event' | 'activity';
   city?: string;
+  source?: string;
+  isHiddenGem?: boolean;
+  isNewDiscovery?: boolean;
+  isLocalFavorite?: boolean;
 }
 
 interface PlanState {

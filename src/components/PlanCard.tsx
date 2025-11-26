@@ -35,6 +35,9 @@ interface Place {
   city?: string;
   category?: 'event' | 'activity';
   source?: string; // 'google' | 'foursquare'
+  isHiddenGem?: boolean;
+  isNewDiscovery?: boolean;
+  isLocalFavorite?: boolean;
 }
 
 interface PlanCardProps {
@@ -355,6 +358,28 @@ export const PlanCard = ({
                     <span className="text-sm font-medium">{restaurant.priceLevel}</span>
                   )}
                 </div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {restaurant.source && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      {restaurant.source === 'foursquare' ? '🟦 Foursquare' : '🌐 Google'}
+                    </span>
+                  )}
+                  {restaurant.isHiddenGem && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                      💎 Hidden Gem
+                    </span>
+                  )}
+                  {restaurant.isNewDiscovery && !restaurant.isHiddenGem && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      🆕 New Discovery
+                    </span>
+                  )}
+                  {restaurant.isLocalFavorite && !restaurant.isHiddenGem && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      🏆 Local Favorite
+                    </span>
+                  )}
+                </div>
               </div>
       <Button 
         onClick={() => {
@@ -560,6 +585,28 @@ export const PlanCard = ({
                   <Star className="w-4 h-4 fill-accent text-accent" />
                   <span className="text-sm font-medium">{activity.rating.toFixed(1)}</span>
                   <span className="text-xs text-muted-foreground">({activity.totalRatings})</span>
+                </div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {activity.source && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      {activity.source === 'foursquare' ? '🟦 Foursquare' : '🌐 Google'}
+                    </span>
+                  )}
+                  {activity.isHiddenGem && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                      💎 Hidden Gem
+                    </span>
+                  )}
+                  {activity.isNewDiscovery && !activity.isHiddenGem && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      🆕 New Discovery
+                    </span>
+                  )}
+                  {activity.isLocalFavorite && !activity.isHiddenGem && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      🏆 Local Favorite
+                    </span>
+                  )}
                 </div>
               </div>
       <Button 
