@@ -1,6 +1,7 @@
 import type { PlacesProvider, ProviderPlace, SearchOptions } from '../places-types.ts';
 
-const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY');
+const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY')?.trim();
+console.log(`🟦 Foursquare provider init: API key ${FOURSQUARE_API_KEY ? `present (${FOURSQUARE_API_KEY.length} chars)` : 'MISSING'}`);
 
 // Helper: Calculate distance using Haversine formula
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -62,7 +63,9 @@ export const foursquarePlacesProvider: PlacesProvider = {
       });
       
       if (!response.ok) {
+        const errorBody = await response.text();
         console.error(`❌ Foursquare API error: ${response.status} ${response.statusText}`);
+        console.error(`❌ Error details: ${errorBody}`);
         return [];
       }
       

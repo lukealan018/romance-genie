@@ -1,6 +1,7 @@
 import type { ActivityProvider, ProviderActivity, ActivitySearchOptions } from '../activities-types.ts';
 
-const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY');
+const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY')?.trim();
+console.log(`🟦 Foursquare activity provider init: API key ${FOURSQUARE_API_KEY ? `present (${FOURSQUARE_API_KEY.length} chars)` : 'MISSING'}`);
 
 // Calculate distance between two coordinates using Haversine formula
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -127,8 +128,10 @@ export const foursquareActivityProvider: ActivityProvider = {
     });
     
     if (!response.ok) {
-      console.error('Foursquare API error:', response.status);
-      throw new Error(`Foursquare API error: ${response.status}`);
+      const errorBody = await response.text();
+      console.error(`❌ Foursquare activity API error: ${response.status} ${response.statusText}`);
+      console.error(`❌ Error details: ${errorBody}`);
+      return [];
     }
     
     const data = await response.json();

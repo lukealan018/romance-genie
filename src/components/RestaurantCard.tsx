@@ -16,6 +16,7 @@ interface RestaurantCardProps {
   lat: number;
   lng: number;
   city?: string;
+  source?: string;
   isHiddenGem?: boolean;
   isNewDiscovery?: boolean;
   isLocalFavorite?: boolean;
@@ -32,6 +33,7 @@ export const RestaurantCard = ({
   lat,
   lng,
   city,
+  source,
   isHiddenGem = false,
   isNewDiscovery = false,
   isLocalFavorite = false,
@@ -98,6 +100,11 @@ export const RestaurantCard = ({
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold text-lg line-clamp-1 flex-1">{name}</h3>
           <div className="flex flex-wrap gap-1 justify-end">
+            {source && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-500/20 text-slate-300 border border-slate-500/30">
+                {source === 'foursquare' ? '🟦 Foursquare' : '🌐 Google'}
+              </span>
+            )}
             {isHiddenGem && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500/20 text-orange-300 border border-orange-500/30">
                 💎 Hidden Gem
