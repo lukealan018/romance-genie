@@ -1,7 +1,7 @@
 import type { PlacesProvider, ProviderPlace, SearchOptions } from '../places-types.ts';
 
 const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY')?.trim();
-console.log(`🟦 Foursquare provider init: API key ${FOURSQUARE_API_KEY ? `present (${FOURSQUARE_API_KEY.length} chars)` : 'MISSING'}`);
+console.log(`🟦 Foursquare provider init: API key ${FOURSQUARE_API_KEY ? `present (${FOURSQUARE_API_KEY.length} chars, starts with: ${FOURSQUARE_API_KEY.substring(0, 4)}, ends with: ${FOURSQUARE_API_KEY.substring(FOURSQUARE_API_KEY.length - 4)})` : 'MISSING'}`);
 
 // Helper: Calculate distance using Haversine formula
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -54,10 +54,14 @@ export const foursquarePlacesProvider: PlacesProvider = {
         }
       }
       
-      // Make API request
+      // Make API request with Bearer token format for Service API Key
+      const authHeader = `Bearer ${FOURSQUARE_API_KEY}`;
+      console.log(`🟦 Foursquare: Making request to ${fsUrl.toString()}`);
+      console.log(`🟦 Foursquare: Auth header format: Bearer ${FOURSQUARE_API_KEY.substring(0, 4)}...${FOURSQUARE_API_KEY.substring(FOURSQUARE_API_KEY.length - 4)}`);
+      
       const response = await fetch(fsUrl.toString(), {
         headers: {
-          'Authorization': FOURSQUARE_API_KEY,
+          'Authorization': authHeader,
           'Accept': 'application/json'
         }
       });
