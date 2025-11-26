@@ -1,7 +1,7 @@
 import type { ActivityProvider, ProviderActivity, ActivitySearchOptions } from '../activities-types.ts';
 
 const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY')?.trim();
-console.log(`🟦 Foursquare activity provider init: API key ${FOURSQUARE_API_KEY ? `present (${FOURSQUARE_API_KEY.length} chars)` : 'MISSING'}`);
+console.log(`🟦 Foursquare activity provider init: API key ${FOURSQUARE_API_KEY ? `present (${FOURSQUARE_API_KEY.length} chars, starts with: ${FOURSQUARE_API_KEY.substring(0, 4)}, ends with: ${FOURSQUARE_API_KEY.substring(FOURSQUARE_API_KEY.length - 4)})` : 'MISSING'}`);
 
 // Calculate distance between two coordinates using Haversine formula
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -120,9 +120,14 @@ export const foursquareActivityProvider: ActivityProvider = {
     // Add sort by relevance
     url.searchParams.set('sort', 'RELEVANCE');
     
+    // Make API request with Bearer token format for Service API Key
+    const authHeader = `Bearer ${FOURSQUARE_API_KEY}`;
+    console.log(`🟦 Foursquare Activity: Making request to ${url.toString()}`);
+    console.log(`🟦 Foursquare Activity: Auth header format: Bearer ${FOURSQUARE_API_KEY.substring(0, 4)}...${FOURSQUARE_API_KEY.substring(FOURSQUARE_API_KEY.length - 4)}`);
+    
     const response = await fetch(url.toString(), {
       headers: {
-        'Authorization': FOURSQUARE_API_KEY,
+        'Authorization': authHeader,
         'Accept': 'application/json'
       }
     });
