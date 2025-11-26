@@ -25,6 +25,7 @@ interface UseVoiceSearchProps {
   handleUseCurrentLocation: (silent: boolean) => Promise<void>;
   trackInteraction: (place: any, type: 'restaurant' | 'activity', interactionType: 'viewed' | 'selected' | 'skipped') => Promise<void>;
   setPlan: (plan: any) => void;
+  onSearchSuccess?: () => void;
 }
 
 export const useVoiceSearch = ({
@@ -33,6 +34,7 @@ export const useVoiceSearch = ({
   handleUseCurrentLocation,
   trackInteraction,
   setPlan,
+  onSearchSuccess,
 }: UseVoiceSearchProps) => {
   const {
     radius,
@@ -451,6 +453,9 @@ export const useVoiceSearch = ({
         title: "Got it!", 
         description: `Found ${restaurants.length} restaurants and ${finalActivities.length} activities based on your request!`,
       });
+      
+      // Trigger first search completion
+      onSearchSuccess?.();
     } catch (error) {
       console.error('Error in voice search:', error);
       toast({ 
@@ -459,7 +464,7 @@ export const useVoiceSearch = ({
         variant: "destructive" 
       });
     }
-  }, [userId, radius, cuisine, activityCategory, searchMode, handleUseCurrentLocation, trackInteraction, setPlan, setLocation, setFilters, setRestaurants, setActivities, setRestaurantIdx, setActivityIdx, setLastSearched, setLastSearchLocation, setSearchMode]);
+  }, [userId, radius, cuisine, activityCategory, searchMode, handleUseCurrentLocation, trackInteraction, setPlan, onSearchSuccess, setLocation, setFilters, setRestaurants, setActivities, setRestaurantIdx, setActivityIdx, setLastSearched, setLastSearchLocation, setSearchMode]);
 
   const { isListening, isProcessing, transcript, startListening } = useVoiceInput({
     onPreferencesExtracted: handlePreferencesExtracted,

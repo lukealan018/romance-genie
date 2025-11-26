@@ -13,7 +13,11 @@ const geoOptions: PositionOptions = {
   maximumAge: 0              // Prevent cached/stale positions
 };
 
-export const usePlaceSearch = (userId: string | null, saveLocationSettings: (radius: number, zipCode: string, immediate: boolean) => Promise<void>) => {
+export const usePlaceSearch = (
+  userId: string | null, 
+  saveLocationSettings: (radius: number, zipCode: string, immediate: boolean) => Promise<void>,
+  onSearchSuccess?: () => void
+) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
@@ -374,6 +378,9 @@ export const usePlaceSearch = (userId: string | null, saveLocationSettings: (rad
         title: "Success", 
         description: `Found ${restaurants.length} restaurants and ${activities.length} activities for your date night!`,
       });
+      
+      // Trigger first search completion
+      onSearchSuccess?.();
     } catch (error) {
       console.error('Error fetching places:', error);
       toast({ title: "Error", description: "Failed to find places. Please try again.", variant: "destructive" });
@@ -857,6 +864,9 @@ export const usePlaceSearch = (userId: string | null, saveLocationSettings: (rad
         cuisine: selectedCuisine, 
         activityCategory: selectedActivity 
       });
+      
+      // Trigger first search completion
+      onSearchSuccess?.();
 
       setTimeout(() => {
         navigate("/plan");
