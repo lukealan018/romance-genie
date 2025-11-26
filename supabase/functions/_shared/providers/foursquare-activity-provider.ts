@@ -129,7 +129,7 @@ export const foursquareActivityProvider: ActivityProvider = {
       headers: {
         'Authorization': authHeader,
         'Accept': 'application/json',
-        'Foursquare-Version': '2025-01-01'
+        'X-Places-Api-Version': '2025-06-17'
       }
     });
     
