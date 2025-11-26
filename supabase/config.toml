@@ -28,7 +28,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.check-availability]
-verify_jwt = false
+verify_jwt = true
+
+[functions.generate-notifications]
+verify_jwt = true
 
 [functions.fetch-weather-forecast]
 verify_jwt = false

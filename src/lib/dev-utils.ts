@@ -8,6 +8,11 @@ export const isDevelopment = () => {
 };
 
 export const isDevModeActive = () => {
+  // SECURITY: Only allow dev mode in development environment
+  if (!import.meta.env.DEV) {
+    return false;
+  }
+  
   // Check URL parameter first
   const params = new URLSearchParams(window.location.search);
   const devParam = params.get('dev') === 'true';

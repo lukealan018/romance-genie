@@ -11,10 +11,31 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // JWT Authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    // Verify JWT and get authenticated user
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error('Authentication error:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const { scheduled_plan_id } = await req.json();
     console.log('Generating notifications for plan:', scheduled_plan_id);
@@ -31,6 +52,15 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Plan not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify ownership
+    if (plan.user_id !== user.id) {
+      console.error('Unauthorized: User does not own this plan');
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: You do not own this plan' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
