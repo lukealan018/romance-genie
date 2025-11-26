@@ -21,21 +21,17 @@ const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: numbe
 
 interface UseVoiceSearchProps {
   userId: string | null;
-  userPreferences: any;
   searchMode: string | null;
   handleUseCurrentLocation: (silent: boolean) => Promise<void>;
   trackInteraction: (place: any, type: 'restaurant' | 'activity', interactionType: 'viewed' | 'selected' | 'skipped') => Promise<void>;
-  setLoading: (loading: boolean) => void;
   setPlan: (plan: any) => void;
 }
 
 export const useVoiceSearch = ({
   userId,
-  userPreferences,
   searchMode,
   handleUseCurrentLocation,
   trackInteraction,
-  setLoading,
   setPlan,
 }: UseVoiceSearchProps) => {
   const {
@@ -204,7 +200,6 @@ export const useVoiceSearch = ({
             description: "Please enable location services or set a home ZIP code",
             variant: "destructive"
           });
-          setLoading(false);
           return;
         }
       } else if (!restaurantLat || !restaurantLng || !activityLat || !activityLng) {
@@ -255,11 +250,13 @@ export const useVoiceSearch = ({
       setFilters(updates);
     }
     
-    setLoading(true);
     try {
       const searchCuisine = updates.cuisine || cuisine || "";
       const searchActivity = updates.activityCategory || activityCategory;
       const restaurantPriceLevel = preferences.restaurantRequest?.priceLevel || null;
+      
+      // Get fresh userPreferences from store
+      const userPreferences = usePlanStore.getState().userPreferences;
       
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
       const voiceMode = preferences.mode || 'both';
@@ -351,8 +348,9 @@ export const useVoiceSearch = ({
         }
       }
       
-      const planLat = (restaurantLat + activityLat) / 2;
-      const planLng = (restaurantLng + activityLng) / 2;
+      // Calculate plan center with null guards
+      const planLat = (restaurantLat && activityLat) ? (restaurantLat + activityLat) / 2 : (restaurantLat || activityLat || 0);
+      const planLng = (restaurantLng && activityLng) ? (restaurantLng + activityLng) / 2 : (restaurantLng || activityLng || 0);
       
       let weatherData = null;
       try {
@@ -460,14 +458,12 @@ export const useVoiceSearch = ({
         description: "Failed to process your request. Please try again.", 
         variant: "destructive" 
       });
-    } finally {
-      setLoading(false);
     }
-  }, [userId, radius, cuisine, activityCategory, searchMode, userPreferences, handleUseCurrentLocation, trackInteraction, setLoading, setPlan, setLocation, setFilters, setRestaurants, setActivities, setRestaurantIdx, setActivityIdx, setLastSearched, setLastSearchLocation, setSearchMode]);
+  }, [userId, radius, cuisine, activityCategory, searchMode, handleUseCurrentLocation, trackInteraction, setPlan, setLocation, setFilters, setRestaurants, setActivities, setRestaurantIdx, setActivityIdx, setLastSearched, setLastSearchLocation, setSearchMode]);
 
   const { isListening, isProcessing, transcript, startListening } = useVoiceInput({
     onPreferencesExtracted: handlePreferencesExtracted,
-    userProfile: userPreferences,
+    userProfile: usePlanStore.getState().userPreferences,
   });
 
   return {
