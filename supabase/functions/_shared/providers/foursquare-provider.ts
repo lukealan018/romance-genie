@@ -3,6 +3,30 @@ import type { PlacesProvider, ProviderPlace, SearchOptions } from '../places-typ
 const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY')?.trim();
 console.log(`🟦 Foursquare provider init: API key ${FOURSQUARE_API_KEY ? `present (${FOURSQUARE_API_KEY.length} chars, starts with: ${FOURSQUARE_API_KEY.substring(0, 4)}, ends with: ${FOURSQUARE_API_KEY.substring(FOURSQUARE_API_KEY.length - 4)})` : 'MISSING'}`);
 
+// Cuisine to Foursquare Category ID mapping
+const cuisineToCategoryId: Record<string, string> = {
+  'italian': '13236',
+  'mexican': '13303',
+  'japanese': '13263',
+  'chinese': '13099',
+  'thai': '13352',
+  'french': '13148',
+  'american': '13064',
+  'steakhouse': '13334',
+  'seafood': '13338',
+  'mediterranean': '13304',
+  'indian': '13199',
+  'fine dining': '13145',
+  'restaurant': '13065', // Generic fallback
+};
+
+// Helper: Get Foursquare category ID for cuisine
+function getCuisineCategory(cuisine?: string): string {
+  if (!cuisine) return '13065'; // Default to generic restaurant
+  const normalized = cuisine.toLowerCase().trim();
+  return cuisineToCategoryId[normalized] || '13065';
+}
+
 // Helper: Calculate distance using Haversine formula
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3959; // Earth's radius in miles
@@ -33,14 +57,18 @@ export const foursquarePlacesProvider: PlacesProvider = {
       const fsUrl = new URL('https://places-api.foursquare.com/places/search');
       fsUrl.searchParams.set('ll', `${options.lat},${options.lng}`);
       fsUrl.searchParams.set('radius', options.radiusMeters.toString());
-      // Temporarily comment out categories to test if old category IDs are causing 400 errors
-      // fsUrl.searchParams.set('categories', '13065'); // Food & Dining category
+      
+      // Add category ID for cuisine type
+      const categoryId = getCuisineCategory(options.cuisine);
+      fsUrl.searchParams.set('categories', categoryId);
       fsUrl.searchParams.set('limit', '50');
       
-      // Add cuisine-specific query if provided
+      // Add cuisine-specific query if provided for additional precision
       if (options.cuisine && options.cuisine !== 'restaurant') {
         fsUrl.searchParams.set('query', options.cuisine);
       }
+      
+      console.log(`🟦 Foursquare: Searching "${options.cuisine || 'restaurant'}" with category ${categoryId}`);
       
       // Map price level to Foursquare's 1-4 scale
       if (options.priceLevel) {

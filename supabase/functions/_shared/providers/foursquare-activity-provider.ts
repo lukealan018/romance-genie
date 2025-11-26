@@ -14,54 +14,67 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// Map keywords to Foursquare categories
-// Major Foursquare category IDs for activities:
-// 10000 - Arts & Entertainment
-// 13003 - Bar
-// 13065 - Nightlife Spot
-// 18000 - Sports & Recreation
+// Map keywords to Foursquare category IDs (new API format)
 const keywordToCategoryMap: Record<string, string[]> = {
-  // Bars and Nightlife
-  'whiskey bar': ['13003', '13065'],
-  'cocktail bar': ['13003', '13065'],
-  'wine bar': ['13003', '13065'],
-  'speakeasy': ['13003', '13065'],
-  'lounge bar': ['13003', '13065'],
-  'lounge': ['13003', '13065'],
-  'sports bar': ['13003'],
-  'dive bar': ['13003'],
-  'rooftop bar': ['13003', '13065'],
-  'tiki bar': ['13003'],
-  'brewery': ['13003'],
-  'jazz lounge': ['13003', '13065'],
-  'hookah lounge': ['13003', '13065'],
-  'cocktail lounge': ['13003', '13065'],
-  'comedy club': ['10000'],
-  'karaoke': ['13065', '10000'],
-  'karaoke bar': ['13065', '10000'],
-  'nightclub': ['13065'],
-  'live music': ['10000', '13065'],
+  // Nightlife categories
+  'bar': ['10033'],
+  'wine bar': ['10038'],
+  'cocktail': ['10034'],
+  'cocktail bar': ['10034'],
+  'dive bar': ['10035'],
+  'sports bar': ['10037'],
+  'nightclub': ['10039'],
+  'lounge': ['10040'],
+  'lounge bar': ['10040'],
+  'whiskey bar': ['10033'],
+  'speakeasy': ['10034'],
+  'rooftop bar': ['10033'],
+  'tiki bar': ['10033'],
+  'brewery': ['10033'],
+  'jazz lounge': ['10040'],
+  'hookah lounge': ['10040'],
+  'cocktail lounge': ['10040'],
   
-  // Entertainment and Recreation
-  'bowling': ['18000'],
-  'mini golf': ['18000'],
-  'golf': ['18000'],
-  'pool hall': ['18000'],
-  'axe throwing': ['18000'],
-  'escape room': ['10000'],
-  'arcade': ['10000'],
-  'movie theater': ['10000'],
-  'wine tasting': ['13003'],
-  'painting class': ['10000'],
-  'paint and sip': ['10000'],
+  // Arts & Entertainment
+  'movie': ['10002'],
+  'movie theater': ['10002'],
+  'theater': ['10004'],
+  'comedy': ['10003'],
+  'comedy club': ['10003'],
+  'music': ['10005'],
+  'live music': ['10005'],
+  'jazz': ['10006'],
+  'concert': ['10007'],
+  'escape room': ['18045'],
+  'arcade': ['18043'],
   'art gallery': ['10000'],
   'museum': ['10000'],
-  'theater': ['10000'],
+  'painting class': ['10000'],
+  'paint and sip': ['10000'],
+  
+  // Recreation
+  'bowling': ['18042'],
+  'mini golf': ['18044'],
+  'karaoke': ['18046'],
+  'karaoke bar': ['18046'],
+  'golf': ['18000'], // General recreation
+  'pool hall': ['18000'],
+  'axe throwing': ['18000'],
+  'wine tasting': ['10038'],
 };
 
 function getFoursquareCategories(keyword: string): string[] {
   const normalized = keyword.toLowerCase().trim();
-  return keywordToCategoryMap[normalized] || ['13003', '10000', '18000']; // Default: bars, arts, sports
+  
+  // Check for exact or partial matches (longer keywords first)
+  const sortedKeys = Object.keys(keywordToCategoryMap).sort((a, b) => b.length - a.length);
+  for (const key of sortedKeys) {
+    if (normalized.includes(key)) {
+      return keywordToCategoryMap[key];
+    }
+  }
+  
+  return ['10032']; // Default to Nightlife general category
 }
 
 // Activity types that typically require tickets/advance booking
@@ -109,11 +122,14 @@ export const foursquareActivityProvider: ActivityProvider = {
     const url = new URL('https://places-api.foursquare.com/places/search');
     url.searchParams.set('ll', `${options.lat},${options.lng}`);
     url.searchParams.set('radius', options.radiusMeters.toString());
-    // Temporarily comment out categories to test if old category IDs are causing 400 errors
-    // url.searchParams.set('categories', categories.join(','));
+    
+    // Add category IDs for activity type
+    url.searchParams.set('categories', categories.join(','));
     url.searchParams.set('limit', '50');
     
-    // Add keyword query if not generic
+    console.log(`🟦 Foursquare Activity: Searching "${options.keyword}" with categories ${categories.join(',')}`);
+    
+    // Add keyword query for additional precision
     if (options.keyword && !['bar', 'activity'].includes(options.keyword.toLowerCase())) {
       url.searchParams.set('query', options.keyword);
     }
