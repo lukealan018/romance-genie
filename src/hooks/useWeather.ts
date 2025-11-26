@@ -4,7 +4,7 @@ import { toast } from "@/hooks/use-toast";
 
 const geoOptions: PositionOptions = {
   enableHighAccuracy: true,  // Required for iOS to prompt properly
-  timeout: 10000,            // 10 second timeout
+  timeout: 20000,            // 20 second timeout for cold starts
   maximumAge: 0              // Don't use cached position
 };
 
@@ -107,7 +107,7 @@ export const useWeather = (userId: string | null) => {
         return;
       }
 
-      const timeout = setTimeout(() => resolve(false), 10000);
+      const timeout = setTimeout(() => resolve(false), 20000);
 
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -185,6 +185,13 @@ export const useWeather = (userId: string | null) => {
     }
 
     setLoadingProfileWeather(true);
+    setLocationSource('gps');
+    
+    toast({
+      title: "📍 Getting Location...",
+      description: "This may take a few seconds",
+    });
+    
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
@@ -239,7 +246,7 @@ export const useWeather = (userId: string | null) => {
           description = "GPS signal not available. Try again outside or near a window.";
         } else if (error.code === 3) { // TIMEOUT
           title = "GPS Timeout";
-          description = "Location request timed out. Check your device settings.";
+          description = "Taking longer than expected. Try again - often works on second attempt.";
         }
         
         toast({ title, description });
