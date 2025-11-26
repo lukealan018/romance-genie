@@ -6,6 +6,13 @@ import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
 import { getLearnedPreferences, getContextualSuggestions } from "@/lib/learning";
 import { usePlanStore } from "@/store/planStore";
 
+// Geolocation options for consistent iOS behavior
+const geoOptions: PositionOptions = {
+  enableHighAccuracy: true,  // Critical for iOS permission prompts
+  timeout: 20000,            // 20 second timeout for cold-start GPS
+  maximumAge: 0              // Prevent cached/stale positions
+};
+
 export const usePlaceSearch = (userId: string | null, saveLocationSettings: (radius: number, zipCode: string, immediate: boolean) => Promise<void>) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -68,7 +75,10 @@ export const usePlaceSearch = (userId: string | null, saveLocationSettings: (rad
 
   const handleUseCurrentLocation = (silent: boolean = false): Promise<void> => {
     return new Promise((resolve, reject) => {
+      console.log('[GPS Location] Requesting location... (silent=' + silent + ')');
+      
       if (!navigator.geolocation) {
+        console.log('[GPS Location] Navigator.geolocation not available');
         const message = "Geolocation is not supported by your browser";
         if (!silent) {
           toast({ title: "Error", description: message, variant: "destructive" });
@@ -80,6 +90,7 @@ export const usePlaceSearch = (userId: string | null, saveLocationSettings: (rad
       setGettingLocation(true);
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          console.log('[GPS Location] SUCCESS! Coordinates:', position.coords.latitude, position.coords.longitude);
           setLocation(position.coords.latitude, position.coords.longitude);
           setGettingLocation(false);
           if (!silent) {
@@ -88,8 +99,8 @@ export const usePlaceSearch = (userId: string | null, saveLocationSettings: (rad
           resolve();
         },
         (error) => {
+          console.log('[GPS Location] FAILED! Code:', error.code, 'Message:', error.message);
           setGettingLocation(false);
-          console.log('Geolocation error (silent=' + silent + '):', error);
           
           if (!silent) {
             let title = "Location Error";
@@ -114,7 +125,8 @@ export const usePlaceSearch = (userId: string | null, saveLocationSettings: (rad
             });
           }
           reject(error);
-        }
+        },
+        geoOptions  // Use consistent geolocation options for iOS
       );
     });
   };
