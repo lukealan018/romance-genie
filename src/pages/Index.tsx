@@ -59,17 +59,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
-      {searchMode && (
-        <div className="fixed top-20 right-4 z-50 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg">
-          <div className="text-xs font-medium">Current Mode:</div>
-          <div className="text-sm font-bold">
-            {searchMode === 'both' && '🍽️ + 🎉 Both'}
-            {searchMode === 'restaurant_only' && '🍽️ Restaurant Only'}
-            {searchMode === 'activity_only' && '🎉 Activity Only'}
-          </div>
-        </div>
-      )}
-      
       <div className="container max-w-2xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between gap-2 mb-4">
           <WeatherWidget
