@@ -54,7 +54,7 @@ export const RestaurantCard = ({
     setLoadingPhone(true);
     try {
       const { data, error } = await supabase.functions.invoke('place-details', {
-        body: { placeId: id }
+        body: { placeId: id, source }
       });
 
       console.log('Phone fetch response:', { data, error });
