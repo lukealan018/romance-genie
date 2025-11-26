@@ -109,7 +109,8 @@ export const foursquareActivityProvider: ActivityProvider = {
     const url = new URL('https://places-api.foursquare.com/places/search');
     url.searchParams.set('ll', `${options.lat},${options.lng}`);
     url.searchParams.set('radius', options.radiusMeters.toString());
-    url.searchParams.set('categories', categories.join(','));
+    // Temporarily comment out categories to test if old category IDs are causing 400 errors
+    // url.searchParams.set('categories', categories.join(','));
     url.searchParams.set('limit', '50');
     
     // Add keyword query if not generic
@@ -135,8 +136,10 @@ export const foursquareActivityProvider: ActivityProvider = {
     
     if (!response.ok) {
       const errorBody = await response.text();
-      console.error(`❌ Foursquare activity API error: ${response.status} ${response.statusText}`);
-      console.error(`❌ Error details: ${errorBody}`);
+      console.error(`❌ Foursquare Activity API error: ${response.status} ${response.statusText}`);
+      console.error(`❌ Foursquare error body: ${errorBody}`);
+      console.error(`❌ Request URL was: ${url.toString()}`);
+      console.error(`❌ Headers sent: Authorization: Bearer ${FOURSQUARE_API_KEY.substring(0,4)}...${FOURSQUARE_API_KEY.substring(FOURSQUARE_API_KEY.length - 4)}`);
       return [];
     }
     
@@ -144,15 +147,16 @@ export const foursquareActivityProvider: ActivityProvider = {
     
     const results = (data.results || [])
       .map((place: any): ProviderActivity => {
-        const placeLat = place.geocodes?.main?.latitude || 0;
-        const placeLng = place.geocodes?.main?.longitude || 0;
+        // Support both new and old field names for coordinates
+        const placeLat = place.latitude || place.geocodes?.main?.latitude || 0;
+        const placeLng = place.longitude || place.geocodes?.main?.longitude || 0;
         const distance = calculateDistance(options.lat, options.lng, placeLat, placeLng);
         
         // Normalize rating from Foursquare's 10-point scale to 5-point scale
         const normalizedRating = place.rating ? (place.rating / 10) * 5 : 0;
         
         return {
-          id: place.fsq_id,
+          id: place.fsq_place_id || place.fsq_id, // New field with fallback to old
           name: place.name,
           address: place.location?.formatted_address || place.location?.address || '',
           rating: normalizedRating,

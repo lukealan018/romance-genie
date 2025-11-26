@@ -33,7 +33,8 @@ export const foursquarePlacesProvider: PlacesProvider = {
       const fsUrl = new URL('https://places-api.foursquare.com/places/search');
       fsUrl.searchParams.set('ll', `${options.lat},${options.lng}`);
       fsUrl.searchParams.set('radius', options.radiusMeters.toString());
-      fsUrl.searchParams.set('categories', '13065'); // Food & Dining category
+      // Temporarily comment out categories to test if old category IDs are causing 400 errors
+      // fsUrl.searchParams.set('categories', '13065'); // Food & Dining category
       fsUrl.searchParams.set('limit', '50');
       
       // Add cuisine-specific query if provided
@@ -70,7 +71,9 @@ export const foursquarePlacesProvider: PlacesProvider = {
       if (!response.ok) {
         const errorBody = await response.text();
         console.error(`❌ Foursquare API error: ${response.status} ${response.statusText}`);
-        console.error(`❌ Error details: ${errorBody}`);
+        console.error(`❌ Foursquare error body: ${errorBody}`);
+        console.error(`❌ Request URL was: ${fsUrl.toString()}`);
+        console.error(`❌ Headers sent: Authorization: Bearer ${FOURSQUARE_API_KEY.substring(0,4)}...${FOURSQUARE_API_KEY.substring(FOURSQUARE_API_KEY.length - 4)}`);
         return [];
       }
       
@@ -81,8 +84,9 @@ export const foursquarePlacesProvider: PlacesProvider = {
       
       // Transform to ProviderPlace format
       const places: ProviderPlace[] = results.map((place: any): ProviderPlace => {
-        const lat = place.geocodes?.main?.latitude || 0;
-        const lng = place.geocodes?.main?.longitude || 0;
+        // Support both new and old field names for coordinates
+        const lat = place.latitude || place.geocodes?.main?.latitude || 0;
+        const lng = place.longitude || place.geocodes?.main?.longitude || 0;
         const distance = calculateDistance(options.lat, options.lng, lat, lng);
         
         // Normalize rating from Foursquare's 10-point scale to 5-point
@@ -101,7 +105,7 @@ export const foursquarePlacesProvider: PlacesProvider = {
         }
         
         return {
-          id: place.fsq_id,
+          id: place.fsq_place_id || place.fsq_id, // New field with fallback to old
           name: place.name,
           address: place.location?.address || place.location?.formatted_address || '',
           rating,
