@@ -12,7 +12,35 @@ serve(async (req) => {
   }
 
   try {
-    const { restaurantId, activityId, restaurantHours, activityHours, scheduledDate, scheduledTime, userId } = await req.json();
+    // JWT Authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabase = createClient(supabaseUrl ?? '', supabaseKey ?? '');
+
+    // Verify JWT and get authenticated user
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error('Authentication error:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { restaurantId, activityId, restaurantHours, activityHours, scheduledDate, scheduledTime } = await req.json();
+
+    // Use authenticated user ID instead of trusting request body
+    const userId = user.id;
 
     // Parse scheduled time
     const [hours, minutes] = scheduledTime.split(':').map(Number);
@@ -86,34 +114,27 @@ serve(async (req) => {
 
     // Check for date proximity conflicts with other scheduled plans
     if (userId) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (supabaseUrl && supabaseKey) {
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        
-        const targetDate = new Date(scheduledDate);
-        const dayBefore = new Date(targetDate);
-        dayBefore.setDate(dayBefore.getDate() - 2);
-        const dayAfter = new Date(targetDate);
-        dayAfter.setDate(dayAfter.getDate() + 2);
+      const targetDate = new Date(scheduledDate);
+      const dayBefore = new Date(targetDate);
+      dayBefore.setDate(dayBefore.getDate() - 2);
+      const dayAfter = new Date(targetDate);
+      dayAfter.setDate(dayAfter.getDate() + 2);
 
-        const { data: nearbyPlans } = await supabase
-          .from('scheduled_plans')
-          .select('scheduled_date')
-          .eq('user_id', userId)
-          .gte('scheduled_date', dayBefore.toISOString().split('T')[0])
-          .lte('scheduled_date', dayAfter.toISOString().split('T')[0])
-          .neq('scheduled_date', scheduledDate);
+      const { data: nearbyPlans } = await supabase
+        .from('scheduled_plans')
+        .select('scheduled_date')
+        .eq('user_id', userId)
+        .gte('scheduled_date', dayBefore.toISOString().split('T')[0])
+        .lte('scheduled_date', dayAfter.toISOString().split('T')[0])
+        .neq('scheduled_date', scheduledDate);
 
-        if (nearbyPlans && nearbyPlans.length > 0) {
-          conflicts.push({
-            type: 'date_proximity',
-            message: `You have ${nearbyPlans.length} other date(s) scheduled within 2 days of this date.`,
-            suggestion: 'Just so you know! No action needed.',
-            severity: 'info'
-          });
-        }
+      if (nearbyPlans && nearbyPlans.length > 0) {
+        conflicts.push({
+          type: 'date_proximity',
+          message: `You have ${nearbyPlans.length} other date(s) scheduled within 2 days of this date.`,
+          suggestion: 'Just so you know! No action needed.',
+          severity: 'info'
+        });
       }
     }
 
