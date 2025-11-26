@@ -105,8 +105,8 @@ export const foursquareActivityProvider: ActivityProvider = {
     // Get Foursquare categories for this keyword
     const categories = getFoursquareCategories(options.keyword);
     
-    // Build Foursquare Places API request
-    const url = new URL('https://api.foursquare.com/v3/places/search');
+    // Build Foursquare Places API request (new endpoint)
+    const url = new URL('https://places-api.foursquare.com/places/search');
     url.searchParams.set('ll', `${options.lat},${options.lng}`);
     url.searchParams.set('radius', options.radiusMeters.toString());
     url.searchParams.set('categories', categories.join(','));
@@ -128,7 +128,8 @@ export const foursquareActivityProvider: ActivityProvider = {
     const response = await fetch(url.toString(), {
       headers: {
         'Authorization': authHeader,
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Foursquare-Version': '2025-01-01'
       }
     });
     

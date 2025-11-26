@@ -29,8 +29,8 @@ export const foursquarePlacesProvider: PlacesProvider = {
     try {
       console.log(`🟦 Foursquare provider: Searching near ${options.lat},${options.lng} radius ${options.radiusMeters}m`);
       
-      // Build Foursquare Places API search URL
-      const fsUrl = new URL('https://api.foursquare.com/v3/places/search');
+      // Build Foursquare Places API search URL (new endpoint)
+      const fsUrl = new URL('https://places-api.foursquare.com/places/search');
       fsUrl.searchParams.set('ll', `${options.lat},${options.lng}`);
       fsUrl.searchParams.set('radius', options.radiusMeters.toString());
       fsUrl.searchParams.set('categories', '13065'); // Food & Dining category
@@ -62,7 +62,8 @@ export const foursquarePlacesProvider: PlacesProvider = {
       const response = await fetch(fsUrl.toString(), {
         headers: {
           'Authorization': authHeader,
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Foursquare-Version': '2025-01-01'
         }
       });
       
