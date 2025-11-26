@@ -77,7 +77,9 @@ const Index = () => {
             icon={weather.profileWeatherData?.icon}
             cityName={weather.profileWeatherData?.cityName}
             loading={weather.loadingProfileWeather}
-            onRefresh={weather.handleWeatherRefresh}
+            locationSource={weather.locationSource}
+            onSwitchToGPS={weather.switchToGPS}
+            onSwitchToHome={weather.switchToHome}
           />
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={() => navigate('/history')} title="Saved Plans">
