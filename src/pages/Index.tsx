@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { ModeSelection } from "@/components/ModeSelection";
 import { HeroSection } from "@/components/hero-section";
 import { ManualFilters } from "@/components/ManualFilters";
-import { ResultsList } from "@/components/ResultsList";
-import { RestaurantDetailsDrawer } from "@/components/RestaurantDetailsDrawer";
 import { LocationDialog } from "@/components/LocationDialog";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { ProfileCompletionPrompt, useProfileCompletionPrompt } from "@/components/ProfileCompletionPrompt";
@@ -22,7 +20,6 @@ import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [selectedPlace, setSelectedPlace] = useState<{ id: string; name: string } | null>(null);
   const [plan, setPlan] = useState<any>(null);
   const [showPickers, setShowPickers] = useState(false);
   const [showLocationDialog, setShowLocationDialog] = useState(false);
@@ -169,37 +166,6 @@ const Index = () => {
           </>
         )}
 
-        <ResultsList
-          loading={search.loading}
-          searchType={search.searchType}
-          onSearchTypeChange={search.setSearchType}
-          restaurants={restaurantResults}
-          activities={activityResults}
-          radius={radius}
-          cuisine={cuisine}
-          onReroll={search.handleRerollPlan}
-          onSelectPlace={setSelectedPlace}
-          onWidenRadius={() => {
-            const newRadius = Math.min(radius + 5, 25);
-            setFilters({ radius: newRadius });
-            toast({ title: "Radius updated", description: `Searching within ${newRadius} miles` });
-          }}
-          onSwitchCuisine={() => {
-            const cuisines = ["Italian", "Mexican", "Japanese", "Chinese", "Thai", "American", "Indian", "French", "Mediterranean"];
-            const currentIndex = cuisines.indexOf(cuisine);
-            const nextCuisine = cuisines[(currentIndex + 1) % 9];
-            setFilters({ cuisine: nextCuisine });
-          }}
-        />
-
-        {selectedPlace && (
-          <RestaurantDetailsDrawer
-            isOpen={!!selectedPlace}
-            onClose={() => setSelectedPlace(null)}
-            placeId={selectedPlace.id}
-            initialName={selectedPlace.name}
-          />
-        )}
 
         <LocationDialog
           open={showLocationDialog}
