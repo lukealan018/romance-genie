@@ -10,6 +10,10 @@ interface Place {
   cuisine?: string;
   category?: 'event' | 'activity';
   city?: string;
+  source?: string;
+  isHiddenGem?: boolean;
+  isNewDiscovery?: boolean;
+  isLocalFavorite?: boolean;
 }
 
 type SearchMode = "both" | "restaurant_only" | "activity_only";
