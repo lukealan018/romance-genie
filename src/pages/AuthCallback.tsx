@@ -8,18 +8,38 @@ export default function AuthCallback() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const handleCallback = async () => {
-      try {
-        // Get the current session
-        const { data: { session }, error } = await supabase.auth.getSession();
+    // Set up auth state listener to handle token exchange
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Successfully signed in, redirect to home
+        navigate('/');
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        // Token refreshed successfully
+        navigate('/');
+      } else if (event === 'USER_UPDATED' && session) {
+        // User session updated
+        navigate('/');
+      }
+    });
 
-        if (error) throw error;
-        if (session) {
-          // User is authenticated, redirect to home
-          navigate('/');
-        } else {
-          setError('Authentication failed. Please try again.');
+    // Also check for existing session (in case already authenticated)
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          // Check if it's a token error
+          if (error.message.includes('Invalid token') || error.message.includes('expired')) {
+            setError('This link has expired or is invalid. Please request a new one.');
+          } else {
+            setError(error.message);
+          }
           setTimeout(() => navigate('/login'), 3000);
+          return;
+        }
+
+        if (session) {
+          navigate('/');
         }
       } catch (error: any) {
         console.error('Auth callback error:', error);
@@ -28,7 +48,11 @@ export default function AuthCallback() {
       }
     };
 
-    handleCallback();
+    checkSession();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   if (error) {
