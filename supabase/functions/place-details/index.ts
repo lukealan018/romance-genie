@@ -59,17 +59,33 @@ serve(async (req) => {
         throw new Error('FOURSQUARE_API_KEY is not configured');
       }
 
-      const fsUrl = new URL(`https://places-api.foursquare.com/places/${placeId}`);
+      // Try with photos first (premium field)
+      let fsUrl = new URL(`https://places-api.foursquare.com/places/${placeId}`);
       fsUrl.searchParams.set('fields', 'name,location,tel,website,rating,stats,hours,price,geocodes,photos');
-      console.log('Fetching Foursquare place details:', fsUrl.toString());
+      console.log('Fetching Foursquare place details with photos:', fsUrl.toString());
 
-      const response = await fetch(fsUrl.toString(), {
+      let response = await fetch(fsUrl.toString(), {
         headers: {
           'Authorization': `Bearer ${FOURSQUARE_API_KEY}`,
           'X-Places-Api-Version': '2025-06-17',
           'Accept': 'application/json',
         },
       });
+
+      // If 429 (premium credits exhausted), retry WITHOUT photos field to stay in free tier
+      if (response.status === 429) {
+        console.log('⚠️ Foursquare premium credits exhausted (photos), retrying without photos field...');
+        fsUrl = new URL(`https://places-api.foursquare.com/places/${placeId}`);
+        fsUrl.searchParams.set('fields', 'name,location,tel,website,rating,stats,hours,price,geocodes');
+        
+        response = await fetch(fsUrl.toString(), {
+          headers: {
+            'Authorization': `Bearer ${FOURSQUARE_API_KEY}`,
+            'X-Places-Api-Version': '2025-06-17',
+            'Accept': 'application/json',
+          },
+        });
+      }
 
       if (!response.ok) {
         const errorBody = await response.text();
