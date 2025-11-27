@@ -161,12 +161,48 @@ export const foursquareActivityProvider: ActivityProvider = {
     
     const data = await response.json();
     
+    // Restaurant/food category IDs to exclude from activities
+    const restaurantCategoryIds = new Set([
+      '13000', // Dining and Drinking (parent)
+      '13034', // Fast Food
+      '13035', // Fast Food (chain)
+      '13145', // Burger Joint
+      '13032', // Fast Food Restaurant
+      '13001', // Bakery
+      '13002', // Food
+      '13003', // Café
+      '13065', // Restaurant
+    ]);
+    
+    // Keywords to exclude restaurants from activities
+    const restaurantKeywords = ['burger', 'pizza', 'taco', 'sushi', 'restaurant', 'grill', 'diner', 'cafe', 'bakery', 'kitchen', 'eatery', 'food'];
+    
     const results = (data.results || [])
-      .map((place: any): ProviderActivity => {
+      .map((place: any): ProviderActivity | null => {
         // Support both new and old field names for coordinates
         const placeLat = place.latitude || place.geocodes?.main?.latitude || 0;
         const placeLng = place.longitude || place.geocodes?.main?.longitude || 0;
         const distance = calculateDistance(options.lat, options.lng, placeLat, placeLng);
+        
+        // Filter out restaurants by category ID
+        const categoryIds = place.categories?.map((c: any) => c.id?.toString()) || [];
+        const hasRestaurantCategory = categoryIds.some((id: string) => {
+          // Check if any category starts with 13 (food/restaurant parent category)
+          return id?.startsWith('13') || restaurantCategoryIds.has(id);
+        });
+        
+        if (hasRestaurantCategory) {
+          console.log(`🟦 Foursquare: Filtering out restaurant "${place.name}" with categories: ${categoryIds.join(', ')}`);
+          return null;
+        }
+        
+        // Filter out by name keywords
+        const nameLower = place.name.toLowerCase();
+        const isRestaurantByName = restaurantKeywords.some(kw => nameLower.includes(kw));
+        if (isRestaurantByName) {
+          console.log(`🟦 Foursquare: Filtering out restaurant by name "${place.name}"`);
+          return null;
+        }
         
         // Normalize rating from Foursquare's 10-point scale to 5-point scale
         const normalizedRating = place.rating ? (place.rating / 10) * 5 : 0;
@@ -186,7 +222,9 @@ export const foursquareActivityProvider: ActivityProvider = {
           types: place.categories?.map((c: any) => c.name) || []
         };
       })
-      .filter((item: ProviderActivity) => {
+      .filter((item: ProviderActivity | null): item is ProviderActivity => {
+        if (!item) return false;
+        
         // Filter by distance
         const radiusMiles = options.radiusMeters / 1609.34;
         const maxDistance = radiusMiles * 1.5; // Allow 50% buffer
@@ -207,7 +245,7 @@ export const foursquareActivityProvider: ActivityProvider = {
         return true;
       });
     
-    console.log(`✅ Foursquare provider: Found ${results.length} activities`);
+    console.log(`✅ Foursquare provider: Found ${results.length} activities (after filtering restaurants)`);
     return results;
   }
 };
