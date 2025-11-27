@@ -13,6 +13,15 @@ export default function AuthCallback() {
     let retryTimerId: NodeJS.Timeout;
     
     const handleAuthCallback = async () => {
+      // FAST PATH: Check for existing session immediately
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      if (existingSession) {
+        clearTimeout(timeoutId);
+        clearTimeout(retryTimerId);
+        navigate('/');
+        return;
+      }
+      
       // Check for auth params in URL
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const queryParams = new URLSearchParams(window.location.search);
@@ -59,7 +68,7 @@ export default function AuthCallback() {
 
       // If there's an access_token in hash, wait for Supabase to auto-process
       if (accessToken) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
       
       // Check for existing session
