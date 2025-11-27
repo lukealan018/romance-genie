@@ -6,21 +6,41 @@ import { supabase } from '@/integrations/supabase/client';
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [error, setError] = useState('');
+  const [showRetry, setShowRetry] = useState(false);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    let retryTimerId: NodeJS.Timeout;
+    
     // Set up auth state listener to handle token exchange
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        // Successfully signed in, redirect to home
+        clearTimeout(timeoutId);
+        clearTimeout(retryTimerId);
         navigate('/');
       } else if (event === 'TOKEN_REFRESHED' && session) {
-        // Token refreshed successfully
+        clearTimeout(timeoutId);
+        clearTimeout(retryTimerId);
         navigate('/');
       } else if (event === 'USER_UPDATED' && session) {
-        // User session updated
+        clearTimeout(timeoutId);
+        clearTimeout(retryTimerId);
         navigate('/');
       }
     });
+
+    // Show "Taking too long?" option after 5 seconds
+    retryTimerId = setTimeout(() => setShowRetry(true), 5000);
+
+    // Set 10-second timeout for authentication
+    timeoutId = setTimeout(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) {
+          setError('Authentication timed out. The link may have expired or been used already. Please request a new one.');
+          setTimeout(() => navigate('/login'), 3000);
+        }
+      });
+    }, 10000);
 
     // Also check for existing session (in case already authenticated)
     const checkSession = async () => {
@@ -34,16 +54,22 @@ export default function AuthCallback() {
           } else {
             setError(error.message);
           }
+          clearTimeout(timeoutId);
+          clearTimeout(retryTimerId);
           setTimeout(() => navigate('/login'), 3000);
           return;
         }
 
         if (session) {
+          clearTimeout(timeoutId);
+          clearTimeout(retryTimerId);
           navigate('/');
         }
       } catch (error: any) {
         console.error('Auth callback error:', error);
         setError(error.message || 'Something went wrong');
+        clearTimeout(timeoutId);
+        clearTimeout(retryTimerId);
         setTimeout(() => navigate('/login'), 3000);
       }
     };
@@ -52,6 +78,8 @@ export default function AuthCallback() {
 
     return () => {
       subscription.unsubscribe();
+      clearTimeout(timeoutId);
+      clearTimeout(retryTimerId);
     };
   }, [navigate]);
 
@@ -77,7 +105,19 @@ export default function AuthCallback() {
       <div className="bg-slate-800 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
         <Loader2 className="w-16 h-16 mx-auto mb-4 text-indigo-400 animate-spin" />
         <h2 className="text-2xl font-bold text-slate-100 mb-2">Signing you in…</h2>
-        <p className="text-slate-400">Just a moment while we verify your magic link ✨</p>
+        <p className="text-slate-400 mb-4">Just a moment while we verify your magic link ✨</p>
+        
+        {showRetry && (
+          <div className="mt-6 pt-6 border-t border-slate-700">
+            <p className="text-slate-500 text-sm mb-3">Taking too long?</p>
+            <button
+              onClick={() => navigate('/login')}
+              className="text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors"
+            >
+              Request a new magic link →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
