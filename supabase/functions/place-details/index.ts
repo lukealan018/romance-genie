@@ -59,10 +59,11 @@ serve(async (req) => {
         throw new Error('FOURSQUARE_API_KEY is not configured');
       }
 
-      const fsUrl = `https://places-api.foursquare.com/places/${placeId}`;
-      console.log('Fetching Foursquare place details:', fsUrl);
+      const fsUrl = new URL(`https://places-api.foursquare.com/places/${placeId}`);
+      fsUrl.searchParams.set('fields', 'name,location,tel,website,rating,stats,hours,price,geocodes,photos');
+      console.log('Fetching Foursquare place details:', fsUrl.toString());
 
-      const response = await fetch(fsUrl, {
+      const response = await fetch(fsUrl.toString(), {
         headers: {
           'Authorization': `Bearer ${FOURSQUARE_API_KEY}`,
           'X-Places-Api-Version': '2025-06-17',
@@ -78,7 +79,10 @@ serve(async (req) => {
       }
 
       const place = await response.json();
-      console.log('Foursquare place details received');
+      console.log('Foursquare place details received, photos count:', place.photos?.length || 0);
+      if (place.photos?.[0]) {
+        console.log('Foursquare photo sample:', JSON.stringify(place.photos[0]));
+      }
 
       // Transform Foursquare response to match expected format
       const details = {
