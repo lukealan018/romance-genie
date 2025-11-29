@@ -110,46 +110,88 @@ export const foursquarePlacesProvider: PlacesProvider = {
       
       console.log(`🟦 Foursquare provider: Received ${results.length} raw results`);
       
-      // Transform to ProviderPlace format
-      const places: ProviderPlace[] = results.map((place: any): ProviderPlace => {
-        // Support both new and old field names for coordinates
-        const lat = place.latitude || place.geocodes?.main?.latitude || 0;
-        const lng = place.longitude || place.geocodes?.main?.longitude || 0;
-        const distance = calculateDistance(options.lat, options.lng, lat, lng);
-        
-        // Normalize rating from Foursquare's 10-point scale to 5-point
-        const rating = place.rating ? place.rating / 2 : 0;
-        
-        // Extract photo URLs
-        const photos: string[] = [];
-        if (place.photos && Array.isArray(place.photos)) {
-          photos.push(...place.photos.map((p: any) => `${p.prefix}original${p.suffix}`));
-        }
-        
-        // Extract categories
-        const categories: string[] = [];
-        if (place.categories && Array.isArray(place.categories)) {
-          categories.push(...place.categories.map((c: any) => c.name?.toLowerCase() || ''));
-        }
-        
-        return {
-          id: place.fsq_place_id || place.fsq_id, // New field with fallback to old
-          name: place.name,
-          address: place.location?.address || place.location?.formatted_address || '',
-          rating,
-          priceLevel: place.price || null,
-          lat,
-          lng,
-          source: "foursquare",
-          reviewCount: place.stats?.total_ratings || 0,
-          photos,
-          categories,
-          distance,
-          types: categories, // For compatibility with scoring
-          addressComponents: [], // Foursquare doesn't provide this
-          geometry: { location: { lat, lng } } // For compatibility
-        };
-      });
+      // Retail store category IDs to EXCLUDE from restaurant results
+      const retailExclusionCategoryIds = new Set([
+        '17000', // Retail (parent)
+        '17069', // Wine Shop
+        '17037', // Liquor Store
+        '17043', // Grocery Store
+        '17044', // Supermarket
+        '17028', // Convenience Store
+        '17048', // Department Store
+        '17027', // Shopping Mall
+      ]);
+      
+      // Retail store keywords to exclude
+      const retailExclusionKeywords = [
+        'wine shop', 'wine store', 'liquor store', 'total wine', 'bevmo',
+        'grocery', 'supermarket', 'market', 'convenience store', 'gas station',
+        'bottle shop', 'package store', 'abc store', 'trader joe', 'whole foods',
+        'costco', 'walmart', 'target', 'safeway', 'vons', 'ralphs', 'kroger'
+      ];
+      
+      // Transform to ProviderPlace format with filtering
+      const places: ProviderPlace[] = results
+        .map((place: any): ProviderPlace | null => {
+          // Support both new and old field names for coordinates
+          const lat = place.latitude || place.geocodes?.main?.latitude || 0;
+          const lng = place.longitude || place.geocodes?.main?.longitude || 0;
+          const distance = calculateDistance(options.lat, options.lng, lat, lng);
+          
+          const nameLower = place.name.toLowerCase();
+          const categoryIds = place.categories?.map((c: any) => c.id?.toString()) || [];
+          
+          // Filter out retail stores by category ID
+          const hasRetailCategory = categoryIds.some((id: string) => {
+            return id?.startsWith('17') || retailExclusionCategoryIds.has(id);
+          });
+          
+          if (hasRetailCategory) {
+            console.log(`🟦 Foursquare: Filtering out retail store "${place.name}" with categories: ${categoryIds.join(', ')}`);
+            return null;
+          }
+          
+          // Filter out by retail name keywords
+          const isRetailByName = retailExclusionKeywords.some(kw => nameLower.includes(kw));
+          if (isRetailByName) {
+            console.log(`🟦 Foursquare: Filtering out retail store by name "${place.name}"`);
+            return null;
+          }
+          
+          // Normalize rating from Foursquare's 10-point scale to 5-point
+          const rating = place.rating ? place.rating / 2 : 0;
+          
+          // Extract photo URLs
+          const photos: string[] = [];
+          if (place.photos && Array.isArray(place.photos)) {
+            photos.push(...place.photos.map((p: any) => `${p.prefix}original${p.suffix}`));
+          }
+          
+          // Extract categories
+          const categories: string[] = [];
+          if (place.categories && Array.isArray(place.categories)) {
+            categories.push(...place.categories.map((c: any) => c.name?.toLowerCase() || ''));
+          }
+          
+          return {
+            id: place.fsq_place_id || place.fsq_id, // New field with fallback to old
+            name: place.name,
+            address: place.location?.address || place.location?.formatted_address || '',
+            rating,
+            priceLevel: place.price || null,
+            lat,
+            lng,
+            source: "foursquare",
+            reviewCount: place.stats?.total_ratings || 0,
+            photos,
+            categories,
+            distance,
+            types: categories, // For compatibility with scoring
+            addressComponents: [], // Foursquare doesn't provide this
+            geometry: { location: { lat, lng } } // For compatibility
+          };
+        })
+        .filter((place: ProviderPlace | null): place is ProviderPlace => place !== null);
       
       // Filter by target city if specified
       let filtered = places;

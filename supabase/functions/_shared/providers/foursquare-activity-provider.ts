@@ -174,8 +174,28 @@ export const foursquareActivityProvider: ActivityProvider = {
       '13065', // Restaurant
     ]);
     
-    // Keywords to exclude restaurants from activities
-    const restaurantKeywords = ['burger', 'pizza', 'taco', 'sushi', 'restaurant', 'grill', 'diner', 'cafe', 'bakery', 'kitchen', 'eatery', 'food'];
+    // Expanded restaurant/food keywords to exclude from activities
+    const restaurantKeywords = [
+      'burger', 'pizza', 'taco', 'sushi', 'restaurant', 'grill', 'diner', 
+      'cafe', 'bakery', 'kitchen', 'eatery', 'food', 'wings', 'chicken',
+      'bbq', 'barbecue', 'steakhouse', 'fatburger', 'in-n-out', 'mcdonalds',
+      'five guys', 'shake shack', 'wendys', 'chick-fil-a', 'popeyes',
+      'del taco', 'taco bell', 'chipotle', 'panda express', 'wingstop'
+    ];
+    
+    // Entertainment golf venues to KEEP (allowlist)
+    const entertainmentGolfKeywords = [
+      'topgolf', 'top golf', 'driving range', 'golf entertainment', 
+      'night golf', 'glow golf', 'mini golf', 'putt putt', 'miniature golf',
+      'golf simulator', 'indoor golf', 'golf lounge'
+    ];
+    
+    // Traditional golf to EXCLUDE
+    const golfExclusionKeywords = [
+      'golf course', 'country club', 'golf club', 'golf resort', 
+      'links', 'championship golf', '18 hole', '9 hole', 'golf & country',
+      'golf and country', 'private club', 'members only'
+    ];
     
     const results = (data.results || [])
       .map((place: any): ProviderActivity | null => {
@@ -184,8 +204,21 @@ export const foursquareActivityProvider: ActivityProvider = {
         const placeLng = place.longitude || place.geocodes?.main?.longitude || 0;
         const distance = calculateDistance(options.lat, options.lng, placeLat, placeLng);
         
-        // Filter out restaurants by category ID
+        const nameLower = place.name.toLowerCase();
         const categoryIds = place.categories?.map((c: any) => c.id?.toString()) || [];
+        const categoryNames = place.categories?.map((c: any) => c.name?.toLowerCase() || '') || [];
+        
+        // GOLF FILTERING: Check entertainment golf first (allowlist takes priority)
+        const isEntertainmentGolf = entertainmentGolfKeywords.some(kw => nameLower.includes(kw));
+        const isTraditionalGolf = golfExclusionKeywords.some(kw => nameLower.includes(kw)) ||
+                                   categoryNames.some((cat: string) => cat.includes('golf course') || cat.includes('country club'));
+        
+        if (isTraditionalGolf && !isEntertainmentGolf) {
+          console.log(`🟦 Foursquare: Filtering out traditional golf "${place.name}"`);
+          return null;
+        }
+        
+        // Filter out restaurants by category ID
         const hasRestaurantCategory = categoryIds.some((id: string) => {
           // Check if any category starts with 13 (food/restaurant parent category)
           return id?.startsWith('13') || restaurantCategoryIds.has(id);
@@ -196,8 +229,7 @@ export const foursquareActivityProvider: ActivityProvider = {
           return null;
         }
         
-        // Filter out by name keywords
-        const nameLower = place.name.toLowerCase();
+        // Filter out by name keywords (restaurants/fast food)
         const isRestaurantByName = restaurantKeywords.some(kw => nameLower.includes(kw));
         if (isRestaurantByName) {
           console.log(`🟦 Foursquare: Filtering out restaurant by name "${place.name}"`);
