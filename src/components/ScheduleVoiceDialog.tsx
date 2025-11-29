@@ -211,23 +211,26 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
       }
 
       const results = await Promise.all(fetchPromises);
-      const weatherResult = results[0];
+      const weatherResult = results[0] || { data: null };
       
       // Extract restaurant and activity results if they were fetched
-      let restaurantResult = { data: { website: null } };
-      let activityResult = { data: { website: null } };
+      let restaurantResult: any = { data: { website: null } };
+      let activityResult: any = { data: { website: null } };
       
       if (!restaurantHours && !activityHours) {
         // Both were fetched
-        restaurantResult = results[1];
-        activityResult = results[2];
+        restaurantResult = results[1] || { data: { website: null } };
+        activityResult = results[2] || { data: { website: null } };
       } else if (!restaurantHours) {
         // Only restaurant was fetched
-        restaurantResult = results[1];
+        restaurantResult = results[1] || { data: { website: null } };
       } else if (!activityHours) {
         // Only activity was fetched
-        activityResult = results[1];
+        activityResult = results[1] || { data: { website: null } };
       }
+
+      // Safely extract weather data - ensure it has the expected structure
+      const weatherData = weatherResult?.data && !weatherResult.data.error ? weatherResult.data : null;
 
       const scheduledPlan = await addScheduledPlan({
         scheduled_date: finalDate,
@@ -238,7 +241,7 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
         restaurant_cuisine: planDetails.restaurant.cuisine,
         restaurant_lat: planDetails.restaurant.lat,
         restaurant_lng: planDetails.restaurant.lng,
-        restaurant_website: restaurantResult.data?.website,
+        restaurant_website: restaurantResult?.data?.website ?? null,
         restaurant_hours: restaurantHours,
         activity_id: planDetails.activity.id,
         activity_name: planDetails.activity.name,
@@ -246,9 +249,9 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
         activity_category: planDetails.activity.category,
         activity_lat: planDetails.activity.lat,
         activity_lng: planDetails.activity.lng,
-        activity_website: activityResult.data?.website,
+        activity_website: activityResult?.data?.website ?? null,
         activity_hours: activityHours,
-        weather_forecast: weatherResult.data,
+        weather_forecast: weatherData,
         confirmation_numbers: confirmationNumbers.restaurant || confirmationNumbers.activity ? confirmationNumbers : undefined,
         availability_status: availabilityData?.status || 'pending',
         conflict_warnings: availabilityData?.conflicts || []

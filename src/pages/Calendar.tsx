@@ -172,11 +172,11 @@ export default function Calendar() {
                         </div>
                       </div>
 
-                      {plan.weather_forecast && (
+                      {plan.weather_forecast && plan.weather_forecast.temp !== undefined && (
                         <div className="flex items-center gap-2 text-sm">
                           <Cloud className="w-4 h-4" />
                           <span>{plan.weather_forecast.temp}°F</span>
-                          <span className="text-muted-foreground">{plan.weather_forecast.description}</span>
+                          <span className="text-muted-foreground">{plan.weather_forecast.description ?? ''}</span>
                         </div>
                       )}
 
