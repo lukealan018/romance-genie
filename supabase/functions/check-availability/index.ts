@@ -41,11 +41,21 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { restaurantId, activityId, restaurantHours, activityHours, scheduledDate, scheduledTime } = body || {};
 
+    // Validate required fields
+    if (!scheduledDate || !scheduledTime) {
+      return new Response(
+        JSON.stringify({ error: 'Missing scheduledDate or scheduledTime' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Use authenticated user ID instead of trusting request body
     const userId = user.id;
 
-    // Parse scheduled time
-    const [hours, minutes] = scheduledTime.split(':').map(Number);
+    // Parse scheduled time safely
+    const timeParts = scheduledTime.split(':');
+    const hours = parseInt(timeParts[0] || '0', 10);
+    const minutes = parseInt(timeParts[1] || '0', 10);
     const scheduledMinutes = hours * 60 + minutes;
 
     const conflicts = [];
