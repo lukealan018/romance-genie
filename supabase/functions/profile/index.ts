@@ -29,7 +29,8 @@ serve(async (req) => {
 
     // Verify the JWT token and get the authenticated user
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    const { data: authData, error: authError } = await supabaseClient.auth.getUser(token);
+    const user = authData?.user;
 
     if (authError || !user) {
       return new Response(
