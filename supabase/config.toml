@@ -35,3 +35,6 @@ verify_jwt = true
 
 [functions.fetch-weather-forecast]
 verify_jwt = false
+
+[functions.provider-status]
+verify_jwt = false
