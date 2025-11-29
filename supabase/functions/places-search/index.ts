@@ -7,11 +7,33 @@ import {
   type NoveltyMode 
 } from "../_shared/scoring.ts";
 import { getRestaurantSuggestions } from "../_shared/places-service.ts";
+import { buildBookingInsights } from "../_shared/booking-insights.ts";
+import { FEATURE_FLAGS } from "../_shared/feature-flags.ts";
+import type { BookingInsights } from "../_shared/booking-types.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Response item type with optional booking insights
+interface PlaceSearchResultItem {
+  id: string;
+  name: string;
+  rating: number;
+  totalRatings: number;
+  priceLevel: string;
+  address: string;
+  lat: number;
+  lng: number;
+  source: string;
+  uniquenessScore: number;
+  isHiddenGem: boolean;
+  isNewDiscovery: boolean;
+  isLocalFavorite: boolean;
+  hasPremiumData?: boolean;
+  bookingInsights?: BookingInsights; // Optional - only when feature enabled
+}
 
 // Calculate distance between two coordinates using Haversine formula
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -93,7 +115,8 @@ serve(async (req) => {
       cuisine: cuisine || 'any',
       priceLevel: priceLevel || 'any',
       targetCity: targetCity || 'none',
-      noveltyMode
+      noveltyMode,
+      bookingInsightsEnabled: FEATURE_FLAGS.ENABLE_BOOKING_INSIGHTS
     });
 
     // Use multi-provider service to get restaurant suggestions
@@ -112,7 +135,7 @@ serve(async (req) => {
 
     // Apply existing scoring and filtering logic
     const radiusMilesNum = radiusMiles;
-    const items = providerResults
+    const items: PlaceSearchResultItem[] = providerResults
       .filter((item: any) => {
         // Distance filter with buffer
         const maxDistance = radiusMilesNum * 1.5;
@@ -148,7 +171,24 @@ serve(async (req) => {
           hasPremiumData: item.hasPremiumData // Flag for neutral scoring
         };
         
-        return {
+        // Build booking insights if feature is enabled
+        const bookingInsights = FEATURE_FLAGS.ENABLE_BOOKING_INSIGHTS 
+          ? buildBookingInsights({
+              id: item.id,
+              name: item.name,
+              address: item.address,
+              rating: item.rating,
+              priceLevel: item.priceLevel,
+              lat: item.lat,
+              lng: item.lng,
+              source: item.source,
+              reviewCount: item.reviewCount,
+              photos: item.photos || [],
+              categories: item.categories || []
+            })
+          : undefined;
+        
+        const result: PlaceSearchResultItem = {
           id: item.id,
           name: item.name,
           rating: item.rating,
@@ -162,10 +202,14 @@ serve(async (req) => {
           isHiddenGem: isHiddenGem(placeData),
           isNewDiscovery: isNewDiscovery(placeData),
           isLocalFavorite: isLocalFavorite(placeData),
-          hasPremiumData: item.hasPremiumData // Pass through for UI display
+          hasPremiumData: item.hasPremiumData,
+          // Only include bookingInsights when defined (removes undefined from output)
+          ...(bookingInsights && { bookingInsights })
         };
+        
+        return result;
       })
-      .sort((a: any, b: any) => {
+      .sort((a, b) => {
         // Sort by uniqueness score (highest first), with rating as tiebreaker
         if (Math.abs(a.uniquenessScore - b.uniquenessScore) > 0.1) {
           return b.uniquenessScore - a.uniquenessScore;
@@ -173,20 +217,13 @@ serve(async (req) => {
         return b.rating - a.rating;
       });
 
-    console.log(`✅ Returning ${items.length} scored restaurants`);
+    // Log booking insights stats when feature is enabled
+    if (FEATURE_FLAGS.ENABLE_BOOKING_INSIGHTS) {
+      const recommendedCount = items.filter(i => i.bookingInsights?.reservationRecommended).length;
+      console.log(`📅 Booking insights: ${recommendedCount}/${items.length} recommend reservations`);
+    }
 
-    // TODO: Future reservation integration point
-    // When booking insights feature is enabled, attach recommendations to response:
-    //
-    // import { buildBookingInsights } from '../_shared/booking-insights.ts';
-    // import { FEATURE_FLAGS } from '../_shared/feature-flags.ts';
-    //
-    // if (FEATURE_FLAGS.ENABLE_BOOKING_INSIGHTS) {
-    //   items = items.map(item => ({
-    //     ...item,
-    //     bookingInsights: buildBookingInsights(item, scheduledDateTime)
-    //   }));
-    // }
+    console.log(`✅ Returning ${items.length} scored restaurants`);
 
     return new Response(
       JSON.stringify({
