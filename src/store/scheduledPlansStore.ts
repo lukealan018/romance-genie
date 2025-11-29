@@ -48,10 +48,11 @@ export const useScheduledPlansStore = create<ScheduledPlansState>((set, get) => 
   fetchScheduledPlans: async () => {
     set({ isLoading: true });
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
+      const { data: plans, error } = await supabase
         .from('scheduled_plans')
         .select('*')
         .eq('user_id', user.id)
@@ -60,7 +61,7 @@ export const useScheduledPlansStore = create<ScheduledPlansState>((set, get) => 
 
       if (error) throw error;
 
-      set({ scheduledPlans: (data || []) as ScheduledPlan[] });
+      set({ scheduledPlans: (plans || []) as ScheduledPlan[] });
     } catch (error) {
       console.error('Error fetching scheduled plans:', error);
     } finally {
@@ -70,10 +71,11 @@ export const useScheduledPlansStore = create<ScheduledPlansState>((set, get) => 
 
   addScheduledPlan: async (plan) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
+      const { data: newPlan, error } = await supabase
         .from('scheduled_plans')
         .insert({
           ...plan,
@@ -86,7 +88,7 @@ export const useScheduledPlansStore = create<ScheduledPlansState>((set, get) => 
 
       set((state) => ({
         ...state,
-        scheduledPlans: [...state.scheduledPlans, data as ScheduledPlan].sort((a, b) => {
+        scheduledPlans: [...state.scheduledPlans, newPlan as ScheduledPlan].sort((a, b) => {
           const dateCompare = a.scheduled_date.localeCompare(b.scheduled_date);
           if (dateCompare !== 0) return dateCompare;
           return a.scheduled_time.localeCompare(b.scheduled_time);
@@ -95,7 +97,7 @@ export const useScheduledPlansStore = create<ScheduledPlansState>((set, get) => 
 
       // Generate notifications for the new plan
       const { error: notifError } = await supabase.functions.invoke('generate-notifications', {
-        body: { scheduled_plan_id: data.id }
+        body: { scheduled_plan_id: newPlan.id }
       });
 
       if (notifError) {
@@ -103,7 +105,7 @@ export const useScheduledPlansStore = create<ScheduledPlansState>((set, get) => 
         // Don't block - notifications are nice-to-have
       }
 
-      return data;
+      return newPlan as ScheduledPlan;
     } catch (error) {
       console.error('Error adding scheduled plan:', error);
       return null;
