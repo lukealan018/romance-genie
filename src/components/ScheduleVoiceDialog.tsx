@@ -112,15 +112,36 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
       const { data: authData } = await supabase.auth.getUser();
       const user = authData?.user;
       
-      // Fetch place details first to get hours data
-      const [restaurantResult, activityResult] = await Promise.all([
-        supabase.functions.invoke('place-details', {
-          body: { placeId: planDetails.restaurant.id }
-        }),
-        supabase.functions.invoke('place-details', {
-          body: { placeId: planDetails.activity.id }
-        })
-      ]);
+      // Fetch place details only for venues that exist
+      const fetchPromises: Promise<any>[] = [];
+      if (planDetails.restaurant?.id) {
+        fetchPromises.push(
+          supabase.functions.invoke('place-details', {
+            body: { placeId: planDetails.restaurant.id }
+          })
+        );
+      }
+      if (planDetails.activity?.id) {
+        fetchPromises.push(
+          supabase.functions.invoke('place-details', {
+            body: { placeId: planDetails.activity.id }
+          })
+        );
+      }
+
+      const results = await Promise.all(fetchPromises);
+      
+      // Map results based on what was fetched
+      let restaurantResult: any = { data: {} };
+      let activityResult: any = { data: {} };
+      let resultIndex = 0;
+      
+      if (planDetails.restaurant?.id) {
+        restaurantResult = results[resultIndex++] || { data: {} };
+      }
+      if (planDetails.activity?.id) {
+        activityResult = results[resultIndex++] || { data: {} };
+      }
 
       // Store hours in state for later use in handleSchedule
       setRestaurantHours(restaurantResult.data?.opening_hours);
@@ -128,8 +149,8 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
       
       const { data, error } = await supabase.functions.invoke('check-availability', {
         body: {
-          restaurantId: planDetails.restaurant.id,
-          activityId: planDetails.activity.id,
+          restaurantId: planDetails.restaurant?.id,
+          activityId: planDetails.activity?.id,
           restaurantHours: restaurantResult.data?.opening_hours,
           activityHours: activityResult.data?.opening_hours,
           scheduledDate: date,
@@ -151,6 +172,12 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
 
     if (!finalDate || !finalTime) {
       toast.error("Please provide both date and time");
+      return;
+    }
+
+    // Require both restaurant and activity for scheduling
+    if (!planDetails.restaurant || !planDetails.activity) {
+      toast.error("Both restaurant and activity are required to schedule a date");
       return;
     }
 
