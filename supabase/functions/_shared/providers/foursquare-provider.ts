@@ -159,9 +159,20 @@ export const foursquarePlacesProvider: PlacesProvider = {
           }
           
           // Normalize rating from Foursquare's 10-point scale to 5-point
+          // NOTE: rating and stats are PREMIUM fields ($18.75/1000 calls)
           const rating = place.rating ? place.rating / 2 : 0;
+          const reviewCount = place.stats?.total_ratings || 0;
           
-          // Extract photo URLs
+          // Detect if Premium data is available (rating > 0 or reviewCount > 0)
+          const hasPremiumData = rating > 0 || reviewCount > 0;
+          
+          // Extract chains array (FREE tier field - accurate chain detection!)
+          const chains = place.chains || [];
+          
+          // Debug logging for Premium data availability
+          console.log(`🟦 Foursquare venue "${place.name}": rating=${rating.toFixed(1)}, reviewCount=${reviewCount}, chains=${chains.length}, hasPremiumData=${hasPremiumData}`);
+          
+          // Extract photo URLs (PREMIUM field - may be empty)
           const photos: string[] = [];
           if (place.photos && Array.isArray(place.photos)) {
             photos.push(...place.photos.map((p: any) => `${p.prefix}original${p.suffix}`));
@@ -182,13 +193,16 @@ export const foursquarePlacesProvider: PlacesProvider = {
             lat,
             lng,
             source: "foursquare",
-            reviewCount: place.stats?.total_ratings || 0,
+            reviewCount,
             photos,
             categories,
             distance,
             types: categories, // For compatibility with scoring
             addressComponents: [], // Foursquare doesn't provide this
-            geometry: { location: { lat, lng } } // For compatibility
+            geometry: { location: { lat, lng } }, // For compatibility
+            // Foursquare-specific fields for scoring
+            chains, // FREE tier - accurate chain detection
+            hasPremiumData // Flag for scoring logic
           };
         })
         .filter((place: ProviderPlace | null): place is ProviderPlace => place !== null);

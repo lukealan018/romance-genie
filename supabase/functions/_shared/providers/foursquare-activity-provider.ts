@@ -237,7 +237,18 @@ export const foursquareActivityProvider: ActivityProvider = {
         }
         
         // Normalize rating from Foursquare's 10-point scale to 5-point scale
+        // NOTE: rating and stats are PREMIUM fields ($18.75/1000 calls)
         const normalizedRating = place.rating ? (place.rating / 10) * 5 : 0;
+        const totalRatings = place.stats?.total_ratings || 0;
+        
+        // Detect if Premium data is available
+        const hasPremiumData = normalizedRating > 0 || totalRatings > 0;
+        
+        // Extract chains array (FREE tier field - accurate chain detection!)
+        const chains = place.chains || [];
+        
+        // Debug logging for Premium data availability
+        console.log(`🟦 Foursquare activity "${place.name}": rating=${normalizedRating.toFixed(1)}, totalRatings=${totalRatings}, chains=${chains.length}, hasPremiumData=${hasPremiumData}`);
         
         return {
           id: place.fsq_place_id || place.fsq_id, // New field with fallback to old
@@ -247,11 +258,14 @@ export const foursquareActivityProvider: ActivityProvider = {
           lat: placeLat,
           lng: placeLng,
           source: "foursquare",
-          totalRatings: place.stats?.total_ratings || 0,
+          totalRatings,
           city: place.location?.locality,
           category: determineCategory(place.name, place.categories?.map((c: any) => c.name) || []),
           distance: distance,
-          types: place.categories?.map((c: any) => c.name) || []
+          types: place.categories?.map((c: any) => c.name) || [],
+          // Foursquare-specific fields for scoring
+          chains, // FREE tier - accurate chain detection
+          hasPremiumData // Flag for scoring logic
         };
       })
       .filter((item: ProviderActivity | null): item is ProviderActivity => {
