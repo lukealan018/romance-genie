@@ -38,13 +38,14 @@ serve(async (req) => {
     
     console.log('Weather data fetched successfully');
 
+    const weatherInfo = data?.weather?.[0];
     const weatherData = {
-      temperature: Math.round(data.main.temp),
-      feelsLike: Math.round(data.main.feels_like),
-      description: data.weather[0].description,
-      icon: data.weather[0].icon,
-      humidity: data.main.humidity,
-      windSpeed: Math.round(data.wind.speed),
+      temperature: Math.round(data?.main?.temp ?? 0),
+      feelsLike: Math.round(data?.main?.feels_like ?? 0),
+      description: weatherInfo?.description ?? 'Unknown',
+      icon: weatherInfo?.icon ?? '01d',
+      humidity: data?.main?.humidity ?? 0,
+      windSpeed: Math.round(data?.wind?.speed ?? 0),
     };
 
     return new Response(

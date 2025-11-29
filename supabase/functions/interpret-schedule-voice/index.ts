@@ -91,7 +91,13 @@ IMPORTANT: Always return valid JSON. Be forgiving with natural language.`;
     }
 
     const data = await response.json();
-    const content = data.choices[0].message.content;
+    const content = data?.choices?.[0]?.message?.content;
+    
+    if (!content) {
+      console.error('AI response missing content:', JSON.stringify(data));
+      throw new Error('Invalid AI response: missing content');
+    }
+    
     const parsed = JSON.parse(content);
 
     console.log('Schedule interpretation:', parsed);

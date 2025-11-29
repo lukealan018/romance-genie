@@ -7,7 +7,9 @@ serve(async (req) => {
   }
 
   try {
-    const { transcript, userProfile } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const transcript = body?.transcript;
+    const userProfile = body?.userProfile;
 
     if (!transcript) {
       throw new Error('No transcript provided');
@@ -265,7 +267,14 @@ CRITICAL EXAMPLES for MODE DETECTION:
     }
 
     const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
+    const content = data?.choices?.[0]?.message?.content;
+    
+    if (!content) {
+      console.error('AI response missing content:', JSON.stringify(data));
+      throw new Error('Invalid AI response: missing content');
+    }
+    
+    const result = JSON.parse(content);
     
     console.log('=== VOICE INTERPRETATION ===');
     console.log('Original transcript:', transcript);
