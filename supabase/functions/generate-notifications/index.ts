@@ -38,8 +38,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { scheduled_plan_id } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const scheduled_plan_id = body?.scheduled_plan_id;
     console.log('Generating notifications for plan:', scheduled_plan_id);
+    
+    if (!scheduled_plan_id) {
+      return new Response(
+        JSON.stringify({ error: 'Missing scheduled_plan_id' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Fetch the scheduled plan
     const { data: plan, error: planError } = await supabase

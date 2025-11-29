@@ -69,10 +69,9 @@ serve(async (req) => {
       );
     }
 
-    // POST: Upsert a profile
     if (req.method === 'POST') {
-      const body = await req.json();
-      const { nickname, home_zip, default_radius_mi, cuisines, activities, dietary, price_range, dislikes, party_size, vibe, planning_style, preferred_date, preferred_time, theme_preference } = body;
+      const body = await req.json().catch(() => ({}));
+      const { nickname, home_zip, default_radius_mi, cuisines, activities, dietary, price_range, dislikes, party_size, vibe, planning_style, preferred_date, preferred_time, theme_preference } = body || {};
 
       if (!nickname || !home_zip || !default_radius_mi) {
         return new Response(

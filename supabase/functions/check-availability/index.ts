@@ -38,7 +38,8 @@ serve(async (req) => {
       );
     }
 
-    const { restaurantId, activityId, restaurantHours, activityHours, scheduledDate, scheduledTime } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { restaurantId, activityId, restaurantHours, activityHours, scheduledDate, scheduledTime } = body || {};
 
     // Use authenticated user ID instead of trusting request body
     const userId = user.id;
