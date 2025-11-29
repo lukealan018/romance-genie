@@ -1,11 +1,18 @@
 import { googleActivityProvider } from './providers/google-activity-provider.ts';
 import { foursquareActivityProvider } from './providers/foursquare-activity-provider.ts';
+import { ticketmasterProvider } from './providers/ticketmaster-provider.ts';
+import { eventbriteProvider } from './providers/eventbrite-provider.ts';
+import { yelpActivityProvider } from './providers/yelp-activity-provider.ts';
 import { mergeAndDedupeActivities } from './activities-merger.ts';
 import type { ProviderActivity, ActivitySearchOptions } from './activities-types.ts';
 
+// All activity providers - disabled providers are filtered out at runtime
 const ALL_PROVIDERS = [
-  googleActivityProvider,       // Primary provider (enabled)
-  foursquareActivityProvider,   // Enabled if API key configured
+  googleActivityProvider,       // ✅ ACTIVE - Primary provider
+  foursquareActivityProvider,   // ✅ ACTIVE - Secondary provider
+  yelpActivityProvider,         // ⏸️ READY (disabled) - Awaiting API key
+  ticketmasterProvider,         // ⏸️ READY (disabled) - Awaiting API key + partnership
+  eventbriteProvider,           // ⏸️ READY (disabled) - Awaiting API key
 ];
 
 export interface ActivitySearchResult {

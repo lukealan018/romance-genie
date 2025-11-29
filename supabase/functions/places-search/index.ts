@@ -175,6 +175,19 @@ serve(async (req) => {
 
     console.log(`✅ Returning ${items.length} scored restaurants`);
 
+    // TODO: Future reservation integration point
+    // When booking insights feature is enabled, attach recommendations to response:
+    //
+    // import { buildBookingInsights } from '../_shared/booking-insights.ts';
+    // import { FEATURE_FLAGS } from '../_shared/feature-flags.ts';
+    //
+    // if (FEATURE_FLAGS.ENABLE_BOOKING_INSIGHTS) {
+    //   items = items.map(item => ({
+    //     ...item,
+    //     bookingInsights: buildBookingInsights(item, scheduledDateTime)
+    //   }));
+    // }
+
     return new Response(
       JSON.stringify({
         items,
