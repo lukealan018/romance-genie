@@ -28,17 +28,20 @@ export const useWeather = (userId: string | null) => {
   const fetchWeather = async (latitude: number, longitude: number) => {
     setLoadingWeather(true);
     try {
-      const { data, error } = await supabase.functions.invoke('weather', {
+      const response = await supabase.functions.invoke('weather', {
         body: { lat: latitude, lng: longitude }
       });
 
-      if (error) throw error;
+      if (response?.error) throw response.error;
 
-      setWeatherData({
-        temperature: data.temperature,
-        description: data.description,
-        icon: data.icon
-      });
+      const data = response?.data;
+      if (data) {
+        setWeatherData({
+          temperature: data.temperature,
+          description: data.description,
+          icon: data.icon
+        });
+      }
     } catch (error) {
       console.error('Error fetching weather:', error);
     } finally {
@@ -66,27 +69,29 @@ export const useWeather = (userId: string | null) => {
       }
 
       // Geocode the ZIP code to get coordinates
-      const { data: geoData, error: geoError } = await supabase.functions.invoke('geocode', {
+      const geoResponse = await supabase.functions.invoke('geocode', {
         body: { zipCode: profile.home_zip }
       });
 
-      if (geoError) throw geoError;
+      if (geoResponse?.error) throw geoResponse.error;
+      const geoData = geoResponse?.data;
       if (!geoData?.lat || !geoData?.lng) {
         console.error('Failed to geocode ZIP code');
         return;
       }
 
       // Fetch weather for the coordinates
-      const { data: weatherResponse, error: weatherError } = await supabase.functions.invoke('weather', {
+      const weatherResponse = await supabase.functions.invoke('weather', {
         body: { lat: geoData.lat, lng: geoData.lng }
       });
 
-      if (weatherError) throw weatherError;
+      if (weatherResponse?.error) throw weatherResponse.error;
+      const weatherData = weatherResponse?.data;
 
       setProfileWeatherData({
-        temperature: weatherResponse.temperature,
-        description: weatherResponse.description,
-        icon: weatherResponse.icon,
+        temperature: weatherData?.temperature,
+        description: weatherData?.description,
+        icon: weatherData?.icon,
         cityName: geoData.city || undefined
       });
     } catch (error) {
@@ -125,24 +130,26 @@ export const useWeather = (userId: string | null) => {
             setLoadingProfileWeather(true);
             
             // Get city name from coordinates
-            const { data: geocodeResponse, error: geocodeError } = await supabase.functions.invoke('geocode', {
+            const geocodeResp = await supabase.functions.invoke('geocode', {
               body: { lat: latitude, lng: longitude }
             });
 
-            if (geocodeError) throw geocodeError;
+            if (geocodeResp?.error) throw geocodeResp.error;
+            const geocodeResponse = geocodeResp?.data;
 
             // Fetch weather data
-            const { data: weatherResponse, error: weatherError } = await supabase.functions.invoke('weather', {
+            const weatherResp = await supabase.functions.invoke('weather', {
               body: { lat: latitude, lng: longitude }
             });
 
-            if (weatherError) throw weatherError;
+            if (weatherResp?.error) throw weatherResp.error;
+            const weatherResponse = weatherResp?.data;
 
             setProfileWeatherData({
-              temperature: weatherResponse.temperature,
-              description: weatherResponse.description,
-              icon: weatherResponse.icon,
-              cityName: geocodeResponse.city || "Current Location"
+              temperature: weatherResponse?.temperature,
+              description: weatherResponse?.description,
+              icon: weatherResponse?.icon,
+              cityName: geocodeResponse?.city || "Current Location"
             });
             setLocationSource('gps');
             resolve(true);
@@ -210,29 +217,31 @@ export const useWeather = (userId: string | null) => {
         const { latitude, longitude } = position.coords;
         try {
           // Get city name from coordinates
-          const { data: geocodeResponse, error: geocodeError } = await supabase.functions.invoke('geocode', {
+          const geocodeResp = await supabase.functions.invoke('geocode', {
             body: { lat: latitude, lng: longitude }
           });
 
-          if (geocodeError) throw geocodeError;
+          if (geocodeResp?.error) throw geocodeResp.error;
+          const geocodeResponse = geocodeResp?.data;
 
           // Fetch weather data
-          const { data: weatherResponse, error: weatherError } = await supabase.functions.invoke('weather', {
+          const weatherResp = await supabase.functions.invoke('weather', {
             body: { lat: latitude, lng: longitude }
           });
 
-          if (weatherError) throw weatherError;
+          if (weatherResp?.error) throw weatherResp.error;
+          const weatherResponse = weatherResp?.data;
 
           setProfileWeatherData({
-            temperature: weatherResponse.temperature,
-            description: weatherResponse.description,
-            icon: weatherResponse.icon,
-            cityName: geocodeResponse.city || "Current Location"
+            temperature: weatherResponse?.temperature,
+            description: weatherResponse?.description,
+            icon: weatherResponse?.icon,
+            cityName: geocodeResponse?.city || "Current Location"
           });
           setLocationSource('gps');
           toast({
             title: "Location Updated",
-            description: `Showing weather for ${geocodeResponse.city || "your current location"}`,
+            description: `Showing weather for ${geocodeResponse?.city || "your current location"}`,
           });
         } catch (error) {
           console.error('Error fetching GPS weather:', error);
