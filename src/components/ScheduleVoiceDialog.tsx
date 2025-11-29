@@ -90,6 +90,7 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
         body: { transcript: text }
       });
 
+      if (!response) throw new Error('No response from voice interpreter');
       if (response.error) throw response.error;
       
       const data = response.data || {};
@@ -167,6 +168,10 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
         }
       });
 
+      if (!response) {
+        console.error('No response from availability check');
+        return;
+      }
       if (response.error) {
         console.error('Availability check error:', response.error);
         return;
