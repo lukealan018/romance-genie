@@ -55,22 +55,23 @@ export const RestaurantDetailsDrawer = ({
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase.functions.invoke('place-details', {
+      const response = await supabase.functions.invoke('place-details', {
         body: { placeId }
       });
 
       console.log('📦 Place details response:', { 
-        hasData: !!data, 
-        hasError: !!error,
-        photosCount: data?.photos?.length || 0,
-        dataKeys: data ? Object.keys(data) : []
+        hasData: !!response?.data, 
+        hasError: !!response?.error,
+        photosCount: response?.data?.photos?.length || 0,
+        dataKeys: response?.data ? Object.keys(response.data) : []
       });
 
-      if (error) {
-        console.error('❌ Error from place-details function:', error);
-        throw error;
+      if (response?.error) {
+        console.error('❌ Error from place-details function:', response.error);
+        throw response.error;
       }
       
+      const data = response?.data;
       if (!data) {
         throw new Error('No data returned from place-details');
       }

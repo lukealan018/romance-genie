@@ -132,12 +132,13 @@ export const PlanCard = ({
     
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('place-details', {
+      const response = await supabase.functions.invoke('place-details', {
         body: { placeId, source }
       });
 
-      if (error) throw error;
+      if (response?.error) throw response.error;
       
+      const data = response?.data;
       if (data) {
         setPhone(data.phoneNumber || null);
         setWebsite(data.website || null);
@@ -157,14 +158,14 @@ export const PlanCard = ({
 
   const fetchWeather = async (lat: number, lng: number) => {
     try {
-      const { data, error } = await supabase.functions.invoke('weather', {
+      const response = await supabase.functions.invoke('weather', {
         body: { lat, lng }
       });
 
-      if (error) throw error;
+      if (response?.error) throw response.error;
       
-      if (data) {
-        setWeather(data);
+      if (response?.data) {
+        setWeather(response.data);
       }
     } catch (error) {
       console.error('Error fetching weather:', error);

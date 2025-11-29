@@ -53,17 +53,18 @@ export const RestaurantCard = ({
     console.log('Fetching phone number for place:', id);
     setLoadingPhone(true);
     try {
-      const { data, error } = await supabase.functions.invoke('place-details', {
+      const response = await supabase.functions.invoke('place-details', {
         body: { placeId: id, source }
       });
 
-      console.log('Phone fetch response:', { data, error });
+      console.log('Phone fetch response:', response);
 
-      if (error) {
-        console.error('Error from place-details:', error);
-        throw error;
+      if (response?.error) {
+        console.error('Error from place-details:', response.error);
+        throw response.error;
       }
       
+      const data = response?.data;
       if (data?.phoneNumber) {
         console.log('Phone number received:', data.phoneNumber);
         setPhoneNumber(data.phoneNumber);
