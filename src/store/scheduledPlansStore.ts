@@ -95,13 +95,17 @@ export const useScheduledPlansStore = create<ScheduledPlansState>((set, get) => 
         }),
       }));
 
-      // Generate notifications for the new plan
-      const { error: notifError } = await supabase.functions.invoke('generate-notifications', {
-        body: { scheduled_plan_id: newPlan.id }
-      });
+      // Generate notifications for the new plan - with safe handling
+      try {
+        const notifResponse = await supabase.functions.invoke('generate-notifications', {
+          body: { scheduled_plan_id: newPlan.id }
+        });
 
-      if (notifError) {
-        console.error('Failed to generate notifications:', notifError);
+        if (notifResponse?.error) {
+          console.error('Failed to generate notifications:', notifResponse.error);
+        }
+      } catch (notifError) {
+        console.error('Notification generation failed:', notifError);
         // Don't block - notifications are nice-to-have
       }
 

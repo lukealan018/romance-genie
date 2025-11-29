@@ -90,8 +90,10 @@ Deno.serve(async (req) => {
     // Helper to adjust time to respect quiet hours
     const adjustForQuietHours = (date: Date, preferredHour: number): Date => {
       const adjusted = new Date(date);
-      const quietStartHour = parseInt(quietStart.split(':')[0]);
-      const quietEndHour = parseInt(quietEnd.split(':')[0]);
+      const quietStartParts = (quietStart || '22:00').split(':');
+      const quietEndParts = (quietEnd || '08:00').split(':');
+      const quietStartHour = parseInt(quietStartParts[0] || '22', 10);
+      const quietEndHour = parseInt(quietEndParts[0] || '8', 10);
       
       if (preferredHour >= quietStartHour || preferredHour < quietEndHour) {
         adjusted.setHours(quietEndHour, 0, 0, 0);
