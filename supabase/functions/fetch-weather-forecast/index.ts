@@ -45,10 +45,11 @@ serve(async (req) => {
       }
 
       const data = await response.json();
+      const weatherInfo = data?.weather?.[0];
       weatherData = {
-        temp: Math.round(data.main.temp),
-        description: data.weather[0].description,
-        icon: data.weather[0].icon,
+        temp: Math.round(data?.main?.temp ?? 0),
+        description: weatherInfo?.description ?? 'Unknown',
+        icon: weatherInfo?.icon ?? '01d',
         fetched_at: new Date().toISOString()
       };
 
@@ -78,10 +79,11 @@ serve(async (req) => {
       });
 
       if (forecast) {
+        const forecastWeather = forecast?.weather?.[0];
         weatherData = {
-          temp: Math.round(forecast.main.temp),
-          description: forecast.weather[0].description,
-          icon: forecast.weather[0].icon,
+          temp: Math.round(forecast?.main?.temp ?? 0),
+          description: forecastWeather?.description ?? 'Unknown',
+          icon: forecastWeather?.icon ?? '01d',
           fetched_at: new Date().toISOString()
         };
       } else {

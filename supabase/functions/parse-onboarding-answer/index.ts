@@ -12,7 +12,10 @@ serve(async (req) => {
   }
 
   try {
-    const { question, answer, field } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const question = body?.question;
+    const answer = body?.answer;
+    const field = body?.field;
     
     if (!question || !answer || !field) {
       throw new Error('Missing required fields');
@@ -158,7 +161,14 @@ Return only the string, nothing else.`
     }
 
     const data = await response.json();
-    const parsedContent = data.choices[0].message.content.trim();
+    const content = data?.choices?.[0]?.message?.content;
+    
+    if (!content) {
+      console.error('AI response missing content:', JSON.stringify(data));
+      throw new Error('Invalid AI response: missing content');
+    }
+    
+    const parsedContent = content.trim();
 
     console.log('AI parsed result:', parsedContent);
 

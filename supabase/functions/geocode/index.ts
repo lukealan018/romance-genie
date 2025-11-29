@@ -7,7 +7,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { address, zipCode, lat, lng } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { address, zipCode, lat, lng } = body || {};
     
     // Support reverse geocoding (lat/lng → city name)
     if (lat !== undefined && lng !== undefined) {
@@ -44,10 +45,19 @@ Deno.serve(async (req) => {
         );
       }
 
-      const cityName = data.results[0].address_components.find(
-        (component: any) => component.types.includes('locality')
-      )?.long_name || data.results[0].address_components.find(
-        (component: any) => component.types.includes('postal_town')
+      const firstResult = data?.results?.[0];
+      if (!firstResult) {
+        console.error('No results in geocoding response');
+        return new Response(
+          JSON.stringify({ error: 'Unable to determine city name from coordinates.' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      const cityName = firstResult.address_components?.find(
+        (component: any) => component.types?.includes('locality')
+      )?.long_name || firstResult.address_components?.find(
+        (component: any) => component.types?.includes('postal_town')
       )?.long_name || 'Unknown';
 
       console.log(`Successfully reverse geocoded to: ${cityName}`);
@@ -149,11 +159,28 @@ Deno.serve(async (req) => {
       );
     }
 
-    const location = data.results[0].geometry.location;
-    const cityName = data.results[0].address_components.find(
-      (component: any) => component.types.includes('locality')
-    )?.long_name || data.results[0].address_components.find(
-      (component: any) => component.types.includes('postal_town')
+    const firstResult = data?.results?.[0];
+    if (!firstResult) {
+      console.error('No results in geocoding response');
+      return new Response(
+        JSON.stringify({ error: 'Unable to geocode location. Please try again.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const location = firstResult.geometry?.location;
+    if (!location) {
+      console.error('No geometry in geocoding result');
+      return new Response(
+        JSON.stringify({ error: 'Invalid geocoding result. Please try again.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const cityName = firstResult.address_components?.find(
+      (component: any) => component.types?.includes('locality')
+    )?.long_name || firstResult.address_components?.find(
+      (component: any) => component.types?.includes('postal_town')
     )?.long_name || 'Unknown';
 
     console.log(`Successfully geocoded "${firstLocation}" to:`, location, cityName);
