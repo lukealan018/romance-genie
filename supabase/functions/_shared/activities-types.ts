@@ -15,6 +15,9 @@ export interface ProviderActivity {
   types?: string[]; // For compatibility with scoring functions
   addressComponents?: any[]; // For city filtering
   geometry?: any; // For compatibility with scoring functions
+  // Foursquare-specific fields for scoring (FREE tier)
+  chains?: { id: string; name: string }[]; // Chain detection array
+  hasPremiumData?: boolean; // Flag indicating if rating/reviews are available
 }
 
 export interface ActivitySearchOptions {

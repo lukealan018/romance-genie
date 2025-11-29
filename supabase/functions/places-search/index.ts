@@ -132,6 +132,7 @@ serve(async (req) => {
       })
       .map((item: any) => {
         // Calculate uniqueness score for each item
+        // Pass Foursquare-specific fields for free tier chain detection
         const placeData = {
           place_id: item.id,
           name: item.name,
@@ -140,7 +141,11 @@ serve(async (req) => {
           types: item.types || item.categories || [],
           geometry: item.geometry || {
             location: { lat: item.lat, lng: item.lng }
-          }
+          },
+          // Foursquare-specific fields
+          source: item.source,
+          chains: item.chains, // FREE tier field for chain detection
+          hasPremiumData: item.hasPremiumData // Flag for neutral scoring
         };
         
         return {
@@ -156,7 +161,8 @@ serve(async (req) => {
           uniquenessScore: calculateUniquenessScore(placeData, noveltyMode),
           isHiddenGem: isHiddenGem(placeData),
           isNewDiscovery: isNewDiscovery(placeData),
-          isLocalFavorite: isLocalFavorite(placeData)
+          isLocalFavorite: isLocalFavorite(placeData),
+          hasPremiumData: item.hasPremiumData // Pass through for UI display
         };
       })
       .sort((a: any, b: any) => {

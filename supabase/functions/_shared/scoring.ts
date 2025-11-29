@@ -50,9 +50,19 @@ export interface Place {
       lng: number;
     }
   };
+  // Foursquare-specific fields
+  source?: string;
+  chains?: { id: string; name: string }[]; // Foursquare chains array (FREE tier)
+  hasPremiumData?: boolean; // Flag for Foursquare Premium data availability
 }
 
-export function isChainRestaurant(name: string): boolean {
+export function isChainRestaurant(name: string, chains?: { id: string; name: string }[]): boolean {
+  // If Foursquare chains array is populated (FREE field), use it for accurate detection
+  if (chains && chains.length > 0) {
+    console.log(`🔗 Chain detected via Foursquare chains field: "${name}" belongs to ${chains.map(c => c.name).join(', ')}`);
+    return true;
+  }
+  
   const nameLower = name.toLowerCase().trim();
   
   // Check against known chains
@@ -96,6 +106,26 @@ export function calculateUniquenessScore(
   place: Place,
   noveltyMode: NoveltyMode = 'balanced'
 ): number {
+  const source = place.source || 'google';
+  const hasPremiumData = place.hasPremiumData !== false; // Default true for Google
+  
+  // === FOURSQUARE FREE TIER HANDLING ===
+  // If Foursquare venue with no Premium data (rating=0, reviewCount=0), apply neutral scoring
+  if (source === 'foursquare' && !hasPremiumData) {
+    console.log(`📊 Foursquare venue "${place.name}": No Premium data - applying neutral score`);
+    
+    // Still apply chain detection (chains field is FREE)
+    const isChain = isChainRestaurant(place.name, place.chains);
+    if (isChain) {
+      const chainPenalty = getChainPenalty(place.name);
+      console.log(`🔗 Foursquare chain "${place.name}": applying penalty ${chainPenalty}`);
+      return chainPenalty; // Chain penalty still applies
+    }
+    
+    // Neutral score for non-chain Foursquare venues without Premium data
+    return 1.0;
+  }
+  
   let score = 1.0;
   
   // === FACTOR 1: Review Count (Sweet Spot Detection) ===
@@ -122,7 +152,8 @@ export function calculateUniquenessScore(
   }
   
   // === FACTOR 2: Chain Detection ===
-  if (isChainRestaurant(place.name)) {
+  // Use Foursquare chains field if available (FREE), otherwise keyword matching
+  if (isChainRestaurant(place.name, place.chains)) {
     const chainPenalty = getChainPenalty(place.name);
     score *= chainPenalty;
   }
@@ -167,7 +198,7 @@ export function calculateUniquenessScore(
     if (reviewCount > 1000) {
       score *= 1.5; // Boost popular places
     }
-    if (isChainRestaurant(place.name)) {
+    if (isChainRestaurant(place.name, place.chains)) {
       score *= 3.0; // Remove chain penalty
     }
   }
@@ -177,8 +208,13 @@ export function calculateUniquenessScore(
 
 // Determine if a place qualifies as a "hidden gem"
 export function isHiddenGem(place: Place): boolean {
+  // Skip badge for Foursquare venues without Premium data
+  if (place.source === 'foursquare' && place.hasPremiumData === false) {
+    return false;
+  }
+  
   const reviewCount = place.user_ratings_total || 0;
-  const isChain = isChainRestaurant(place.name);
+  const isChain = isChainRestaurant(place.name, place.chains);
   const hasGoodRating = place.rating >= 4.5;
   
   // Hidden gem criteria: 50-500 reviews, not a chain, 4.5+ rating
@@ -187,13 +223,23 @@ export function isHiddenGem(place: Place): boolean {
 
 // Determine if a place is newly discovered
 export function isNewDiscovery(place: Place): boolean {
+  // Skip badge for Foursquare venues without Premium data
+  if (place.source === 'foursquare' && place.hasPremiumData === false) {
+    return false;
+  }
+  
   const reviewCount = place.user_ratings_total || 0;
   return reviewCount < 100 && place.rating >= 4.0;
 }
 
 // Determine if a place is a local favorite
 export function isLocalFavorite(place: Place): boolean {
-  const isChain = isChainRestaurant(place.name);
+  // Skip badge for Foursquare venues without Premium data
+  if (place.source === 'foursquare' && place.hasPremiumData === false) {
+    return false;
+  }
+  
+  const isChain = isChainRestaurant(place.name, place.chains);
   const hasGoodRating = place.rating >= 4.5;
   const reviewCount = place.user_ratings_total || 0;
   
