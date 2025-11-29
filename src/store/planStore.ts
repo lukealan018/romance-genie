@@ -30,6 +30,10 @@ interface PlanState {
   locationMode: "gps" | "zip";
   zipCode: string;
   
+  // Date/time selection for future date searches
+  searchDate: Date | null;
+  searchTime: string | null;
+  
   // Last search location fallback
   lastSearchLat: number | null;
   lastSearchLng: number | null;
@@ -60,6 +64,7 @@ interface PlanState {
   // Actions
   setLocation: (lat: number, lng: number) => void;
   setFilters: (filters: { radius?: number; cuisine?: string; activityCategory?: string; locationMode?: "gps" | "zip"; zipCode?: string }) => void;
+  setSearchDate: (date: Date | null, time?: string | null) => void;
   setRestaurants: (restaurants: Place[], token: string | null) => void;
   setActivities: (activities: Place[], token: string | null) => void;
   setRestaurantIdx: (idx: number) => void;
@@ -80,6 +85,9 @@ export const usePlanStore = create<PlanState>((set) => ({
   activityCategory: "",
   locationMode: "gps",
   zipCode: "",
+  
+  searchDate: null,
+  searchTime: null,
   
   lastSearchLat: null,
   lastSearchLng: null,
@@ -126,6 +134,11 @@ export const usePlanStore = create<PlanState>((set) => ({
   
   setUserPreferences: (preferences) => set({ userPreferences: preferences }),
   
+  setSearchDate: (date, time = null) => set({ 
+    searchDate: date, 
+    searchTime: time 
+  }),
+  
   setLastSearched: (cuisine, activity) => set({ 
     lastSearchedCuisine: cuisine, 
     lastSearchedActivity: activity 
@@ -147,5 +160,7 @@ export const usePlanStore = create<PlanState>((set) => ({
     nextActivitiesToken: null,
     lastSearchedCuisine: null,
     lastSearchedActivity: null,
+    searchDate: null,
+    searchTime: null,
   }),
 }));
