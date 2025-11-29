@@ -14,7 +14,8 @@ export default function AuthCallback() {
     
     const handleAuthCallback = async () => {
       // FAST PATH: Check for existing session immediately
-      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const existingSession = sessionData?.session;
       if (existingSession) {
         clearTimeout(timeoutId);
         clearTimeout(retryTimerId);
@@ -73,7 +74,8 @@ export default function AuthCallback() {
       
       // Check for existing session
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: sessionData, error } = await supabase.auth.getSession();
+        const session = sessionData?.session;
         
         if (error) {
           if (error.message.includes('Invalid token') || error.message.includes('expired')) {
@@ -102,7 +104,7 @@ export default function AuthCallback() {
     };
     
     // Set up auth state listener to handle token exchange
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authStateData } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         clearTimeout(timeoutId);
         clearTimeout(retryTimerId);
@@ -123,7 +125,8 @@ export default function AuthCallback() {
 
     // Set 10-second timeout for authentication
     timeoutId = setTimeout(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      supabase.auth.getSession().then(({ data: sessionData }) => {
+        const session = sessionData?.session;
         if (!session) {
           setError('Authentication timed out. The link may have expired or been used already. Please request a new one.');
           setTimeout(() => navigate('/login'), 3000);
@@ -135,7 +138,7 @@ export default function AuthCallback() {
     handleAuthCallback();
 
     return () => {
-      subscription.unsubscribe();
+      authStateData?.subscription?.unsubscribe();
       clearTimeout(timeoutId);
       clearTimeout(retryTimerId);
     };

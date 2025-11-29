@@ -221,7 +221,8 @@ export default function ProfileSetup() {
       
       // Normal authentication flow
       console.log('[ProfileSetup] Checking authentication...');
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const { data: sessionData, error } = await supabase.auth.getSession();
+      const session = sessionData?.session;
       
       if (error) {
         console.error('[ProfileSetup] Error getting session:', error);
@@ -460,7 +461,8 @@ export default function ProfileSetup() {
       console.log('[ProfileSetup] Starting profile save...');
       
       // Get the current session to ensure auth.uid() works in RLS policies
-      let { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      let { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      let session = sessionData?.session;
       
       if (sessionError) {
         console.error('[ProfileSetup] Session error:', sessionError);
