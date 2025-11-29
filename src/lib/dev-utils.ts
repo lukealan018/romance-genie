@@ -13,21 +13,12 @@ export const isDevModeActive = () => {
     return false;
   }
   
-  // Check URL parameter first
+  // ONLY activate dev mode with explicit URL parameter
+  // Don't auto-activate from localStorage alone - user must intentionally add ?dev=true
   const params = new URLSearchParams(window.location.search);
   const devParam = params.get('dev') === 'true';
   
-  // Check localStorage
-  const devStored = localStorage.getItem('devMode') === 'true';
-  
-  // If URL has dev=true, store it in localStorage
-  if (devParam) {
-    localStorage.setItem('devMode', 'true');
-    return true;
-  }
-  
-  // Otherwise use stored value
-  return devStored;
+  return devParam;
 };
 
 export const enableDevMode = () => {

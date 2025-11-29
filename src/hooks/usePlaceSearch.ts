@@ -721,13 +721,50 @@ export const usePlaceSearch = (
       return;
     }
     
-    if (!lat || !lng) {
-      toast({ 
-        title: "Location Required", 
-        description: "Please set your location first",
-        variant: "destructive"
-      });
-      return;
+    // Try to resolve location if not set
+    let searchLat = lat;
+    let searchLng = lng;
+    
+    if (!searchLat || !searchLng) {
+      // Try geocoding profile ZIP code first
+      if (zipCode && /^\d{5}$/.test(zipCode.trim())) {
+        try {
+          const { data: geocodeData } = await supabase.functions.invoke('geocode', {
+            body: { zipCode: zipCode.trim() }
+          });
+          if (geocodeData?.lat && geocodeData?.lng) {
+            searchLat = geocodeData.lat;
+            searchLng = geocodeData.lng;
+            setLocation(searchLat, searchLng);
+            toast({ title: "Using home location", description: `Searching near ${geocodeData.city || zipCode}` });
+          }
+        } catch (error) {
+          console.error('Geocoding error in SurpriseMe:', error);
+        }
+      }
+      
+      // If still no location, try GPS
+      if (!searchLat || !searchLng) {
+        try {
+          await handleUseCurrentLocation(true);
+          // After GPS success, get updated coordinates from store
+          const storeState = usePlanStore.getState();
+          searchLat = storeState.lat;
+          searchLng = storeState.lng;
+        } catch (error) {
+          console.error('GPS error in SurpriseMe:', error);
+        }
+      }
+      
+      // Final check - if still no location, show error
+      if (!searchLat || !searchLng) {
+        toast({ 
+          title: "Location Required", 
+          description: "Please set your location or ZIP code first",
+          variant: "destructive"
+        });
+        return;
+      }
     }
     
     const cuisineOptions = ["Italian", "Mexican", "Japanese", "Chinese", "Thai", "American", "Indian", "French", "Mediterranean"];
@@ -765,9 +802,6 @@ export const usePlaceSearch = (
     
     setLoading(true);
     try {
-      const searchLat = lat;
-      const searchLng = lng;
-
       let weatherData = null;
       try {
         const { data: weather, error: weatherError } = await supabase.functions.invoke('weather', {
