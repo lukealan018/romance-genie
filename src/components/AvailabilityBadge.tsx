@@ -26,7 +26,10 @@ export function AvailabilityBadge({ status }: AvailabilityBadgeProps) {
     }
   };
 
-  const { icon: Icon, label, className } = config[status];
+  const statusConfig = config[status as keyof typeof config];
+  if (!statusConfig) return null;
+  
+  const { icon: Icon, label, className } = statusConfig;
 
   return (
     <Badge variant="outline" className={className}>
