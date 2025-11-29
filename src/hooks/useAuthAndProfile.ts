@@ -41,7 +41,8 @@ export const useAuthAndProfile = () => {
       }
 
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: sessionData } = await supabase.auth.getSession();
+        const session = sessionData?.session;
         
         if (!session?.user) {
           navigate('/login');

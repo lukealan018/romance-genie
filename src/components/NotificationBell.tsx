@@ -35,7 +35,8 @@ export const NotificationBell = () => {
   }, []);
 
   const fetchUnreadCount = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: authData } = await supabase.auth.getUser();
+    const user = authData?.user;
     if (!user) return;
 
     const { count } = await supabase

@@ -31,7 +31,8 @@ const Onboarding = () => {
   // Check authentication on mount
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData?.session;
       
       if (!session) {
         navigate("/login");
@@ -80,7 +81,8 @@ const Onboarding = () => {
     setIsLoading(true);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData?.session;
       
       if (!session) {
         toast.error("Authentication required. Please log in.");

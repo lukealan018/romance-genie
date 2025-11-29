@@ -50,7 +50,8 @@ export const NotificationList = ({ onClose }: { onClose: () => void }) => {
   }, []);
 
   const fetchNotifications = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: authData } = await supabase.auth.getUser();
+    const user = authData?.user;
     if (!user) return;
 
     const { data, error } = await supabase
@@ -79,7 +80,8 @@ export const NotificationList = ({ onClose }: { onClose: () => void }) => {
   };
 
   const markAllAsRead = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: authData } = await supabase.auth.getUser();
+    const user = authData?.user;
     if (!user) return;
 
     await supabase

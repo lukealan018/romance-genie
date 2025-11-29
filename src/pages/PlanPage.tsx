@@ -49,7 +49,8 @@ const PlanPage = () => {
   // Get user ID
   useEffect(() => {
     const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData?.session;
       if (session?.user) {
         setUserId(session.user.id);
       }
