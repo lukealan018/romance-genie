@@ -12,7 +12,8 @@ export default function OnboardingWrapper() {
   useEffect(() => {
     // Fetch current user email
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
       if (!user) {
         navigate("/login");
         return;
@@ -24,7 +25,8 @@ export default function OnboardingWrapper() {
 
   const handleComplete = async (profile: OnboardingData) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
       if (!user) {
         throw new Error("No user found");
       }

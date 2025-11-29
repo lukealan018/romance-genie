@@ -109,7 +109,8 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
 
   const checkAvailability = async (date: string, time: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
       
       // Fetch place details first to get hours data
       const [restaurantResult, activityResult] = await Promise.all([

@@ -16,7 +16,8 @@ export const NoveltyPreferenceSetting = () => {
 
   const fetchPreference = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
       if (!user) return;
 
       const { data, error } = await supabase
@@ -41,7 +42,8 @@ export const NoveltyPreferenceSetting = () => {
     setPreference(newPref);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
       if (!user) return;
 
       const { error } = await supabase

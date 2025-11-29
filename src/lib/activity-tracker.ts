@@ -15,7 +15,8 @@ export async function trackActivity(params: TrackActivityParams) {
   try {
     console.log('🔍 Attempting to track activity:', params);
     
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: authData } = await supabase.auth.getUser();
+    const user = authData?.user;
     
     if (!user) {
       console.log('❌ No user logged in, skipping activity tracking');

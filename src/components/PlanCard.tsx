@@ -99,7 +99,8 @@ export const PlanCard = ({
   useEffect(() => {
     const fetchUserPreferences = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: sessionData } = await supabase.auth.getSession();
+        const session = sessionData?.session;
         if (!session) return;
 
         const { data: profile } = await supabase.functions.invoke('profile', {
@@ -192,7 +193,8 @@ export const PlanCard = ({
 
     setSavingPlan(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData?.session;
       if (!session) {
         toast({
           title: "Authentication required",
