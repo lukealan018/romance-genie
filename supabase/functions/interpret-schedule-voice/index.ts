@@ -12,7 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const { transcript } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const transcript = body?.transcript;
 
     if (!transcript) {
       throw new Error('No transcript provided');

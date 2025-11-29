@@ -11,7 +11,10 @@ serve(async (req) => {
   }
 
   try {
-    const { lat, lng, scheduledDate } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const lat = body?.lat;
+    const lng = body?.lng;
+    const scheduledDate = body?.scheduledDate;
 
     if (!lat || !lng || !scheduledDate) {
       throw new Error('Missing required parameters: lat, lng, scheduledDate');
