@@ -86,17 +86,21 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
   const handleVoiceTranscript = async (text: string) => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('interpret-schedule-voice', {
+      const response = await supabase.functions.invoke('interpret-schedule-voice', {
         body: { transcript: text }
       });
 
-      if (error) throw error;
+      if (response.error) throw response.error;
+      
+      const data = response.data || {};
 
       if (data.ambiguous) {
-        setParsedDateTime({ ambiguous: true, options: data.options });
-      } else {
+        setParsedDateTime({ ambiguous: true, options: data.options || [] });
+      } else if (data.scheduledDate && data.scheduledTime) {
         await checkAvailability(data.scheduledDate, data.scheduledTime);
         setParsedDateTime({ date: data.scheduledDate, time: data.scheduledTime, ambiguous: false });
+      } else {
+        throw new Error('Could not parse date/time from voice input');
       }
     } catch (error) {
       console.error('Error parsing voice:', error);
@@ -131,36 +135,44 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
 
       const results = await Promise.all(fetchPromises);
       
-      // Map results based on what was fetched
+      // Map results based on what was fetched - with safe defaults
       let restaurantResult: any = { data: {} };
       let activityResult: any = { data: {} };
       let resultIndex = 0;
       
-      if (planDetails.restaurant?.id) {
-        restaurantResult = results[resultIndex++] || { data: {} };
+      if (planDetails.restaurant?.id && results[resultIndex]) {
+        restaurantResult = results[resultIndex] || { data: {} };
+        resultIndex++;
       }
-      if (planDetails.activity?.id) {
-        activityResult = results[resultIndex++] || { data: {} };
+      if (planDetails.activity?.id && results[resultIndex]) {
+        activityResult = results[resultIndex] || { data: {} };
       }
 
-      // Store hours in state for later use in handleSchedule
-      setRestaurantHours(restaurantResult.data?.opening_hours);
-      setActivityHours(activityResult.data?.opening_hours);
+      // Store hours in state for later use in handleSchedule - with null safety
+      const restaurantOpeningHours = restaurantResult?.data?.opening_hours ?? null;
+      const activityOpeningHours = activityResult?.data?.opening_hours ?? null;
       
-      const { data, error } = await supabase.functions.invoke('check-availability', {
+      setRestaurantHours(restaurantOpeningHours);
+      setActivityHours(activityOpeningHours);
+      
+      const response = await supabase.functions.invoke('check-availability', {
         body: {
           restaurantId: planDetails.restaurant?.id,
           activityId: planDetails.activity?.id,
-          restaurantHours: restaurantResult.data?.opening_hours,
-          activityHours: activityResult.data?.opening_hours,
+          restaurantHours: restaurantOpeningHours,
+          activityHours: activityOpeningHours,
           scheduledDate: date,
           scheduledTime: time,
           userId: user?.id
         }
       });
 
-      if (error) throw error;
-      setAvailabilityData(data);
+      if (response.error) {
+        console.error('Availability check error:', response.error);
+        return;
+      }
+      
+      setAvailabilityData(response.data || null);
     } catch (error) {
       console.error('Error checking availability:', error);
     }
