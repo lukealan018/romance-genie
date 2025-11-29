@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Loader2, User, Calendar as CalendarIcon, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,7 @@ import { LocationDialog } from "@/components/LocationDialog";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { ProfileCompletionPrompt, useProfileCompletionPrompt } from "@/components/ProfileCompletionPrompt";
 import { NotificationBell } from "@/components/NotificationBell";
+import { DateSelector } from "@/components/DateSelector";
 import { toast } from "@/hooks/use-toast";
 import { usePlanStore } from "@/store/planStore";
 import { useWeather } from "@/hooks/useWeather";
@@ -27,7 +28,8 @@ const Index = () => {
   const {
     lat, lng, radius, cuisine, activityCategory, locationMode, zipCode,
     restaurants: restaurantResults, activities: activityResults,
-    searchMode, setLocation, setFilters, resetPlan,
+    searchMode, searchDate, searchTime,
+    setLocation, setFilters, resetPlan, setSearchDate,
   } = usePlanStore();
 
   // Custom hooks
@@ -112,6 +114,15 @@ const Index = () => {
               >
                 Change Mode
               </Button>
+            </div>
+
+            {/* Date/Time Selection */}
+            <div className="mb-6">
+              <DateSelector
+                selectedDate={searchDate}
+                selectedTime={searchTime}
+                onDateChange={setSearchDate}
+              />
             </div>
 
             <HeroSection
