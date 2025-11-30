@@ -20,7 +20,7 @@ serve(async (req) => {
   }
 
   try {
-    const { lat, lng, radiusMiles, keyword, pagetoken, targetCity, noveltyMode = 'balanced' as NoveltyMode } = await req.json();
+    const { lat, lng, radiusMiles, keyword, pagetoken, targetCity, noveltyMode = 'balanced' as NoveltyMode, seed } = await req.json();
 
     if (!lat || !lng || !radiusMiles || !keyword) {
       return new Response(
@@ -37,6 +37,7 @@ serve(async (req) => {
     console.log('Radius (miles):', radiusMiles);
     console.log('Target City:', targetCity);
     console.log('Novelty Mode:', noveltyMode);
+    console.log('Seed:', seed || 'none');
     console.log('======================================');
 
     // Use multi-provider service
@@ -79,19 +80,34 @@ serve(async (req) => {
           return b.uniquenessScore - a.uniquenessScore;
         }
         return (a.distance || 0) - (b.distance || 0);
-      })
-      .map((item: any) => {
-        // Remove internal fields before returning
-        const { addressComponents, distance, types, geometry, uniquenessScore, ...cleanItem } = item;
-        return cleanItem;
       });
+    
+    // If seed is provided, shuffle the results deterministically
+    if (seed !== undefined) {
+      console.log(`🎲 Shuffling activity results with seed: ${seed}`);
+      const seededRandom = (s: number) => {
+        const x = Math.sin(s) * 10000;
+        return x - Math.floor(x);
+      };
+      
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom(seed + i) * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+      }
+    }
+    
+    // Remove internal fields before returning
+    const cleanedItems = items.map((item: any) => {
+      const { addressComponents, distance, types, geometry, uniquenessScore, ...cleanItem } = item;
+      return cleanItem;
+    });
 
     console.log(`📊 Provider stats:`, providerStats);
-    console.log(`✅ Returning ${items.length} activities`);
+    console.log(`✅ Returning ${cleanedItems.length} activities`);
 
     return new Response(
       JSON.stringify({
-        items,
+        items: cleanedItems,
         nextPageToken: null, // Multi-provider doesn't support pagination yet
         providerStats
       }),

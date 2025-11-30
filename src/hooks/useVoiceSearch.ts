@@ -54,6 +54,7 @@ export const useVoiceSearch = ({
     setLastSearchLocation,
     setSearchMode,
     setSearchDate,
+    clearResults,
   } = usePlanStore();
 
   // State for date ambiguity handling
@@ -497,6 +498,8 @@ export const useVoiceSearch = ({
     console.log('=== VOICE PREFERENCES EXTRACTION START ===');
     console.log('Raw preferences:', preferences);
     
+    // Clear previous results to force fresh search
+    clearResults();
     setLastSearched('', '');
     setLastSearchLocation(null, null);
     
@@ -532,7 +535,14 @@ export const useVoiceSearch = ({
       // No date mentioned - proceed with today (backward compatible)
       await executeSearch(preferences);
     }
-  }, [executeSearch, setSearchDate, setLastSearched, setLastSearchLocation]);
+    
+    // Update tracking state after voice search
+    const voiceMode = preferences.mode || searchMode || 'both';
+    usePlanStore.setState({ 
+      lastSearchMode: voiceMode,
+      lastSearchDate: preferences.searchDate ? parseISO(preferences.searchDate) : null
+    });
+  }, [executeSearch, setSearchDate, clearResults, setLastSearched, setLastSearchLocation, searchMode]);
 
   // Handler for when user selects a date from the ambiguity dialog
   const handleDateChoice = useCallback(async (date: string, time: string) => {

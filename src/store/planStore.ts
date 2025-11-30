@@ -61,6 +61,10 @@ interface PlanState {
   // Search mode
   searchMode: SearchMode | null;
   
+  // Track last search params for cache invalidation
+  lastSearchMode: SearchMode | null;
+  lastSearchDate: Date | null;
+  
   // Actions
   setLocation: (lat: number, lng: number) => void;
   setFilters: (filters: { radius?: number; cuisine?: string; activityCategory?: string; locationMode?: "gps" | "zip"; zipCode?: string }) => void;
@@ -71,8 +75,9 @@ interface PlanState {
   setActivityIdx: (idx: number) => void;
   setUserPreferences: (preferences: { cuisines: string[]; activities: string[] }) => void;
   setLastSearched: (cuisine: string, activity: string) => void;
-  setLastSearchLocation: (lat: number, lng: number) => void;
+  setLastSearchLocation: (lat: number | null, lng: number | null) => void;
   setSearchMode: (mode: SearchMode | null) => void;
+  clearResults: () => void;
   resetPlan: () => void;
 }
 
@@ -109,6 +114,9 @@ export const usePlanStore = create<PlanState>((set) => ({
   },
   
   searchMode: null,
+  
+  lastSearchMode: null,
+  lastSearchDate: null,
   
   // Actions
   setLocation: (lat, lng) => set({ lat, lng }),
@@ -149,7 +157,28 @@ export const usePlanStore = create<PlanState>((set) => ({
     lastSearchLng: lng
   }),
   
-  setSearchMode: (mode) => set({ searchMode: mode }),
+  setSearchMode: (mode) => set((state) => {
+    // Clear results when mode changes
+    if (state.searchMode !== mode) {
+      return {
+        searchMode: mode,
+        restaurants: [],
+        activities: [],
+        restaurantIdx: 0,
+        activityIdx: 0,
+      };
+    }
+    return { searchMode: mode };
+  }),
+  
+  clearResults: () => set({
+    restaurants: [],
+    activities: [],
+    restaurantIdx: 0,
+    activityIdx: 0,
+    nextRestaurantsToken: null,
+    nextActivitiesToken: null,
+  }),
   
   resetPlan: () => set({
     restaurants: [],
@@ -160,6 +189,8 @@ export const usePlanStore = create<PlanState>((set) => ({
     nextActivitiesToken: null,
     lastSearchedCuisine: null,
     lastSearchedActivity: null,
+    lastSearchMode: null,
+    lastSearchDate: null,
     searchDate: null,
     searchTime: null,
   }),
