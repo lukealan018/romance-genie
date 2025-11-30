@@ -1,4 +1,9 @@
 import type { ActivityProvider, ProviderActivity, ActivitySearchOptions } from '../activities-types.ts';
+import {
+  isEntertainmentGolf,
+  shouldExcludeAsTraditionalGolf,
+  RESTAURANT_KEYWORDS,
+} from '../place-filters.ts';
 
 const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY')?.trim();
 console.log(`🟦 Foursquare activity provider init: API key ${FOURSQUARE_API_KEY ? `present (${FOURSQUARE_API_KEY.length} chars, starts with: ${FOURSQUARE_API_KEY.substring(0, 4)}, ends with: ${FOURSQUARE_API_KEY.substring(FOURSQUARE_API_KEY.length - 4)})` : 'MISSING'}`);
@@ -103,6 +108,19 @@ function determineCategory(name: string, categories: string[]): 'event' | 'activ
   return 'activity';
 }
 
+// Restaurant/food category IDs to exclude from activities
+const restaurantCategoryIds = new Set([
+  '13000', // Dining and Drinking (parent)
+  '13034', // Fast Food
+  '13035', // Fast Food (chain)
+  '13145', // Burger Joint
+  '13032', // Fast Food Restaurant
+  '13001', // Bakery
+  '13002', // Food
+  '13003', // Café
+  '13065', // Restaurant
+]);
+
 export const foursquareActivityProvider: ActivityProvider = {
   providerName: "foursquare",
   isEnabled: !!FOURSQUARE_API_KEY,
@@ -161,42 +179,6 @@ export const foursquareActivityProvider: ActivityProvider = {
     
     const data = await response.json();
     
-    // Restaurant/food category IDs to exclude from activities
-    const restaurantCategoryIds = new Set([
-      '13000', // Dining and Drinking (parent)
-      '13034', // Fast Food
-      '13035', // Fast Food (chain)
-      '13145', // Burger Joint
-      '13032', // Fast Food Restaurant
-      '13001', // Bakery
-      '13002', // Food
-      '13003', // Café
-      '13065', // Restaurant
-    ]);
-    
-    // Expanded restaurant/food keywords to exclude from activities
-    const restaurantKeywords = [
-      'burger', 'pizza', 'taco', 'sushi', 'restaurant', 'grill', 'diner', 
-      'cafe', 'bakery', 'kitchen', 'eatery', 'food', 'wings', 'chicken',
-      'bbq', 'barbecue', 'steakhouse', 'fatburger', 'in-n-out', 'mcdonalds',
-      'five guys', 'shake shack', 'wendys', 'chick-fil-a', 'popeyes',
-      'del taco', 'taco bell', 'chipotle', 'panda express', 'wingstop'
-    ];
-    
-    // Entertainment golf venues to KEEP (allowlist)
-    const entertainmentGolfKeywords = [
-      'topgolf', 'top golf', 'driving range', 'golf entertainment', 
-      'night golf', 'glow golf', 'mini golf', 'putt putt', 'miniature golf',
-      'golf simulator', 'indoor golf', 'golf lounge'
-    ];
-    
-    // Traditional golf to EXCLUDE
-    const golfExclusionKeywords = [
-      'golf course', 'country club', 'golf club', 'golf resort', 
-      'links', 'championship golf', '18 hole', '9 hole', 'golf & country',
-      'golf and country', 'private club', 'members only'
-    ];
-    
     const results = (data.results || [])
       .map((place: any): ProviderActivity | null => {
         // Support both new and old field names for coordinates
@@ -208,17 +190,18 @@ export const foursquareActivityProvider: ActivityProvider = {
         const categoryIds = place.categories?.map((c: any) => c.id?.toString()) || [];
         const categoryNames = place.categories?.map((c: any) => c.name?.toLowerCase() || '') || [];
         
-        // GOLF FILTERING: Check entertainment golf first (allowlist takes priority)
-        const isEntertainmentGolf = entertainmentGolfKeywords.some(kw => nameLower.includes(kw));
-        const isTraditionalGolf = golfExclusionKeywords.some(kw => nameLower.includes(kw)) ||
-                                   categoryNames.some((cat: string) => cat.includes('golf course') || cat.includes('country club'));
-        
-        if (isTraditionalGolf && !isEntertainmentGolf) {
-          console.log(`🟦 Foursquare: Filtering out traditional golf "${place.name}"`);
-          return null;
+        // === GOLF FILTERING: Use centralized logic ===
+        if (options.keyword.toLowerCase().includes('golf')) {
+          // Allow entertainment golf
+          if (isEntertainmentGolf(nameLower)) {
+            console.log(`🟦 Foursquare: Allowing entertainment golf "${place.name}"`);
+          } else if (shouldExcludeAsTraditionalGolf(nameLower, categoryNames)) {
+            console.log(`🟦 Foursquare: Filtering out traditional golf "${place.name}"`);
+            return null;
+          }
         }
         
-        // Filter out restaurants by category ID
+        // === Filter out restaurants by category ID ===
         const hasRestaurantCategory = categoryIds.some((id: string) => {
           // Check if any category starts with 13 (food/restaurant parent category)
           return id?.startsWith('13') || restaurantCategoryIds.has(id);
@@ -229,8 +212,8 @@ export const foursquareActivityProvider: ActivityProvider = {
           return null;
         }
         
-        // Filter out by name keywords (restaurants/fast food)
-        const isRestaurantByName = restaurantKeywords.some(kw => nameLower.includes(kw));
+        // === Filter out by name keywords (restaurants/fast food) - using centralized list ===
+        const isRestaurantByName = RESTAURANT_KEYWORDS.some(kw => nameLower.includes(kw));
         if (isRestaurantByName) {
           console.log(`🟦 Foursquare: Filtering out restaurant by name "${place.name}"`);
           return null;

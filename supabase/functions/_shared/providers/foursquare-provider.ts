@@ -1,4 +1,8 @@
 import type { PlacesProvider, ProviderPlace, SearchOptions } from '../places-types.ts';
+import {
+  EXCLUDED_ALWAYS_TYPES,
+  EXCLUDED_RESTAURANT_TYPES,
+} from '../place-filters.ts';
 
 const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY')?.trim();
 console.log(`🟦 Foursquare provider init: API key ${FOURSQUARE_API_KEY ? `present (${FOURSQUARE_API_KEY.length} chars, starts with: ${FOURSQUARE_API_KEY.substring(0, 4)}, ends with: ${FOURSQUARE_API_KEY.substring(FOURSQUARE_API_KEY.length - 4)})` : 'MISSING'}`);
@@ -39,6 +43,26 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
+
+// Foursquare retail category IDs to EXCLUDE from restaurant results
+const retailExclusionCategoryIds = new Set([
+  '17000', // Retail (parent)
+  '17069', // Wine Shop
+  '17037', // Liquor Store
+  '17043', // Grocery Store
+  '17044', // Supermarket
+  '17028', // Convenience Store
+  '17048', // Department Store
+  '17027', // Shopping Mall
+]);
+
+// Retail store keywords to exclude (centralized)
+const retailExclusionKeywords = [
+  'wine shop', 'wine store', 'liquor store', 'total wine', 'bevmo',
+  'grocery', 'supermarket', 'market', 'convenience store', 'gas station',
+  'bottle shop', 'package store', 'abc store', 'trader joe', 'whole foods',
+  'costco', 'walmart', 'target', 'safeway', 'vons', 'ralphs', 'kroger'
+];
 
 export const foursquarePlacesProvider: PlacesProvider = {
   providerName: "foursquare",
@@ -109,26 +133,6 @@ export const foursquarePlacesProvider: PlacesProvider = {
       const results = data.results || [];
       
       console.log(`🟦 Foursquare provider: Received ${results.length} raw results`);
-      
-      // Retail store category IDs to EXCLUDE from restaurant results
-      const retailExclusionCategoryIds = new Set([
-        '17000', // Retail (parent)
-        '17069', // Wine Shop
-        '17037', // Liquor Store
-        '17043', // Grocery Store
-        '17044', // Supermarket
-        '17028', // Convenience Store
-        '17048', // Department Store
-        '17027', // Shopping Mall
-      ]);
-      
-      // Retail store keywords to exclude
-      const retailExclusionKeywords = [
-        'wine shop', 'wine store', 'liquor store', 'total wine', 'bevmo',
-        'grocery', 'supermarket', 'market', 'convenience store', 'gas station',
-        'bottle shop', 'package store', 'abc store', 'trader joe', 'whole foods',
-        'costco', 'walmart', 'target', 'safeway', 'vons', 'ralphs', 'kroger'
-      ];
       
       // Transform to ProviderPlace format with filtering
       const places: ProviderPlace[] = results

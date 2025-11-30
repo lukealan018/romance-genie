@@ -1,4 +1,13 @@
 import type { ActivityProvider, ProviderActivity, ActivitySearchOptions } from '../activities-types.ts';
+import {
+  EXCLUDED_ALWAYS_TYPES,
+  EXCLUDED_ACTIVITY_TYPES,
+  hasExcludedType,
+  isPrimarilyRestaurant,
+  isRestaurantByKeyword,
+  shouldExcludeAsTraditionalGolf,
+  isEntertainmentGolf,
+} from '../place-filters.ts';
 
 const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
 
@@ -65,9 +74,9 @@ const venueFilters: Record<string, { allowlist: string[]; excludeTypes: string[]
   },
   
   golf: {
-    allowlist: ['golf course', 'driving range', 'top golf', 'topgolf', 'mini golf', 'putt-putt', 'miniature golf', 'golf club', 'golf center'],
+    allowlist: ['topgolf', 'top golf', 'driving range', 'mini golf', 'putt-putt', 'miniature golf', 'golf simulator', 'indoor golf', 'golf lounge', 'puttshack'],
     excludeTypes: ['sporting_goods_store', 'store', 'shopping_mall', 'department_store'],
-    excludeKeywords: ['golf shop', 'golf store', 'sporting goods', "dick's sporting", 'golf galaxy', 'pga superstore']
+    excludeKeywords: ['golf shop', 'golf store', 'sporting goods', "dick's sporting", 'golf galaxy', 'pga superstore', 'golf course', 'country club', 'golf club', 'golf resort']
   },
   
   painting: {
@@ -95,11 +104,42 @@ const venueFilters: Record<string, { allowlist: string[]; excludeTypes: string[]
   }
 };
 
-function shouldExcludeResult(placeTypes: string[], searchKeyword: string, placeName: string = ''): boolean {
+function shouldExcludeActivity(placeTypes: string[], searchKeyword: string, placeName: string = ''): boolean {
   const keyword = searchKeyword.toLowerCase();
   const name = placeName.toLowerCase();
   
-  // Determine which category filter to apply based on search keyword
+  // === PASS 0: Check centralized type exclusions ===
+  const allExcludedTypes = [...EXCLUDED_ALWAYS_TYPES, ...EXCLUDED_ACTIVITY_TYPES];
+  if (hasExcludedType(placeTypes, allExcludedTypes)) {
+    console.log(`🚫 Google Activity: Excluding "${placeName}" - has excluded type`);
+    return true;
+  }
+  
+  // === PASS 1: Exclude pure restaurants from activities (unless they're bars) ===
+  if (isPrimarilyRestaurant(placeTypes)) {
+    console.log(`🚫 Google Activity: Excluding "${placeName}" - primarily a restaurant`);
+    return true;
+  }
+  
+  // Also check by name for restaurants
+  if (isRestaurantByKeyword(name) && !placeTypes.some(t => ['bar', 'night_club', 'lounge'].includes(t.toLowerCase()))) {
+    console.log(`🚫 Google Activity: Excluding "${placeName}" - restaurant by name`);
+    return true;
+  }
+  
+  // === PASS 2: Golf filtering using centralized logic ===
+  if (keyword.includes('golf')) {
+    if (shouldExcludeAsTraditionalGolf(name, placeTypes)) {
+      console.log(`🚫 Google Activity: Excluding "${placeName}" - traditional golf`);
+      return true;
+    }
+    // If it's entertainment golf, don't exclude
+    if (isEntertainmentGolf(name)) {
+      return false;
+    }
+  }
+  
+  // === PASS 3: Category-specific filtering ===
   let categoryFilter = null;
   
   if (keyword.includes('brewery') || keyword.includes('brewpub') || keyword.includes('beer')) {
@@ -108,8 +148,6 @@ function shouldExcludeResult(placeTypes: string[], searchKeyword: string, placeN
     categoryFilter = venueFilters.wine;
   } else if (keyword.includes('art') || keyword.includes('gallery') || keyword.includes('museum')) {
     categoryFilter = venueFilters.art;
-  } else if (keyword.includes('golf')) {
-    categoryFilter = venueFilters.golf;
   } else if (keyword.includes('paint') || keyword.includes('painting')) {
     categoryFilter = venueFilters.painting;
   } else if (keyword.includes('hookah') || keyword.includes('shisha')) {
@@ -123,19 +161,18 @@ function shouldExcludeResult(placeTypes: string[], searchKeyword: string, placeN
   // If no category filter matches, don't exclude
   if (!categoryFilter) return false;
   
-  // PASS 1: Check allowlist - if match found, don't exclude
+  // Check allowlist - if match found, don't exclude
   if (categoryFilter.allowlist.some(venue => name.includes(venue))) {
     return false;
   }
   
-  // PASS 2: Check exclusions
-  // Check place types
-  if (placeTypes.some(type => categoryFilter.excludeTypes.includes(type))) {
+  // Check exclusions - place types
+  if (placeTypes.some(type => categoryFilter!.excludeTypes.includes(type))) {
     return true;
   }
   
-  // Check name keywords
-  if (categoryFilter.excludeKeywords.some(keyword => name.includes(keyword))) {
+  // Check exclusions - name keywords
+  if (categoryFilter.excludeKeywords.some(kw => name.includes(kw))) {
     return true;
   }
   
@@ -244,7 +281,7 @@ export const googleActivityProvider: ActivityProvider = {
     const radiusMiles = options.radiusMeters / 1609.34;
     
     const results = (data.results || [])
-      .filter((place: any) => !shouldExcludeResult(place.types || [], options.keyword, place.name || ''))
+      .filter((place: any) => !shouldExcludeActivity(place.types || [], options.keyword, place.name || ''))
       .map((place: any): ProviderActivity => {
         const placeLat = place.geometry?.location?.lat || 0;
         const placeLng = place.geometry?.location?.lng || 0;
