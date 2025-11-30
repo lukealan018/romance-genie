@@ -74,7 +74,7 @@ serve(async (req) => {
 
   try {
     // Parse request parameters
-    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode;
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined;
 
     if (req.method === 'POST') {
       const body = await req.json();
@@ -85,6 +85,7 @@ serve(async (req) => {
       priceLevel = body.priceLevel;
       targetCity = body.targetCity;
       noveltyMode = body.noveltyMode || 'balanced';
+      seed = body.seed; // Optional seed for randomization
     } else {
       const url = new URL(req.url);
       lat = parseFloat(url.searchParams.get('lat') || '');
@@ -94,6 +95,7 @@ serve(async (req) => {
       priceLevel = url.searchParams.get('priceLevel') || undefined;
       targetCity = url.searchParams.get('targetCity') || undefined;
       noveltyMode = (url.searchParams.get('noveltyMode') as NoveltyMode) || 'balanced';
+      seed = url.searchParams.get('seed') ? parseInt(url.searchParams.get('seed')!) : undefined;
     }
 
     // Validate required parameters
@@ -116,6 +118,7 @@ serve(async (req) => {
       priceLevel: priceLevel || 'any',
       targetCity: targetCity || 'none',
       noveltyMode,
+      seed: seed || 'none',
       bookingInsightsEnabled: FEATURE_FLAGS.ENABLE_BOOKING_INSIGHTS
     });
 
@@ -216,6 +219,22 @@ serve(async (req) => {
         }
         return b.rating - a.rating;
       });
+
+    // If seed is provided, shuffle the results deterministically
+    if (seed !== undefined) {
+      console.log(`🎲 Shuffling results with seed: ${seed}`);
+      // Seeded random shuffle using the seed
+      const seededRandom = (s: number) => {
+        const x = Math.sin(s) * 10000;
+        return x - Math.floor(x);
+      };
+      
+      // Fisher-Yates shuffle with seeded random
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom(seed + i) * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+      }
+    }
 
     // Log booking insights stats when feature is enabled
     if (FEATURE_FLAGS.ENABLE_BOOKING_INSIGHTS) {

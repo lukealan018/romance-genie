@@ -33,6 +33,7 @@ export const usePlaceSearch = (
     activityCategory,
     locationMode,
     zipCode,
+    searchDate,
     restaurants: restaurantResults,
     activities: activityResults,
     restaurantIdx: restaurantIndex,
@@ -41,6 +42,8 @@ export const usePlaceSearch = (
     nextActivitiesToken,
     lastSearchedCuisine,
     lastSearchedActivity,
+    lastSearchMode,
+    lastSearchDate,
     userPreferences,
     searchMode,
     setLocation,
@@ -51,6 +54,7 @@ export const usePlaceSearch = (
     setActivityIdx: setActivityIndex,
     setLastSearched,
     setLastSearchLocation,
+    clearResults,
   } = usePlanStore();
 
   // Track user interactions
@@ -503,18 +507,22 @@ export const usePlaceSearch = (
     try {
       const searchLat = lat;
       const searchLng = lng;
-
       const currentMode = searchMode || 'both';
+      
+      // Generate a random seed to get different results
+      const randomSeed = Math.floor(Math.random() * 1000000);
+      
+      console.log('🎲 [handleRerollPlan] Rerolling with seed:', randomSeed);
       
       const restaurantsPromise = (currentMode === 'both' || currentMode === 'restaurant_only')
         ? supabase.functions.invoke('places-search', {
-            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine }
+            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine, seed: randomSeed }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
       
       const activitiesPromise = (currentMode === 'both' || currentMode === 'activity_only')
         ? supabase.functions.invoke('activities-search', {
-            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: activityCategory }
+            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: activityCategory, seed: randomSeed }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
       
@@ -553,7 +561,15 @@ export const usePlaceSearch = (
       setRestaurants(sortedRestaurants, restaurantsResponse.data?.nextPageToken || null);
       setActivities(sortedActivities, activitiesResponse.data?.nextPageToken || null);
 
-      const freshPlan = buildPlan({
+      // Pick a random starting index instead of always index 0
+      const restaurantStartIdx = sortedRestaurants.length > 1 
+        ? Math.floor(Math.random() * Math.min(3, sortedRestaurants.length)) 
+        : 0;
+      const activityStartIdx = sortedActivities.length > 1 
+        ? Math.floor(Math.random() * Math.min(3, sortedActivities.length)) 
+        : 0;
+
+      const freshPlan = buildPlanFromIndices({
         lat: searchLat,
         lng: searchLng,
         radius,
@@ -562,18 +578,11 @@ export const usePlaceSearch = (
         preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
           ? userPreferences 
           : undefined,
-        searchMode: searchMode || 'both',
-      });
+        searchMode: currentMode,
+      }, restaurantStartIdx, activityStartIdx);
 
-      const selectedRestaurantIndex = freshPlan.restaurant 
-        ? sortedRestaurants.findIndex(r => r.id === freshPlan.restaurant?.id)
-        : 0;
-      const selectedActivityIndex = freshPlan.activity
-        ? sortedActivities.findIndex(a => a.id === freshPlan.activity?.id)
-        : 0;
-
-      setRestaurantIndex(selectedRestaurantIndex >= 0 ? selectedRestaurantIndex : 0);
-      setActivityIndex(selectedActivityIndex >= 0 ? selectedActivityIndex : 0);
+      setRestaurantIndex(restaurantStartIdx);
+      setActivityIndex(activityStartIdx);
       
       setPlan(freshPlan);
       toast({ title: "Rerolled!", description: "Fresh picks served up!" });
@@ -586,50 +595,36 @@ export const usePlaceSearch = (
   };
 
   const handleReroll = async () => {
-    const relevantToken = searchType === "restaurants" ? nextRestaurantsToken : nextActivitiesToken;
+    // Since backend doesn't support true pagination, we shuffle and pick different indices
+    const currentRestaurants = restaurantResults;
+    const currentActivities = activityResults;
     
-    if (relevantToken && lat !== null && lng !== null) {
-      setLoading(true);
-      try {
-        const searchLat = lat;
-        const searchLng = lng;
-
-        const functionName = searchType === "restaurants" ? "places-search" : "activities-search";
-        const params = searchType === "restaurants" 
-          ? { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine, pagetoken: relevantToken }
-          : { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: activityCategory, pagetoken: relevantToken };
-
-        const { data, error } = await supabase.functions.invoke(functionName, {
-          body: params
-        });
-
-        if (error) throw error;
-
-        if (searchType === "restaurants") {
-          setRestaurants(data.items || [], data.nextPageToken || null);
-          setRestaurantIndex(0);
-        } else {
-          setActivities(data.items || [], data.nextPageToken || null);
-          setActivityIndex(0);
-        }
-        toast({ title: "Success", description: "Loaded more options!" });
-      } catch (error) {
-        console.error('Error fetching next page:', error);
-        toast({ title: "Error", description: "Failed to load more results.", variant: "destructive" });
-      } finally {
-        setLoading(false);
+    if (searchType === "restaurants" && currentRestaurants.length > 1) {
+      // Shuffle the array using Fisher-Yates
+      const shuffled = [...currentRestaurants];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
+      setRestaurants(shuffled, nextRestaurantsToken);
+      setRestaurantIndex(0);
+      toast({ title: "Shuffled!", description: "New restaurant picks ready!" });
+    } else if (searchType === "activities" && currentActivities.length > 1) {
+      // Shuffle the array using Fisher-Yates
+      const shuffled = [...currentActivities];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      setActivities(shuffled, nextActivitiesToken);
+      setActivityIndex(0);
+      toast({ title: "Shuffled!", description: "New activity picks ready!" });
     } else {
-      if (searchType === "restaurants") {
-        const shuffled = [...restaurantResults].sort(() => Math.random() - 0.5);
-        setRestaurants(shuffled, nextRestaurantsToken);
-        setRestaurantIndex(0);
-      } else {
-        const shuffled = [...activityResults].sort(() => Math.random() - 0.5);
-        setActivities(shuffled, nextActivitiesToken);
-        setActivityIndex(0);
-      }
-      toast({ title: "Success", description: "Refreshed your options!" });
+      toast({ 
+        title: "No more options", 
+        description: "Try expanding your search radius",
+        variant: "destructive"
+      });
     }
   };
 
@@ -691,9 +686,13 @@ export const usePlaceSearch = (
     if (restaurantIndex === null || restaurantIndex === undefined) setRestaurantIndex(0);
     if (activityIndex === null || activityIndex === undefined) setActivityIndex(0);
 
+    // Check ALL factors that should invalidate cached results
     const filtersChanged = 
       lastSearchedCuisine !== cuisine || 
       lastSearchedActivity !== activityCategory;
+    
+    const modeChanged = lastSearchMode !== currentMode;
+    const dateChanged = searchDate?.toISOString() !== lastSearchDate?.toISOString();
 
     const hasRestaurants = restaurantResults.length > 0;
     const hasActivities = activityResults.length > 0;
@@ -702,12 +701,30 @@ export const usePlaceSearch = (
       (currentMode === 'restaurant_only' && hasRestaurants) ||
       (currentMode === 'activity_only' && hasActivities);
 
-    if (hasRequiredResults && !filtersChanged) {
+    // Only skip API call if we have valid cached results AND nothing changed
+    const needsFreshSearch = !hasRequiredResults || filtersChanged || modeChanged || dateChanged;
+    
+    console.log('🔍 [handleSeePlan] Cache check:', {
+      hasRequiredResults,
+      filtersChanged,
+      modeChanged,
+      dateChanged,
+      needsFreshSearch
+    });
+
+    if (!needsFreshSearch) {
       navigate("/plan");
       return;
     }
 
     await handleFindPlaces();
+    
+    // Update tracking state after successful search
+    usePlanStore.setState({ 
+      lastSearchMode: currentMode,
+      lastSearchDate: searchDate 
+    });
+    
     navigate("/plan");
   };
 
