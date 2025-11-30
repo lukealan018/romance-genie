@@ -12,6 +12,7 @@ import { WeatherWidget } from "@/components/WeatherWidget";
 import { ProfileCompletionPrompt, useProfileCompletionPrompt } from "@/components/ProfileCompletionPrompt";
 import { NotificationBell } from "@/components/NotificationBell";
 import { DateSelector } from "@/components/DateSelector";
+import { DateChoiceDialog } from "@/components/DateChoiceDialog";
 import { toast } from "@/hooks/use-toast";
 import { usePlanStore } from "@/store/planStore";
 import { useWeather } from "@/hooks/useWeather";
@@ -38,7 +39,16 @@ const Index = () => {
   const { shouldShowPrompt, markFirstRecommendationSeen, markCompletionPromptSeen } = useProfileCompletionPrompt();
   const search = usePlaceSearch(auth.userId, auth.saveLocationSettings, markFirstRecommendationSeen);
   
-  const voice = useVoiceSearch({
+  const {
+    isListening,
+    isProcessing,
+    transcript,
+    startListening,
+    showDateChoice,
+    dateChoiceOptions,
+    handleDateChoice,
+    closeDateChoice,
+  } = useVoiceSearch({
     userId: auth.userId,
     searchMode,
     handleUseCurrentLocation: search.handleUseCurrentLocation,
@@ -128,9 +138,9 @@ const Index = () => {
             <HeroSection
               userName={auth.nickname}
               isLoggedIn={!!auth.userId}
-              loading={search.loading || voice.isProcessing}
-              isListening={voice.isListening}
-              onVoiceInput={voice.startListening}
+              loading={search.loading || isProcessing}
+              isListening={isListening}
+              onVoiceInput={startListening}
               onSurpriseMe={search.handleSurpriseMe}
               onTogglePickers={() => setShowPickers(!showPickers)}
               showPickers={showPickers}
@@ -221,6 +231,14 @@ const Index = () => {
             }}
           />
         )}
+
+        {/* Date Choice Dialog for ambiguous voice dates */}
+        <DateChoiceDialog
+          open={showDateChoice}
+          onClose={closeDateChoice}
+          options={dateChoiceOptions}
+          onSelect={handleDateChoice}
+        />
       </div>
     </div>
   );

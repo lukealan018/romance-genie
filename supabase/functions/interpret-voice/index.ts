@@ -1,6 +1,62 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
+// Get today's date for date extraction context
+const today = new Date();
+const todayStr = today.toISOString().split('T')[0];
+const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
+
+// Helper to get next occurrence of a day
+function getNextDayOfWeek(dayName: string): string {
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const targetDay = days.indexOf(dayName.toLowerCase());
+  if (targetDay === -1) return todayStr;
+  
+  const todayDay = today.getDay();
+  let daysUntil = targetDay - todayDay;
+  if (daysUntil <= 0) daysUntil += 7; // Next week if today or past
+  
+  const targetDate = new Date(today);
+  targetDate.setDate(today.getDate() + daysUntil);
+  return targetDate.toISOString().split('T')[0];
+}
+
+// Helper to get tomorrow's date
+function getTomorrow(): string {
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  return tomorrow.toISOString().split('T')[0];
+}
+
+// Get this weekend dates (Friday and Saturday)
+function getWeekendDates(): { friday: string; saturday: string } {
+  const friday = new Date(today);
+  const saturday = new Date(today);
+  
+  const todayDay = today.getDay();
+  const daysUntilFriday = (5 - todayDay + 7) % 7 || 7;
+  const daysUntilSaturday = (6 - todayDay + 7) % 7 || 7;
+  
+  // If today is Friday, use today
+  if (todayDay === 5) {
+    friday.setDate(today.getDate());
+  } else {
+    friday.setDate(today.getDate() + daysUntilFriday);
+  }
+  
+  // If today is Saturday, use today
+  if (todayDay === 6) {
+    saturday.setDate(today.getDate());
+  } else {
+    saturday.setDate(today.getDate() + daysUntilSaturday);
+  }
+  
+  return {
+    friday: friday.toISOString().split('T')[0],
+    saturday: saturday.toISOString().split('T')[0]
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -23,6 +79,40 @@ serve(async (req) => {
     console.log('Interpreting voice input:', transcript);
 
     const systemPrompt = `You are a date night planning assistant. Parse natural language and extract structured information.
+
+TODAY'S DATE CONTEXT:
+- Today is ${dayOfWeek}, ${todayStr}
+- Use this to calculate relative dates like "tomorrow", "Saturday", "this weekend"
+
+DATE/TIME EXTRACTION:
+Extract dates and times from the user's request. Return in the following format:
+- searchDate: "YYYY-MM-DD" format or null if no date mentioned
+- searchTime: "HH:mm" 24-hour format or null (default to "19:00" if date mentioned but no time)
+- searchDateAmbiguous: true if date is ambiguous (e.g., "this weekend" could be Friday or Saturday)
+- searchDateOptions: array of options if ambiguous, each with { date: "YYYY-MM-DD", time: "HH:mm", label: "friendly label" }
+
+DATE KEYWORDS TO RECOGNIZE:
+- "today", "tonight" → ${todayStr}
+- "tomorrow" → calculate next day
+- Day names: "Saturday", "Friday", "Sunday" → calculate next occurrence
+- "this weekend" → AMBIGUOUS - return both Friday and Saturday options
+- "next [day]" → calculate next week's occurrence
+
+TIME KEYWORDS TO RECOGNIZE:
+- "at 7pm", "7pm", "7:00", "seven" → "19:00"
+- "at noon", "noon", "12pm" → "12:00"
+- "lunch", "lunchtime" → "12:00"
+- "dinner", "dinnertime", "evening" → "19:00"
+- "late night" → "21:00"
+- "tonight" → "20:00"
+
+DATE EXTRACTION EXAMPLES:
+1. "Find me sushi for Saturday at 7pm" → searchDate: next Saturday's date, searchTime: "19:00", searchDateAmbiguous: false
+2. "Dinner tomorrow" → searchDate: tomorrow's date, searchTime: "19:00", searchDateAmbiguous: false
+3. "Tacos this weekend" → searchDateAmbiguous: true, searchDateOptions: [{ date: Friday, time: "19:00", label: "Friday, December X at 7:00 PM" }, { date: Saturday, time: "19:00", label: "Saturday, December X at 7:00 PM" }]
+4. "Tonight at 8" → searchDate: ${todayStr}, searchTime: "20:00", searchDateAmbiguous: false
+5. "Italian restaurant" → searchDate: null (no date mentioned)
+6. "Lunch on Friday" → searchDate: next Friday, searchTime: "12:00", searchDateAmbiguous: false
 
 CRITICAL INSTRUCTION: Extract location PER venue type, not a general location.
 - restaurantRequest.location should ONLY contain the restaurant's city/neighborhood
@@ -160,10 +250,16 @@ VOICE ERROR EXAMPLES (test filler word removal):
 17. "something great whiskey bar and also nice in West Hollywood"
    → { activityRequest: { type: "whiskey bar", location: "West Hollywood" } }
 
+DATE EXTRACTION EXAMPLES:
+18. "Sushi for Saturday at 7pm" → { restaurantRequest: { type: "sushi" }, searchDate: "next Saturday YYYY-MM-DD", searchTime: "19:00", searchDateAmbiguous: false }
+19. "Dinner tomorrow evening" → { searchDate: "tomorrow YYYY-MM-DD", searchTime: "19:00", searchDateAmbiguous: false }
+20. "Tacos this weekend" → { restaurantRequest: { type: "tacos" }, searchDateAmbiguous: true, searchDateOptions: [...] }
+21. "Comedy club tonight" → { activityRequest: { type: "comedy club" }, searchDate: "${todayStr}", searchTime: "20:00", searchDateAmbiguous: false }
+
 MORE STANDARD EXAMPLES:
-18. "Upscale lounge bar" → { activityRequest: { type: "lounge bar", priceLevel: "upscale" }, intent: "specific" }
-19. "Cheap tacos" → { restaurantRequest: { type: "tacos", priceLevel: "budget" }, intent: "specific" }
-20. "Hidden gem sushi omakase" → { restaurantRequest: { type: "omakase" }, intent: "surprise", noveltyLevel: "adventurous" }
+22. "Upscale lounge bar" → { activityRequest: { type: "lounge bar", priceLevel: "upscale" }, intent: "specific" }
+23. "Cheap tacos" → { restaurantRequest: { type: "tacos", priceLevel: "budget" }, intent: "specific" }
+24. "Hidden gem sushi omakase" → { restaurantRequest: { type: "omakase" }, intent: "surprise", noveltyLevel: "adventurous" }
 
 1. "Upscale lounge bar" → { activityRequest: { type: "lounge bar", priceLevel: "upscale" }, intent: "specific" }
 2. "High-end restaurant in Brentwood" → { location: "Brentwood", restaurantRequest: { type: "restaurant", priceLevel: "upscale" }, intent: "specific" }
@@ -230,7 +326,11 @@ Return JSON with this structure:
   "intent": "surprise|specific|flexible",
   "noveltyLevel": "safe|adventurous|wild",
   "mustHaves": ["required features"],
-  "avoidances": ["things to avoid"]
+  "avoidances": ["things to avoid"],
+  "searchDate": "YYYY-MM-DD or null",
+  "searchTime": "HH:mm or null",
+  "searchDateAmbiguous": false,
+  "searchDateOptions": []
 }
 
 CRITICAL EXAMPLES for MODE DETECTION:
@@ -284,6 +384,10 @@ CRITICAL EXAMPLES for MODE DETECTION:
     console.log('General location:', result.generalLocation);
     console.log('Intent:', result.intent);
     console.log('Novelty level:', result.noveltyLevel);
+    console.log('Search date:', result.searchDate);
+    console.log('Search time:', result.searchTime);
+    console.log('Date ambiguous:', result.searchDateAmbiguous);
+    console.log('Date options:', result.searchDateOptions);
     console.log('Must-haves:', result.mustHaves);
     console.log('Avoidances:', result.avoidances);
     console.log('Price levels:', {
