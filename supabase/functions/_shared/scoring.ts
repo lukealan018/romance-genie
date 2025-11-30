@@ -1,42 +1,13 @@
 // Chain Detection & Uniqueness Scoring for Hidden Gems Algorithm
 
-export type NoveltyMode = 'popular' | 'balanced' | 'hidden_gems';
+import {
+  isFastFoodChain,
+  isCasualChain,
+  isFineDiningChain,
+  isAnyChain,
+} from './place-filters.ts';
 
-// Comprehensive chain restaurant database
-export const chainKeywords = [
-  // Fast Casual
-  'chipotle', 'panera', 'subway', 'jimmy john', 'jersey mike',
-  'panda express', 'el pollo loco', 'del taco', 'taco bell',
-  'blaze pizza', 'mod pizza', 'pieology',
-  
-  // Casual Dining
-  'applebee', 'chili\'s', 'olive garden', 'red lobster', 'outback',
-  'texas roadhouse', 'longhorn', 'cheesecake factory', 'yard house',
-  'bj\'s restaurant', 'buffalo wild wings', 'hooters', 'twin peaks',
-  'california pizza kitchen', 'pf chang', 'benihana', 'claim jumper',
-  'red robin', 'cheddar', 'cracker barrel', 'denny\'s', 'ihop',
-  
-  // Fast Food
-  'mcdonald', 'burger king', 'wendy\'s', 'in-n-out', 'five guys',
-  'shake shack', 'kfc', 'popeyes', 'wingstop', 'jack in the box',
-  'carl\'s jr', 'hardee', 'arby\'s', 'sonic', 'whataburger',
-  
-  // Coffee Chains
-  'starbucks', 'dunkin', 'coffee bean', 'peet\'s coffee',
-  
-  // Bar/Nightlife Chains
-  'dave & buster', 'top golf', 'topgolf', 'punch bowl social',
-  
-  // Upscale Chains
-  'capital grille', 'morton', 'ruth chris', 'flemings', 'mastro',
-  'eddie v', 'seasons 52', 'houston\'s',
-  
-  // Regional Chains (California/West Coast)
-  'lucille\'s', 'lazy dog', 'the habit', 'rubio', 'islands',
-  
-  // Common indicators
-  ' grill & bar', ' bar & grill', ' sports bar',
-];
+export type NoveltyMode = 'popular' | 'balanced' | 'hidden_gems';
 
 export interface Place {
   place_id: string;
@@ -63,43 +34,28 @@ export function isChainRestaurant(name: string, chains?: { id: string; name: str
     return true;
   }
   
-  const nameLower = name.toLowerCase().trim();
-  
-  // Check against known chains
-  const isKnownChain = chainKeywords.some(chain => 
-    nameLower.includes(chain.toLowerCase())
-  );
-  
-  // Additional heuristics for chains
-  const hasNumberInName = /\s#\d+|\s\d+$/.test(name); // "Location #42"
-  const hasMultipleLocations = name.includes('Multiple Locations');
-  
-  return isKnownChain || hasNumberInName || hasMultipleLocations;
+  return isAnyChain(name);
 }
 
 export function getChainPenalty(name: string): number {
-  const nameLower = name.toLowerCase();
-  
   // Fast food gets heaviest penalty
-  const fastFoodChains = ['mcdonald', 'burger king', 'wendy', 'kfc', 'taco bell', 'subway'];
-  if (fastFoodChains.some(chain => nameLower.includes(chain))) {
+  if (isFastFoodChain(name)) {
     return 0.05; // 95% penalty
   }
   
   // Casual dining chains
-  const casualChains = ['applebee', 'chili', 'olive garden', 'cheesecake factory', 'red robin'];
-  if (casualChains.some(chain => nameLower.includes(chain))) {
+  if (isCasualChain(name)) {
     return 0.15; // 85% penalty
   }
   
-  // Upscale chains (less penalty)
-  const upscaleChains = ['capital grille', 'morton', 'ruth chris', 'flemings', 'mastro'];
-  if (upscaleChains.some(chain => nameLower.includes(chain))) {
-    return 0.4; // 60% penalty
+  // FINE DINING CHAINS: Light penalty - they're valid date-night options!
+  // Examples: Mastro's, Ruth's Chris, Fleming's, Capital Grille, Eddie V's
+  if (isFineDiningChain(name)) {
+    return 0.85; // Only 15% penalty - essentially allowed
   }
   
-  // Generic chain
-  return 0.2; // 80% penalty
+  // Unknown chain (from Foursquare chains field) - moderate penalty
+  return 0.3; // 70% penalty
 }
 
 export function calculateUniquenessScore(

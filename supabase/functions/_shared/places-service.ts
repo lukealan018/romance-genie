@@ -4,6 +4,11 @@ import { yelpPlacesProvider } from './providers/yelp-provider.ts';
 import { foursquarePlacesProvider } from './providers/foursquare-provider.ts';
 import { mergeAndDedupeResults } from './places-merger.ts';
 import type { ProviderPlace, SearchOptions } from './places-types.ts';
+import {
+  MIN_RATING_RESTAURANT,
+  MIN_REVIEW_COUNT,
+  MIN_REVIEW_COUNT_IF_NO_PHOTOS,
+} from './place-filters.ts';
 
 const ALL_PROVIDERS = [
   googlePlacesProvider,      // Primary provider (enabled)
@@ -63,10 +68,42 @@ export async function getRestaurantSuggestions(
   
   const totalRaw = successfulResults.flat().length;
   console.log(`📊 Combined ${totalRaw} raw results → ${merged.length} unique places`);
+  
+  // === QUALITY FLOOR FILTERING ===
+  const qualityFiltered = merged.filter(place => {
+    // Skip quality filters for Foursquare venues without premium data
+    if (place.source === 'foursquare' && place.hasPremiumData === false) {
+      return true; // Keep - can't evaluate quality
+    }
+    
+    // Rating floor (only if rating exists and is > 0)
+    if (place.rating > 0 && place.rating < MIN_RATING_RESTAURANT) {
+      console.log(`🚫 Quality filter: "${place.name}" rating ${place.rating} < ${MIN_RATING_RESTAURANT}`);
+      return false;
+    }
+    
+    // Review count floor
+    if (place.reviewCount < MIN_REVIEW_COUNT) {
+      // TODO: Add "super new" mode exception for brand-new hidden gems
+      console.log(`🚫 Quality filter: "${place.name}" reviews ${place.reviewCount} < ${MIN_REVIEW_COUNT}`);
+      return false;
+    }
+    
+    // No photos + low reviews = likely incomplete listing
+    const hasPhotos = place.photos && place.photos.length > 0;
+    if (!hasPhotos && place.reviewCount < MIN_REVIEW_COUNT_IF_NO_PHOTOS) {
+      console.log(`🚫 Quality filter: "${place.name}" no photos + only ${place.reviewCount} reviews`);
+      return false;
+    }
+    
+    return true;
+  });
+  
+  console.log(`📊 Quality filtering: ${merged.length} → ${qualityFiltered.length} places`);
   console.log(`⏱️ Query time: ${queryTime}ms | Merge time: ${mergeTime}ms | Total: ${queryTime + mergeTime}ms`);
   
   // Apply limit
-  const limitedResults = merged.slice(0, options.limit || 20);
+  const limitedResults = qualityFiltered.slice(0, options.limit || 20);
   
   return {
     items: limitedResults,

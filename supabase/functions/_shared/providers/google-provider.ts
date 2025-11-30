@@ -1,4 +1,9 @@
 import type { PlacesProvider, ProviderPlace, SearchOptions } from '../places-types.ts';
+import {
+  EXCLUDED_ALWAYS_TYPES,
+  EXCLUDED_RESTAURANT_TYPES,
+  hasExcludedType,
+} from '../place-filters.ts';
 
 const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
 
@@ -13,7 +18,7 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// Restaurant filtering to exclude grocery stores, gas stations, etc.
+// Restaurant filtering using centralized exclusion lists
 function shouldExcludeRestaurant(placeTypes: string[], placeName: string = ''): boolean {
   const name = placeName.toLowerCase();
   
@@ -28,20 +33,18 @@ function shouldExcludeRestaurant(placeTypes: string[], placeName: string = ''): 
     return false;
   }
   
-  // PASS 2: Exclude grocery stores, gas stations, convenience stores
-  const excludeTypes = [
-    'grocery_store', 'supermarket', 'convenience_store', 
-    'gas_station', 'shopping_mall', 'department_store'
-  ];
-  
-  if (placeTypes.some(type => excludeTypes.includes(type))) {
+  // PASS 2: Check centralized type exclusions
+  const allExcludedTypes = [...EXCLUDED_ALWAYS_TYPES, ...EXCLUDED_RESTAURANT_TYPES];
+  if (hasExcludedType(placeTypes, allExcludedTypes)) {
     return true;
   }
   
+  // PASS 3: Name-based exclusions (grocery stores, gas stations, etc.)
   const excludeKeywords = [
     'whole foods', 'trader joe', '7-eleven', 'chevron', 
     'shell', 'arco', 'grocery', 'market', 'walmart', 
-    'target', 'costco', 'safeway', 'ralphs', 'vons'
+    'target', 'costco', 'safeway', 'ralphs', 'vons',
+    'total wine', 'bevmo', 'liquor store'
   ];
   
   return excludeKeywords.some(keyword => name.includes(keyword));
@@ -108,8 +111,9 @@ export const googlePlacesProvider: PlacesProvider = {
     
     const results = (data.results || [])
       .filter((place: any) => {
-        // Exclude non-restaurants
+        // Exclude non-restaurants using centralized filtering
         if (shouldExcludeRestaurant(place.types || [], place.name || '')) {
+          console.log(`🚫 Google: Filtering out "${place.name}" - excluded type/name`);
           return false;
         }
         // Apply price filtering
