@@ -27,6 +27,7 @@ interface PlanState {
   radius: number;
   cuisine: string;
   activityCategory: string;
+  priceLevel: string;
   locationMode: "gps" | "zip";
   zipCode: string;
   
@@ -67,7 +68,7 @@ interface PlanState {
   
   // Actions
   setLocation: (lat: number, lng: number) => void;
-  setFilters: (filters: { radius?: number; cuisine?: string; activityCategory?: string; locationMode?: "gps" | "zip"; zipCode?: string }) => void;
+  setFilters: (filters: { radius?: number; cuisine?: string; activityCategory?: string; priceLevel?: string; locationMode?: "gps" | "zip"; zipCode?: string }) => void;
   setSearchDate: (date: Date | null, time?: string | null) => void;
   setRestaurants: (restaurants: Place[], token: string | null) => void;
   setActivities: (activities: Place[], token: string | null) => void;
@@ -88,6 +89,7 @@ export const usePlanStore = create<PlanState>((set) => ({
   radius: 5,
   cuisine: "",
   activityCategory: "",
+  priceLevel: "",
   locationMode: "gps",
   zipCode: "",
   

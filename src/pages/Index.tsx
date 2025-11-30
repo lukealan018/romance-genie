@@ -27,7 +27,7 @@ const Index = () => {
   const [showLocationDialog, setShowLocationDialog] = useState(false);
 
   const {
-    lat, lng, radius, cuisine, activityCategory, locationMode, zipCode,
+    lat, lng, radius, cuisine, activityCategory, priceLevel, locationMode, zipCode,
     restaurants: restaurantResults, activities: activityResults,
     searchMode, searchDate, searchTime,
     setLocation, setFilters, resetPlan, setSearchDate,
@@ -151,6 +151,7 @@ const Index = () => {
                   searchMode={searchMode}
                   cuisine={cuisine}
                   activityCategory={activityCategory}
+                  priceLevel={priceLevel}
                   locationMode={locationMode}
                   zipCode={zipCode}
                   radius={radius}
@@ -160,6 +161,7 @@ const Index = () => {
                   gettingLocation={search.gettingLocation}
                   onCuisineChange={(value) => setFilters({ cuisine: value })}
                   onActivityChange={(value) => setFilters({ activityCategory: value })}
+                  onPriceLevelChange={(value) => setFilters({ priceLevel: value })}
                   onLocationModeChange={(mode) => {
                     setLocation(null, null);
                     setFilters({ locationMode: mode });
