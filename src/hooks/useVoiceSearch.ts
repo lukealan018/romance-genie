@@ -1,10 +1,12 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { buildPlan, scorePlaces } from "@/lib/planner";
 import { getLearnedPreferences, getContextualSuggestions } from "@/lib/learning";
 import { usePlanStore } from "@/store/planStore";
+import type { DateOption } from "@/components/DateChoiceDialog";
 
 // Helper function to calculate distance
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -51,14 +53,17 @@ export const useVoiceSearch = ({
     setLastSearched,
     setLastSearchLocation,
     setSearchMode,
+    setSearchDate,
   } = usePlanStore();
 
-  const handlePreferencesExtracted = useCallback(async (preferences: any) => {
-    console.log('=== VOICE PREFERENCES EXTRACTION START ===');
-    console.log('Raw preferences:', preferences);
-    
-    setLastSearched('', '');
-    setLastSearchLocation(null, null);
+  // State for date ambiguity handling
+  const [showDateChoice, setShowDateChoice] = useState(false);
+  const [dateChoiceOptions, setDateChoiceOptions] = useState<DateOption[]>([]);
+  const [pendingSearchData, setPendingSearchData] = useState<any>(null);
+
+  // Core search logic - extracted for reuse
+  const executeSearch = useCallback(async (preferences: any) => {
+    console.log('=== EXECUTING VOICE SEARCH ===');
     
     let restaurantLat = null;
     let restaurantLng = null;
@@ -480,17 +485,101 @@ export const useVoiceSearch = ({
         variant: "destructive" 
       });
     }
-  }, [userId, radius, cuisine, activityCategory, searchMode, handleUseCurrentLocation, trackInteraction, setPlan, onSearchSuccess, setLocation, setFilters, setRestaurants, setActivities, setRestaurantIdx, setActivityIdx, setLastSearched, setLastSearchLocation, setSearchMode]);
+  }, [
+    radius, cuisine, activityCategory, searchMode, userId,
+    setLocation, setFilters, setRestaurants, setActivities,
+    setRestaurantIdx, setActivityIdx, setLastSearched, setLastSearchLocation,
+    setSearchMode, handleUseCurrentLocation, trackInteraction, setPlan,
+    onSearchSuccess, navigate
+  ]);
+
+  const handlePreferencesExtracted = useCallback(async (preferences: any) => {
+    console.log('=== VOICE PREFERENCES EXTRACTION START ===');
+    console.log('Raw preferences:', preferences);
+    
+    setLastSearched('', '');
+    setLastSearchLocation(null, null);
+    
+    // Handle date extraction
+    if (preferences.searchDate && !preferences.searchDateAmbiguous) {
+      // Clear date - set it immediately and proceed
+      try {
+        const parsedDate = parseISO(preferences.searchDate);
+        const time = preferences.searchTime || '19:00';
+        setSearchDate(parsedDate, time);
+        
+        toast({
+          title: "Date set",
+          description: `Searching for ${format(parsedDate, 'EEEE, MMMM d')}`,
+        });
+      } catch (err) {
+        console.error('Failed to parse date:', err);
+      }
+      
+      // Proceed with search
+      await executeSearch(preferences);
+      
+    } else if (preferences.searchDateAmbiguous && preferences.searchDateOptions?.length > 0) {
+      // Ambiguous date - PAUSE and show dialog
+      console.log('📅 Ambiguous date detected, showing choice dialog');
+      setDateChoiceOptions(preferences.searchDateOptions);
+      setPendingSearchData(preferences);
+      setShowDateChoice(true);
+      // Don't proceed with search yet - wait for user selection
+      return;
+      
+    } else {
+      // No date mentioned - proceed with today (backward compatible)
+      await executeSearch(preferences);
+    }
+  }, [executeSearch, setSearchDate, setLastSearched, setLastSearchLocation]);
+
+  // Handler for when user selects a date from the ambiguity dialog
+  const handleDateChoice = useCallback(async (date: string, time: string) => {
+    setShowDateChoice(false);
+    
+    try {
+      const parsedDate = parseISO(date);
+      setSearchDate(parsedDate, time);
+      
+      // Format time for display
+      const [hours, minutes] = time.split(':').map(Number);
+      const displayDate = new Date(parsedDate);
+      displayDate.setHours(hours, minutes);
+      
+      toast({
+        title: "Date set",
+        description: `Searching for ${format(displayDate, "EEEE, MMMM d 'at' h:mm a")}`,
+      });
+    } catch (err) {
+      console.error('Failed to parse selected date:', err);
+    }
+    
+    // Resume search with pending data
+    if (pendingSearchData) {
+      await executeSearch(pendingSearchData);
+      setPendingSearchData(null);
+    }
+  }, [executeSearch, setSearchDate, pendingSearchData]);
+
+  const closeDateChoice = useCallback(() => {
+    setShowDateChoice(false);
+    setPendingSearchData(null);
+  }, []);
 
   const { isListening, isProcessing, transcript, startListening } = useVoiceInput({
     onPreferencesExtracted: handlePreferencesExtracted,
-    userProfile: usePlanStore.getState().userPreferences,
   });
 
   return {
     isListening,
     isProcessing,
     transcript,
-    startListening
+    startListening,
+    // Date choice dialog state
+    showDateChoice,
+    dateChoiceOptions,
+    handleDateChoice,
+    closeDateChoice,
   };
 };
