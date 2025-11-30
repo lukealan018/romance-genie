@@ -222,9 +222,18 @@ export const usePlaceSearch = (
       console.log('Will search restaurants?', currentMode === 'both' || currentMode === 'restaurant_only');
       console.log('Will search activities?', currentMode === 'both' || currentMode === 'activity_only');
       
+      // Get priceLevel from store for restaurant filtering
+      const { priceLevel } = usePlanStore.getState();
+      
       const restaurantsPromise = (currentMode === 'both' || currentMode === 'restaurant_only')
         ? supabase.functions.invoke('places-search', {
-            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine: searchCuisine }
+            body: { 
+              lat: searchLat, 
+              lng: searchLng, 
+              radiusMiles: radius, 
+              cuisine: searchCuisine,
+              priceLevel: priceLevel || undefined
+            }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
       

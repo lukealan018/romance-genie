@@ -1,5 +1,6 @@
 import { Loader2 } from "lucide-react";
 import { CuisinePicker } from "@/components/CuisinePicker";
+import { PriceLevelPicker } from "@/components/PriceLevelPicker";
 import { ActivityPicker } from "@/components/ActivityPicker";
 import { LocationToggle } from "@/components/LocationToggle";
 import { RadiusSelector } from "@/components/RadiusSelector";
@@ -10,6 +11,7 @@ interface ManualFiltersProps {
   searchMode: SearchMode | null;
   cuisine: string;
   activityCategory: string;
+  priceLevel: string;
   locationMode: "gps" | "zip";
   zipCode: string;
   radius: number;
@@ -19,6 +21,7 @@ interface ManualFiltersProps {
   gettingLocation: boolean;
   onCuisineChange: (value: string) => void;
   onActivityChange: (value: string) => void;
+  onPriceLevelChange: (value: string) => void;
   onLocationModeChange: (mode: "gps" | "zip") => void;
   onZipCodeChange: (value: string) => void;
   onRadiusChange: (value: number) => void;
@@ -30,6 +33,7 @@ export const ManualFilters = ({
   searchMode,
   cuisine,
   activityCategory,
+  priceLevel,
   locationMode,
   zipCode,
   radius,
@@ -39,6 +43,7 @@ export const ManualFilters = ({
   gettingLocation,
   onCuisineChange,
   onActivityChange,
+  onPriceLevelChange,
   onLocationModeChange,
   onZipCodeChange,
   onRadiusChange,
@@ -48,10 +53,16 @@ export const ManualFilters = ({
   return (
     <div className="space-y-6 mt-6">
       {(searchMode === 'both' || searchMode === 'restaurant_only') && (
-        <CuisinePicker
-          selected={cuisine}
-          onSelect={onCuisineChange}
-        />
+        <>
+          <CuisinePicker
+            selected={cuisine}
+            onSelect={onCuisineChange}
+          />
+          <PriceLevelPicker
+            selected={priceLevel}
+            onSelect={onPriceLevelChange}
+          />
+        </>
       )}
 
       {(searchMode === 'both' || searchMode === 'activity_only') && (

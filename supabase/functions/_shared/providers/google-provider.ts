@@ -66,7 +66,8 @@ export const googlePlacesProvider: PlacesProvider = {
     const priceLevelMap: Record<string, { min: number; max: number }> = {
       'budget': { min: 1, max: 2 },
       'moderate': { min: 2, max: 3 },
-      'upscale': { min: 3, max: 4 }
+      'upscale': { min: 3, max: 4 },
+      'fine_dining': { min: 4, max: 4 }
     };
     
     const priceRange = options.priceLevel ? priceLevelMap[options.priceLevel] : null;
@@ -76,7 +77,9 @@ export const googlePlacesProvider: PlacesProvider = {
       ? 'restaurant' 
       : `${options.cuisine} restaurant`;
       
-    if (options.priceLevel === 'upscale') {
+    if (options.priceLevel === 'fine_dining') {
+      enhancedKeyword = `luxury ${enhancedKeyword} fine dining michelin`;
+    } else if (options.priceLevel === 'upscale') {
       enhancedKeyword = `upscale ${enhancedKeyword} fine dining`;
     } else if (options.priceLevel === 'budget') {
       enhancedKeyword = `affordable ${enhancedKeyword}`;
