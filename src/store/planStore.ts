@@ -70,6 +70,7 @@ interface PlanState {
   setLocation: (lat: number, lng: number) => void;
   setFilters: (filters: { radius?: number; cuisine?: string; activityCategory?: string; priceLevel?: string; locationMode?: "gps" | "zip"; zipCode?: string }) => void;
   setSearchDate: (date: Date | null, time?: string | null) => void;
+  clearSearchDateTime: () => void;
   setRestaurants: (restaurants: Place[], token: string | null) => void;
   setActivities: (activities: Place[], token: string | null) => void;
   setRestaurantIdx: (idx: number) => void;
@@ -149,7 +150,12 @@ export const usePlanStore = create<PlanState>((set) => ({
     searchTime: time 
   }),
   
-  setLastSearched: (cuisine, activity) => set({ 
+  clearSearchDateTime: () => set({
+    searchDate: null,
+    searchTime: null,
+  }),
+  
+  setLastSearched: (cuisine, activity) => set({
     lastSearchedCuisine: cuisine, 
     lastSearchedActivity: activity 
   }),
