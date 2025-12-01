@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { getReservationLinks } from "@/lib/external-links";
+import { getReservationLinks, getMapUrl } from "@/lib/external-links";
 
 interface RestaurantCardProps {
   id: string;
@@ -44,7 +44,8 @@ export const RestaurantCard = ({
 
   const handleAddressClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+    const url = getMapUrl(name, address, lat, lng);
+    window.open(url, '_blank');
   };
 
   const handlePhoneClick = async (e: React.MouseEvent) => {
