@@ -161,3 +161,53 @@ export function isRestaurantByKeyword(name: string): boolean {
   const nameLower = name.toLowerCase();
   return RESTAURANT_KEYWORDS.some(kw => nameLower.includes(kw));
 }
+
+// ===== FOURSQUARE RETAIL/GROCERY EXCLUSIONS =====
+
+export const FOURSQUARE_RETAIL_CATEGORY_PREFIXES: string[] = [
+  '170',   // Retail (parent category)
+  '171',   // Shopping Mall
+  '172',   // Department Store
+];
+
+export const RETAIL_NAME_EXCLUSIONS: string[] = [
+  // Grocery stores
+  'trader joe', 'whole foods', 'vons', 'ralphs', 'safeway', 'kroger',
+  'albertsons', 'publix', 'aldi', 'lidl', 'sprouts', 'food 4 less',
+  'smart & final', 'grocery outlet', 'hmart', '99 ranch', 'gelson',
+  // Big box / general retail
+  'costco', 'walmart', 'target', 'sams club', 'sam\'s club', 'bjs wholesale',
+  // Dollar/discount stores
+  '99 cent', 'dollar tree', 'dollar general', 'family dollar', 'five below',
+  // Drugstores
+  'cvs', 'walgreens', 'rite aid',
+  // Home improvement
+  'home depot', 'lowes', 'lowe\'s', 'ace hardware',
+  // Beauty/cosmetics retail
+  'sephora', 'ulta beauty', 'mac cosmetics',
+  // Other retail
+  'best buy', 'staples', 'office depot', 'petco', 'petsmart', 'nordstrom',
+  'bloomingdale', 'macy\'s', 'jcpenney', 'kohl\'s', 'ross dress', 'marshalls', 't.j. maxx',
+];
+
+export function isRetailPlaceByFoursquare(
+  categories: { id: string; name?: string }[],
+  name: string
+): boolean {
+  const nameLower = name.toLowerCase();
+
+  // Category-based: any category whose id starts with a retail prefix
+  const hasRetailCategory = categories.some((c) =>
+    FOURSQUARE_RETAIL_CATEGORY_PREFIXES.some((prefix) => c.id?.startsWith(prefix))
+  );
+  if (hasRetailCategory) {
+    return true;
+  }
+
+  // Name-based exclusions
+  if (RETAIL_NAME_EXCLUSIONS.some((kw) => nameLower.includes(kw))) {
+    return true;
+  }
+
+  return false;
+}
