@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { getReservationLinks, getActivityLinks } from "@/lib/external-links";
+import { getReservationLinks, getActivityLinks, getMapUrl } from "@/lib/external-links";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { trackActivity } from '@/lib/activity-tracker';
 
@@ -178,8 +178,9 @@ export const PlanCard = ({
     }
   }, [restaurant?.id]);
 
-  const handleNavigate = (lat: number, lng: number) => {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+  const handleNavigate = (name: string, address: string, lat: number, lng: number) => {
+    const url = getMapUrl(name, address, lat, lng);
+    window.open(url, '_blank');
   };
 
   const handleSavePlan = async () => {
@@ -409,7 +410,7 @@ export const PlanCard = ({
             
             <div 
               className="flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer"
-              onClick={() => handleNavigate(restaurant.lat, restaurant.lng)}
+              onClick={() => handleNavigate(restaurant.name, restaurant.address, restaurant.lat, restaurant.lng)}
             >
               <MapPin className="w-4 h-4" />
               <span className="line-clamp-1">{restaurant.address}</span>
@@ -636,7 +637,7 @@ export const PlanCard = ({
             
             <div 
               className="flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer"
-              onClick={() => handleNavigate(activity.lat, activity.lng)}
+              onClick={() => handleNavigate(activity.name, activity.address, activity.lat, activity.lng)}
             >
               <MapPin className="w-4 h-4" />
               <span className="line-clamp-1">{activity.address}</span>
