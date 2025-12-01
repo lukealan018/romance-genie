@@ -17,7 +17,7 @@ const PlanPage = () => {
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Get state from global store
+  // Get state from global store - use mode-aware getters
   const {
     lat,
     lng,
@@ -26,12 +26,6 @@ const PlanPage = () => {
     activityCategory,
     locationMode,
     zipCode,
-    restaurants: restaurantResults,
-    activities: activityResults,
-    restaurantIdx: restaurantIndex,
-    activityIdx: activityIndex,
-    nextRestaurantsToken,
-    nextActivitiesToken,
     userPreferences,
     lastSearchedCuisine,
     lastSearchedActivity,
@@ -40,7 +34,21 @@ const PlanPage = () => {
     setActivities,
     setRestaurantIdx: setRestaurantIndex,
     setActivityIdx: setActivityIndex,
+    getCurrentRestaurants,
+    getCurrentActivities,
+    getCurrentRestaurantIdx,
+    getCurrentActivityIdx,
+    getNextRestaurantsToken,
+    getNextActivitiesToken,
   } = usePlanStore();
+
+  // Use mode-aware getters
+  const restaurantResults = getCurrentRestaurants();
+  const activityResults = getCurrentActivities();
+  const restaurantIndex = getCurrentRestaurantIdx();
+  const activityIndex = getCurrentActivityIdx();
+  const nextRestaurantsToken = getNextRestaurantsToken();
+  const nextActivitiesToken = getNextActivitiesToken();
 
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<any>(null);

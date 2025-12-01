@@ -20,7 +20,18 @@ serve(async (req) => {
   }
 
   try {
-    const { lat, lng, radiusMiles, keyword, pagetoken, targetCity, noveltyMode = 'balanced' as NoveltyMode, seed } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { 
+      lat, 
+      lng, 
+      radiusMiles, 
+      keyword, 
+      pagetoken, 
+      targetCity, 
+      noveltyMode = 'balanced' as NoveltyMode, 
+      seed,
+      forceFresh = false 
+    } = body;
 
     if (!lat || !lng || !radiusMiles || !keyword) {
       return new Response(
@@ -38,7 +49,15 @@ serve(async (req) => {
     console.log('Target City:', targetCity);
     console.log('Novelty Mode:', noveltyMode);
     console.log('Seed:', seed || 'none');
+    console.log('Force Fresh:', forceFresh);
     console.log('======================================');
+
+    // If forceFresh, generate a new seed to ensure different results
+    let effectiveSeed = seed;
+    if (forceFresh && effectiveSeed === undefined) {
+      effectiveSeed = Math.floor(Math.random() * 1000000);
+      console.log('🔄 Force fresh: generated random seed:', effectiveSeed);
+    }
 
     // Use multi-provider service
     const searchOptions: ActivitySearchOptions = {
@@ -82,16 +101,16 @@ serve(async (req) => {
         return (a.distance || 0) - (b.distance || 0);
       });
     
-    // If seed is provided, shuffle the results deterministically
-    if (seed !== undefined) {
-      console.log(`🎲 Shuffling activity results with seed: ${seed}`);
+    // If seed is provided (or forceFresh generated one), shuffle the results deterministically
+    if (effectiveSeed !== undefined) {
+      console.log(`🎲 Shuffling activity results with seed: ${effectiveSeed}`);
       const seededRandom = (s: number) => {
         const x = Math.sin(s) * 10000;
         return x - Math.floor(x);
       };
       
       for (let i = items.length - 1; i > 0; i--) {
-        const j = Math.floor(seededRandom(seed + i) * (i + 1));
+        const j = Math.floor(seededRandom(effectiveSeed + i) * (i + 1));
         [items[i], items[j]] = [items[j], items[i]];
       }
     }
@@ -103,13 +122,14 @@ serve(async (req) => {
     });
 
     console.log(`📊 Provider stats:`, providerStats);
-    console.log(`✅ Returning ${cleanedItems.length} activities`);
+    console.log(`✅ Returning ${cleanedItems.length} activities (forceFresh: ${forceFresh})`);
 
     return new Response(
       JSON.stringify({
         items: cleanedItems,
         nextPageToken: null, // Multi-provider doesn't support pagination yet
-        providerStats
+        providerStats,
+        forceFresh // Echo back for debugging
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
