@@ -138,7 +138,22 @@ export const usePlaceSearch = (
     });
   };
 
-  const handleFindPlaces = async (overrideCuisine?: string, overrideActivity?: string, forceFresh: boolean = false) => {
+  // Helper to shuffle results while keeping top-scored items at front
+  const shuffleResults = <T,>(results: T[]): T[] => {
+    if (results.length <= 5) return results;
+    
+    // Keep top 5 highest-scored, shuffle the rest for variety
+    const top = results.slice(0, 5);
+    const rest = [...results.slice(5)].sort(() => Math.random() - 0.5);
+    return [...top, ...rest];
+  };
+
+  const handleFindPlaces = async (
+    overrideCuisine?: string, 
+    overrideActivity?: string, 
+    forceFresh: boolean = false,
+    userTriggered: boolean = false  // Bypass cache on explicit user action
+  ) => {
     const searchCuisine = overrideCuisine ?? cuisine;
     const searchActivity = overrideActivity ?? activityCategory;
     
@@ -192,9 +207,9 @@ export const usePlaceSearch = (
     }
 
     const currentMode = searchMode || 'both';
-    const { priceLevel } = usePlanStore.getState();
+    const { priceLevel, lastSearchSignature: freshSignature } = usePlanStore.getState();
 
-    // Build search signature
+    // Build search signature (without seed - seed is for variation, not cache key)
     const currentSignature = buildSearchSignature({
       mode: currentMode,
       cuisine: searchCuisine,
@@ -206,8 +221,9 @@ export const usePlaceSearch = (
       lng: searchLng,
     });
 
-    // Check if we can use cached results (unless forceFresh)
-    if (!forceFresh && currentSignature === lastSearchSignature) {
+    // Check if we can use cached results (unless forceFresh OR userTriggered)
+    // Read signature fresh from store to avoid stale closure
+    if (!forceFresh && !userTriggered && currentSignature === freshSignature) {
       console.log('🔄 Same search signature, using cached results');
       const currentRestaurants = getCurrentRestaurants();
       const currentActivities = getCurrentActivities();
@@ -263,6 +279,10 @@ export const usePlaceSearch = (
       console.log('Will search restaurants?', currentMode === 'both' || currentMode === 'restaurant_only');
       console.log('Will search activities?', currentMode === 'both' || currentMode === 'activity_only');
       
+      // Generate variation seed for result shuffling
+      const variationSeed = Math.floor(Math.random() * 1000000);
+      console.log('🎲 Using variation seed:', variationSeed);
+
       const restaurantsPromise = (currentMode === 'both' || currentMode === 'restaurant_only')
         ? supabase.functions.invoke('places-search', {
             body: { 
@@ -271,7 +291,8 @@ export const usePlaceSearch = (
               radiusMiles: radius, 
               cuisine: searchCuisine,
               priceLevel: priceLevel || undefined,
-              forceFresh
+              seed: variationSeed,
+              forceFresh: forceFresh || userTriggered
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -283,7 +304,8 @@ export const usePlaceSearch = (
               lng: searchLng, 
               radiusMiles: radius, 
               keyword: searchActivity,
-              forceFresh
+              seed: variationSeed,
+              forceFresh: forceFresh || userTriggered
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -362,7 +384,8 @@ export const usePlaceSearch = (
         }
       }
       
-      const sortedRestaurants = scorePlaces(
+      // Score and shuffle for variety
+      const scoredRestaurants = scorePlaces(
         restaurants, 
         searchLat, 
         searchLng, 
@@ -373,7 +396,7 @@ export const usePlaceSearch = (
         'restaurant',
         learnedPrefs
       );
-      const sortedActivities = scorePlaces(
+      const scoredActivities = scorePlaces(
         finalActivities, 
         searchLat, 
         searchLng, 
@@ -384,6 +407,10 @@ export const usePlaceSearch = (
         'activity',
         learnedPrefs
       );
+      
+      // Shuffle results for variety (keeps top 5, shuffles rest)
+      const sortedRestaurants = shuffleResults(scoredRestaurants);
+      const sortedActivities = shuffleResults(scoredActivities);
       
       console.log('🔍 [usePlaceSearch] Setting search results:', {
         restaurants: sortedRestaurants.length,
@@ -876,8 +903,8 @@ export const usePlaceSearch = (
       }
     }
 
-    // Build current signature
-    const { priceLevel } = usePlanStore.getState();
+    // Build current signature - read fresh from store to avoid stale closure
+    const { priceLevel, lastSearchSignature: freshSignature } = usePlanStore.getState();
     const currentSignature = buildSearchSignature({
       mode: currentMode,
       cuisine,
@@ -889,17 +916,18 @@ export const usePlaceSearch = (
       lng,
     });
 
-    // Check if signature changed
-    const needsFreshSearch = currentSignature !== lastSearchSignature;
+    // Check if signature changed (using fresh value from store)
+    const needsFreshSearch = currentSignature !== freshSignature;
     
     console.log('🔍 [handleSeePlan] Signature check:', {
       currentSignature,
-      lastSignature: lastSearchSignature,
+      lastSignature: freshSignature,
       needsFreshSearch
     });
 
     if (needsFreshSearch) {
-      await handleFindPlaces();
+      // Always pass userTriggered=true for explicit user actions
+      await handleFindPlaces(undefined, undefined, false, true);
     }
     
     // Update tracking state after successful search

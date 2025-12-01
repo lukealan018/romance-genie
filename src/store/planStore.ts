@@ -272,7 +272,12 @@ export const usePlanStore = create<PlanState>((set, get) => ({
   // Mode switching clears ALL buckets and resets signature
   setSearchMode: (mode) => set((state) => {
     if (state.searchMode !== mode) {
-      console.log('🔄 [planStore] Mode changed, clearing ALL result buckets');
+      console.log('🔄 [planStore] Mode CHANGING from', state.searchMode, 'to', mode);
+      console.log('🧹 [planStore] Clearing ALL result buckets and signature');
+      console.log('  - Previous resultsBoth.restaurants:', state.resultsBoth.restaurants.length);
+      console.log('  - Previous resultsRestaurantOnly.restaurants:', state.resultsRestaurantOnly.restaurants.length);
+      console.log('  - Previous resultsActivityOnly.activities:', state.resultsActivityOnly.activities.length);
+      console.log('  - Previous lastSearchSignature:', state.lastSearchSignature?.substring(0, 50) || 'null');
       return {
         searchMode: mode,
         resultsBoth: getEmptyBothBucket(),
