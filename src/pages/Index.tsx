@@ -11,7 +11,8 @@ import { LocationDialog } from "@/components/LocationDialog";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { ProfileCompletionPrompt, useProfileCompletionPrompt } from "@/components/ProfileCompletionPrompt";
 import { NotificationBell } from "@/components/NotificationBell";
-import { DateSelector } from "@/components/DateSelector";
+import { FloatingPlanAheadButton } from "@/components/FloatingPlanAheadButton";
+import { PlanAheadDialog } from "@/components/PlanAheadDialog";
 import { DateChoiceDialog } from "@/components/DateChoiceDialog";
 import { toast } from "@/hooks/use-toast";
 import { usePlanStore } from "@/store/planStore";
@@ -25,12 +26,13 @@ const Index = () => {
   const [plan, setPlan] = useState<any>(null);
   const [showPickers, setShowPickers] = useState(false);
   const [showLocationDialog, setShowLocationDialog] = useState(false);
+  const [isPlanAheadOpen, setIsPlanAheadOpen] = useState(false);
 
   const {
     lat, lng, radius, cuisine, activityCategory, priceLevel, locationMode, zipCode,
     restaurants: restaurantResults, activities: activityResults,
     searchMode, searchDate, searchTime,
-    setLocation, setFilters, resetPlan, setSearchDate,
+    setLocation, setFilters, resetPlan, setSearchDate, clearSearchDateTime,
   } = usePlanStore();
 
   // Custom hooks
@@ -124,15 +126,6 @@ const Index = () => {
               >
                 Change Mode
               </Button>
-            </div>
-
-            {/* Date/Time Selection */}
-            <div className="mb-6">
-              <DateSelector
-                selectedDate={searchDate}
-                selectedTime={searchTime}
-                onDateChange={setSearchDate}
-              />
             </div>
 
             <HeroSection
@@ -240,6 +233,42 @@ const Index = () => {
           onClose={closeDateChoice}
           options={dateChoiceOptions}
           onSelect={handleDateChoice}
+        />
+
+        {/* Plan Ahead Floating Button & Dialog */}
+        {searchMode && (
+          <FloatingPlanAheadButton 
+            onClick={() => setIsPlanAheadOpen(true)}
+            hasScheduledDate={!!searchDate}
+          />
+        )}
+
+        <PlanAheadDialog
+          open={isPlanAheadOpen}
+          onOpenChange={setIsPlanAheadOpen}
+          onConfirm={({ customDate, timeChoice }) => {
+            if (customDate) {
+              // Map timeChoice to time string
+              const timeMap = {
+                lunch: "12:00",
+                dinner: "19:00",
+                late_night: "21:30",
+              };
+              setSearchDate(customDate, timeMap[timeChoice]);
+              toast({
+                title: "Date set",
+                description: `Planning for ${customDate.toLocaleDateString()} at ${timeChoice === 'lunch' ? 'lunch' : timeChoice === 'dinner' ? 'dinner' : 'late night'}`,
+              });
+            } else {
+              clearSearchDateTime();
+            }
+            setIsPlanAheadOpen(false);
+            
+            // Trigger fresh search if we have results
+            if (restaurantResults.length > 0 || activityResults.length > 0) {
+              search.handleSeePlan();
+            }
+          }}
         />
       </div>
     </div>
