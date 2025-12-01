@@ -74,7 +74,7 @@ serve(async (req) => {
 
   try {
     // Parse request parameters
-    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined;
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean;
 
     if (req.method === 'POST') {
       const body = await req.json();
@@ -86,6 +86,7 @@ serve(async (req) => {
       targetCity = body.targetCity;
       noveltyMode = body.noveltyMode || 'balanced';
       seed = body.seed; // Optional seed for randomization
+      forceFresh = body.forceFresh === true; // Force fresh results
     } else {
       const url = new URL(req.url);
       lat = parseFloat(url.searchParams.get('lat') || '');
@@ -96,6 +97,7 @@ serve(async (req) => {
       targetCity = url.searchParams.get('targetCity') || undefined;
       noveltyMode = (url.searchParams.get('noveltyMode') as NoveltyMode) || 'balanced';
       seed = url.searchParams.get('seed') ? parseInt(url.searchParams.get('seed')!) : undefined;
+      forceFresh = url.searchParams.get('forceFresh') === 'true';
     }
 
     // Validate required parameters
@@ -119,8 +121,16 @@ serve(async (req) => {
       targetCity: targetCity || 'none',
       noveltyMode,
       seed: seed || 'none',
+      forceFresh,
       bookingInsightsEnabled: FEATURE_FLAGS.ENABLE_BOOKING_INSIGHTS
     });
+
+    // If forceFresh, add variation to prevent any caching
+    let effectiveSeed = seed;
+    if (forceFresh && effectiveSeed === undefined) {
+      effectiveSeed = Math.floor(Math.random() * 1000000);
+      console.log('🔄 Force fresh: generated random seed:', effectiveSeed);
+    }
 
     // Use multi-provider service to get restaurant suggestions
     const { items: providerResults, providerStats } = await getRestaurantSuggestions({
@@ -220,9 +230,9 @@ serve(async (req) => {
         return b.rating - a.rating;
       });
 
-    // If seed is provided, shuffle the results deterministically
-    if (seed !== undefined) {
-      console.log(`🎲 Shuffling results with seed: ${seed}`);
+    // If seed is provided (or forceFresh generated one), shuffle the results deterministically
+    if (effectiveSeed !== undefined) {
+      console.log(`🎲 Shuffling results with seed: ${effectiveSeed}`);
       // Seeded random shuffle using the seed
       const seededRandom = (s: number) => {
         const x = Math.sin(s) * 10000;
@@ -231,7 +241,7 @@ serve(async (req) => {
       
       // Fisher-Yates shuffle with seeded random
       for (let i = items.length - 1; i > 0; i--) {
-        const j = Math.floor(seededRandom(seed + i) * (i + 1));
+        const j = Math.floor(seededRandom(effectiveSeed + i) * (i + 1));
         [items[i], items[j]] = [items[j], items[i]];
       }
     }
@@ -242,13 +252,14 @@ serve(async (req) => {
       console.log(`📅 Booking insights: ${recommendedCount}/${items.length} recommend reservations`);
     }
 
-    console.log(`✅ Returning ${items.length} scored restaurants`);
+    console.log(`✅ Returning ${items.length} scored restaurants (forceFresh: ${forceFresh})`);
 
     return new Response(
       JSON.stringify({
         items,
         nextPageToken: null, // Multi-provider doesn't support pagination initially
-        providerStats // Include provider stats for debugging
+        providerStats, // Include provider stats for debugging
+        forceFresh // Echo back for debugging
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

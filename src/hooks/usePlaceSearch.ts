@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { buildPlan, buildPlanFromIndices, scorePlaces } from "@/lib/planner";
 import { getLearnedPreferences, getContextualSuggestions } from "@/lib/learning";
-import { usePlanStore } from "@/store/planStore";
+import { usePlanStore, buildSearchSignature } from "@/store/planStore";
 
 // Geolocation options for consistent iOS behavior
 const geoOptions: PositionOptions = {
@@ -34,18 +34,9 @@ export const usePlaceSearch = (
     locationMode,
     zipCode,
     searchDate,
-    restaurants: restaurantResults,
-    activities: activityResults,
-    restaurantIdx: restaurantIndex,
-    activityIdx: activityIndex,
-    nextRestaurantsToken,
-    nextActivitiesToken,
-    lastSearchedCuisine,
-    lastSearchedActivity,
-    lastSearchMode,
-    lastSearchDate,
     userPreferences,
     searchMode,
+    lastSearchSignature,
     setLocation,
     setFilters,
     setRestaurants,
@@ -54,7 +45,15 @@ export const usePlaceSearch = (
     setActivityIdx: setActivityIndex,
     setLastSearched,
     setLastSearchLocation,
+    setSearchSignature,
     clearResults,
+    clearAllResults,
+    getCurrentRestaurants,
+    getCurrentActivities,
+    getCurrentRestaurantIdx,
+    getCurrentActivityIdx,
+    getNextRestaurantsToken,
+    getNextActivitiesToken,
   } = usePlanStore();
 
   // Track user interactions
@@ -134,12 +133,12 @@ export const usePlaceSearch = (
           }
           reject(error);
         },
-        geoOptions  // Use consistent geolocation options for iOS
+        geoOptions
       );
     });
   };
 
-  const handleFindPlaces = async (overrideCuisine?: string, overrideActivity?: string) => {
+  const handleFindPlaces = async (overrideCuisine?: string, overrideActivity?: string, forceFresh: boolean = false) => {
     const searchCuisine = overrideCuisine ?? cuisine;
     const searchActivity = overrideActivity ?? activityCategory;
     
@@ -192,10 +191,54 @@ export const usePlaceSearch = (
       }
     }
 
+    const currentMode = searchMode || 'both';
+    const { priceLevel } = usePlanStore.getState();
+
+    // Build search signature
+    const currentSignature = buildSearchSignature({
+      mode: currentMode,
+      cuisine: searchCuisine,
+      activityCategory: searchActivity,
+      radius,
+      priceLevel,
+      searchDate,
+      lat: searchLat,
+      lng: searchLng,
+    });
+
+    // Check if we can use cached results (unless forceFresh)
+    if (!forceFresh && currentSignature === lastSearchSignature) {
+      console.log('🔄 Same search signature, using cached results');
+      const currentRestaurants = getCurrentRestaurants();
+      const currentActivities = getCurrentActivities();
+      
+      if (currentRestaurants.length > 0 || currentActivities.length > 0) {
+        // Build plan from cached results
+        const cachedPlan = buildPlanFromIndices({
+          lat: searchLat,
+          lng: searchLng,
+          radius,
+          restaurants: currentRestaurants,
+          activities: currentActivities,
+          preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+            ? userPreferences 
+            : undefined,
+          searchMode: currentMode,
+        }, getCurrentRestaurantIdx(), getCurrentActivityIdx());
+        
+        setPlan(cachedPlan);
+        return;
+      }
+    }
+
+    // Clear results for fresh search
+    clearResults();
+
     setLoading(true);
     try {
-      console.log('🔍 MANUAL SEARCH INITIATED');
+      console.log('🔍 MANUAL SEARCH INITIATED (forceFresh:', forceFresh, ')');
       console.log('Store searchMode:', searchMode);
+      console.log('Search signature:', currentSignature);
       
       // Fetch weather for contextual suggestions
       let weatherData = null;
@@ -215,15 +258,10 @@ export const usePlaceSearch = (
       const contextual = getContextualSuggestions({ weather: weatherData });
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
       
-      const currentMode = searchMode || 'both';
-      
       console.log('=== MANUAL SEARCH MODE CHECK ===');
       console.log('Mode:', currentMode);
       console.log('Will search restaurants?', currentMode === 'both' || currentMode === 'restaurant_only');
       console.log('Will search activities?', currentMode === 'both' || currentMode === 'activity_only');
-      
-      // Get priceLevel from store for restaurant filtering
-      const { priceLevel } = usePlanStore.getState();
       
       const restaurantsPromise = (currentMode === 'both' || currentMode === 'restaurant_only')
         ? supabase.functions.invoke('places-search', {
@@ -232,14 +270,21 @@ export const usePlaceSearch = (
               lng: searchLng, 
               radiusMiles: radius, 
               cuisine: searchCuisine,
-              priceLevel: priceLevel || undefined
+              priceLevel: priceLevel || undefined,
+              forceFresh
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
       
       const activitiesPromise = (currentMode === 'both' || currentMode === 'activity_only')
         ? supabase.functions.invoke('activities-search', {
-            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: searchActivity }
+            body: { 
+              lat: searchLat, 
+              lng: searchLng, 
+              radiusMiles: radius, 
+              keyword: searchActivity,
+              forceFresh
+            }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
       
@@ -282,7 +327,7 @@ export const usePlaceSearch = (
           usedKeyword = fallbackTerm;
           
           const fallbackResponse = await supabase.functions.invoke('activities-search', {
-            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: fallbackTerm }
+            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: fallbackTerm, forceFresh }
           });
           
           if (!fallbackResponse.error && fallbackResponse.data?.items?.length > 0) {
@@ -302,7 +347,7 @@ export const usePlaceSearch = (
           if (expandedRadius <= radius) continue;
           
           const expandedResponse = await supabase.functions.invoke('activities-search', {
-            body: { lat: searchLat, lng: searchLng, radiusMiles: expandedRadius, keyword: usedKeyword }
+            body: { lat: searchLat, lng: searchLng, radiusMiles: expandedRadius, keyword: usedKeyword, forceFresh }
           });
           
           if (!expandedResponse.error && expandedResponse.data?.items?.length > 0) {
@@ -348,8 +393,11 @@ export const usePlaceSearch = (
       
       setRestaurants(sortedRestaurants, restaurantsResponse.data?.nextPageToken || null);
       setActivities(sortedActivities, activitiesResponse.data?.nextPageToken || null);
-      setLastSearched(cuisine, activityCategory);
+      setLastSearched(searchCuisine, searchActivity);
       setLocation(searchLat, searchLng);
+      
+      // Store the search signature
+      setSearchSignature(currentSignature);
       
       console.log('✅ [usePlaceSearch] Store updated successfully');
 
@@ -415,6 +463,11 @@ export const usePlaceSearch = (
     swapDebounceRef.current.restaurant = true;
     setTimeout(() => { swapDebounceRef.current.restaurant = false; }, 300);
 
+    const restaurantResults = getCurrentRestaurants();
+    const restaurantIndex = getCurrentRestaurantIdx();
+    const activityResults = getCurrentActivities();
+    const activityIndex = getCurrentActivityIdx();
+
     if (restaurantResults[restaurantIndex]) {
       await trackInteraction(restaurantResults[restaurantIndex], 'restaurant', 'skipped');
     }
@@ -448,11 +501,72 @@ export const usePlaceSearch = (
         await trackInteraction(newPlan.restaurant, 'restaurant', 'viewed');
       }
     } else {
-      toast({ 
-        title: "End of list", 
-        description: "Try rerolling for fresh options", 
-        variant: "destructive" 
-      });
+      // Exhausted cached options - fetch fresh
+      console.log('🔄 Exhausted restaurant options, fetching fresh');
+      const randomSeed = Math.floor(Math.random() * 1000000);
+      const { priceLevel } = usePlanStore.getState();
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('places-search', {
+          body: { 
+            lat: searchLat, 
+            lng: searchLng, 
+            radiusMiles: radius, 
+            cuisine,
+            priceLevel: priceLevel || undefined,
+            seed: randomSeed,
+            forceFresh: true
+          }
+        });
+        
+        if (!error && data?.items?.length > 0) {
+          const sortedRestaurants = scorePlaces(
+            data.items, 
+            searchLat, 
+            searchLng, 
+            radius, 
+            userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+              ? userPreferences 
+              : undefined,
+            'restaurant'
+          );
+          
+          setRestaurants(sortedRestaurants, null);
+          setRestaurantIndex(0);
+          
+          const newPlan = buildPlanFromIndices(
+            {
+              lat: searchLat,
+              lng: searchLng,
+              radius,
+              restaurants: sortedRestaurants,
+              activities: activityResults,
+              preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+                ? userPreferences 
+                : undefined,
+              searchMode: searchMode || 'both',
+            },
+            0,
+            activityIndex
+          );
+          
+          setPlan(newPlan);
+          toast({ title: "Fresh picks!", description: "Found new restaurant options" });
+        } else {
+          toast({ 
+            title: "End of list", 
+            description: "No more options in this area", 
+            variant: "destructive" 
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching fresh restaurants:', error);
+        toast({ 
+          title: "End of list", 
+          description: "Try rerolling for fresh options", 
+          variant: "destructive" 
+        });
+      }
     }
   };
 
@@ -460,6 +574,11 @@ export const usePlaceSearch = (
     if (swapDebounceRef.current.activity) return;
     swapDebounceRef.current.activity = true;
     setTimeout(() => { swapDebounceRef.current.activity = false; }, 300);
+
+    const restaurantResults = getCurrentRestaurants();
+    const restaurantIndex = getCurrentRestaurantIdx();
+    const activityResults = getCurrentActivities();
+    const activityIndex = getCurrentActivityIdx();
 
     if (activityResults[activityIndex]) {
       await trackInteraction(activityResults[activityIndex], 'activity', 'skipped');
@@ -494,11 +613,70 @@ export const usePlaceSearch = (
         await trackInteraction(newPlan.activity, 'activity', 'viewed');
       }
     } else {
-      toast({ 
-        title: "End of list", 
-        description: "Try rerolling for fresh options", 
-        variant: "destructive" 
-      });
+      // Exhausted cached options - fetch fresh
+      console.log('🔄 Exhausted activity options, fetching fresh');
+      const randomSeed = Math.floor(Math.random() * 1000000);
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('activities-search', {
+          body: { 
+            lat: searchLat, 
+            lng: searchLng, 
+            radiusMiles: radius, 
+            keyword: activityCategory,
+            seed: randomSeed,
+            forceFresh: true
+          }
+        });
+        
+        if (!error && data?.items?.length > 0) {
+          const sortedActivities = scorePlaces(
+            data.items, 
+            searchLat, 
+            searchLng, 
+            radius, 
+            userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+              ? userPreferences 
+              : undefined,
+            'activity'
+          );
+          
+          setActivities(sortedActivities, null);
+          setActivityIndex(0);
+          
+          const newPlan = buildPlanFromIndices(
+            {
+              lat: searchLat,
+              lng: searchLng,
+              radius,
+              restaurants: restaurantResults,
+              activities: sortedActivities,
+              preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+                ? userPreferences 
+                : undefined,
+              searchMode: searchMode || 'both',
+            },
+            restaurantIndex,
+            0
+          );
+          
+          setPlan(newPlan);
+          toast({ title: "Fresh picks!", description: "Found new activity options" });
+        } else {
+          toast({ 
+            title: "End of list", 
+            description: "No more options in this area", 
+            variant: "destructive" 
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching fresh activities:', error);
+        toast({ 
+          title: "End of list", 
+          description: "Try rerolling for fresh options", 
+          variant: "destructive" 
+        });
+      }
     }
   };
 
@@ -512,6 +690,9 @@ export const usePlaceSearch = (
       return;
     }
     
+    // ALWAYS clear results for reroll
+    clearResults();
+    
     setLoading(true);
     try {
       const searchLat = lat;
@@ -520,18 +701,34 @@ export const usePlaceSearch = (
       
       // Generate a random seed to get different results
       const randomSeed = Math.floor(Math.random() * 1000000);
+      const { priceLevel } = usePlanStore.getState();
       
-      console.log('🎲 [handleRerollPlan] Rerolling with seed:', randomSeed);
+      console.log('🎲 [handleRerollPlan] Rerolling with seed:', randomSeed, 'forceFresh: true');
       
       const restaurantsPromise = (currentMode === 'both' || currentMode === 'restaurant_only')
         ? supabase.functions.invoke('places-search', {
-            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine, seed: randomSeed }
+            body: { 
+              lat: searchLat, 
+              lng: searchLng, 
+              radiusMiles: radius, 
+              cuisine, 
+              priceLevel: priceLevel || undefined,
+              seed: randomSeed,
+              forceFresh: true  // ALWAYS force fresh on reroll
+            }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
       
       const activitiesPromise = (currentMode === 'both' || currentMode === 'activity_only')
         ? supabase.functions.invoke('activities-search', {
-            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: activityCategory, seed: randomSeed }
+            body: { 
+              lat: searchLat, 
+              lng: searchLng, 
+              radiusMiles: radius, 
+              keyword: activityCategory, 
+              seed: randomSeed,
+              forceFresh: true  // ALWAYS force fresh on reroll
+            }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
       
@@ -593,6 +790,21 @@ export const usePlaceSearch = (
       setRestaurantIndex(restaurantStartIdx);
       setActivityIndex(activityStartIdx);
       
+      // Update signature with seed to mark this as a unique search
+      const { priceLevel: currentPriceLevel } = usePlanStore.getState();
+      const newSignature = buildSearchSignature({
+        mode: currentMode,
+        cuisine,
+        activityCategory,
+        radius,
+        priceLevel: currentPriceLevel,
+        searchDate,
+        lat: searchLat,
+        lng: searchLng,
+        seed: randomSeed,  // Include seed to make signature unique
+      });
+      setSearchSignature(newSignature);
+      
       setPlan(freshPlan);
       toast({ title: "Rerolled!", description: "Fresh picks served up!" });
     } catch (error) {
@@ -604,37 +816,9 @@ export const usePlaceSearch = (
   };
 
   const handleReroll = async () => {
-    // Since backend doesn't support true pagination, we shuffle and pick different indices
-    const currentRestaurants = restaurantResults;
-    const currentActivities = activityResults;
-    
-    if (searchType === "restaurants" && currentRestaurants.length > 1) {
-      // Shuffle the array using Fisher-Yates
-      const shuffled = [...currentRestaurants];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      setRestaurants(shuffled, nextRestaurantsToken);
-      setRestaurantIndex(0);
-      toast({ title: "Shuffled!", description: "New restaurant picks ready!" });
-    } else if (searchType === "activities" && currentActivities.length > 1) {
-      // Shuffle the array using Fisher-Yates
-      const shuffled = [...currentActivities];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      setActivities(shuffled, nextActivitiesToken);
-      setActivityIndex(0);
-      toast({ title: "Shuffled!", description: "New activity picks ready!" });
-    } else {
-      toast({ 
-        title: "No more options", 
-        description: "Try expanding your search radius",
-        variant: "destructive"
-      });
-    }
+    // Delegate to handleRerollPlan for consistent behavior
+    // This ensures reroll ALWAYS fetches fresh data
+    await handleRerollPlan();
   };
 
   const handleSeePlan = async () => {
@@ -692,41 +876,31 @@ export const usePlaceSearch = (
       }
     }
 
-    if (restaurantIndex === null || restaurantIndex === undefined) setRestaurantIndex(0);
-    if (activityIndex === null || activityIndex === undefined) setActivityIndex(0);
+    // Build current signature
+    const { priceLevel } = usePlanStore.getState();
+    const currentSignature = buildSearchSignature({
+      mode: currentMode,
+      cuisine,
+      activityCategory,
+      radius,
+      priceLevel,
+      searchDate,
+      lat,
+      lng,
+    });
 
-    // Check ALL factors that should invalidate cached results
-    const filtersChanged = 
-      lastSearchedCuisine !== cuisine || 
-      lastSearchedActivity !== activityCategory;
+    // Check if signature changed
+    const needsFreshSearch = currentSignature !== lastSearchSignature;
     
-    const modeChanged = lastSearchMode !== currentMode;
-    const dateChanged = searchDate?.toISOString() !== lastSearchDate?.toISOString();
-
-    const hasRestaurants = restaurantResults.length > 0;
-    const hasActivities = activityResults.length > 0;
-    const hasRequiredResults = 
-      (currentMode === 'both' && hasRestaurants && hasActivities) ||
-      (currentMode === 'restaurant_only' && hasRestaurants) ||
-      (currentMode === 'activity_only' && hasActivities);
-
-    // Only skip API call if we have valid cached results AND nothing changed
-    const needsFreshSearch = !hasRequiredResults || filtersChanged || modeChanged || dateChanged;
-    
-    console.log('🔍 [handleSeePlan] Cache check:', {
-      hasRequiredResults,
-      filtersChanged,
-      modeChanged,
-      dateChanged,
+    console.log('🔍 [handleSeePlan] Signature check:', {
+      currentSignature,
+      lastSignature: lastSearchSignature,
       needsFreshSearch
     });
 
-    if (!needsFreshSearch) {
-      navigate("/plan");
-      return;
+    if (needsFreshSearch) {
+      await handleFindPlaces();
     }
-
-    await handleFindPlaces();
     
     // Update tracking state after successful search
     usePlanStore.setState({ 
@@ -746,6 +920,9 @@ export const usePlaceSearch = (
       });
       return;
     }
+    
+    // ALWAYS clear results for Surprise Me - fresh experience
+    clearAllResults();
     
     // Try to resolve location if not set
     let searchLat = lat;
@@ -845,16 +1022,31 @@ export const usePlaceSearch = (
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
       
       const currentMode = searchMode || 'both';
+      const randomSeed = Math.floor(Math.random() * 1000000);
 
       const restaurantsPromise = (currentMode === 'both' || currentMode === 'restaurant_only')
         ? supabase.functions.invoke('places-search', {
-            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, cuisine: selectedCuisine }
+            body: { 
+              lat: searchLat, 
+              lng: searchLng, 
+              radiusMiles: radius, 
+              cuisine: selectedCuisine,
+              seed: randomSeed,
+              forceFresh: true  // Always fresh for Surprise Me
+            }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
 
       const activitiesPromise = (currentMode === 'both' || currentMode === 'activity_only')
         ? supabase.functions.invoke('activities-search', {
-            body: { lat: searchLat, lng: searchLng, radiusMiles: radius, keyword: selectedActivity }
+            body: { 
+              lat: searchLat, 
+              lng: searchLng, 
+              radiusMiles: radius, 
+              keyword: selectedActivity,
+              seed: randomSeed,
+              forceFresh: true  // Always fresh for Surprise Me
+            }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
 
@@ -901,6 +1093,21 @@ export const usePlaceSearch = (
       setRestaurants(sortedRestaurants, restaurantsResponse.data?.nextPageToken || null);
       setActivities(sortedActivities, activitiesResponse.data?.nextPageToken || null);
       setLastSearched(selectedCuisine, selectedActivity);
+      
+      // Update signature for Surprise Me
+      const { priceLevel } = usePlanStore.getState();
+      const newSignature = buildSearchSignature({
+        mode: currentMode,
+        cuisine: selectedCuisine,
+        activityCategory: selectedActivity,
+        radius,
+        priceLevel,
+        searchDate,
+        lat: searchLat,
+        lng: searchLng,
+        seed: randomSeed,
+      });
+      setSearchSignature(newSignature);
       
       console.log('✅ [SurpriseMe] Store updated successfully');
 
@@ -969,9 +1176,12 @@ export const usePlaceSearch = (
       setLocation(plan.search_params.lat, plan.search_params.lng);
     }
     
+    // Clear signature to force fresh search with new params
+    setSearchSignature('');
+    
     toast({
-      title: "Plan loaded! 💫",
-      description: "Click 'See Tonight's Plan' to search again with these settings",
+      title: "Loaded",
+      description: "Search settings restored from saved plan",
     });
   };
 
@@ -981,16 +1191,15 @@ export const usePlaceSearch = (
     plan,
     searchType,
     setSearchType,
+    trackInteraction,
+    handleUseCurrentLocation,
     handleFindPlaces,
     handleSwapRestaurant,
     handleSwapActivity,
-    handleRerollPlan,
     handleReroll,
+    handleRerollPlan,
     handleSeePlan,
     handleSurpriseMe,
     handleSelectRecentPlan,
-    handleUseCurrentLocation,
-    trackInteraction
   };
 };
-
