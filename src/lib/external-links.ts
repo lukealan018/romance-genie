@@ -1,7 +1,25 @@
 /** Detect iOS devices for Apple Maps integration */
 function isIOS(): boolean {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || '';
+  // Check for iOS devices in userAgent
+  if (/iPad|iPhone|iPod/.test(userAgent)) {
+    return true;
+  }
+  // Check for iPad on iOS 13+ (reports as Mac but has touch)
+  if (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel|Macintosh/.test(userAgent)) {
+    return true;
+  }
+  // Check platform as fallback (deprecated but still useful)
+  if (typeof navigator.platform === 'string') {
+    if (/iPad|iPhone|iPod/.test(navigator.platform)) {
+      return true;
+    }
+    // iPad on iOS 13+ with touchscreen
+    if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /** Device-aware map URL that prioritizes address over coordinates */
