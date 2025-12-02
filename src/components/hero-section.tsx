@@ -41,7 +41,24 @@ export const HeroSection = ({
   }[searchMode];
 
   return (
-    <div className="space-y-6 py-5">
+    <div className="space-y-6 py-5 relative">
+      {/* Background gradient behind hero area */}
+      <div 
+        className="absolute inset-0 pointer-events-none -z-10"
+        style={{
+          background: 'linear-gradient(180deg, #11171D 0%, rgba(58,122,254,0.10) 50%, #0A0E12 100%)',
+        }}
+      />
+      
+      {/* Hero card outer glow */}
+      <div 
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[50%] aspect-square pointer-events-none -z-10"
+        style={{
+          background: 'radial-gradient(circle, rgba(58,122,254,0.18) 0%, rgba(120,80,255,0.10) 40%, transparent 70%)',
+          filter: 'blur(48px)',
+        }}
+      />
+      
       {/* Luxury Hero Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -49,7 +66,7 @@ export const HeroSection = ({
         transition={{ duration: 0.6 }}
         className="relative px-6 pt-8 pb-10 bg-[#11171D] border border-[rgba(255,255,255,0.06)] rounded-[18px] overflow-hidden"
       >
-        {/* Signature luxury radial glow */}
+        {/* Signature luxury radial glow inside card */}
         <div 
           className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40%] aspect-square pointer-events-none"
           style={{
@@ -104,11 +121,21 @@ export const HeroSection = ({
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+            className="relative"
           >
+            {/* Button glow underneath */}
+            <div 
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(58,122,254,0.16) 0%, transparent 70%)',
+                filter: 'blur(28px)',
+                transform: 'translateY(8px)',
+              }}
+            />
             <button
               onClick={onVoiceInput}
               disabled={loading || isListening}
-              className="w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.82)] font-medium py-5 px-6 rounded-[16px] transition-all duration-200 relative overflow-hidden disabled:opacity-50"
+              className="relative w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.82)] font-medium py-5 px-6 rounded-[16px] transition-all duration-200 overflow-hidden disabled:opacity-50"
             >
               {/* Pulse animation when listening */}
               {isListening && (
@@ -171,11 +198,21 @@ export const HeroSection = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
+            className="relative inline-block"
           >
+            {/* Button glow underneath */}
+            <div 
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(58,122,254,0.16) 0%, transparent 70%)',
+                filter: 'blur(26px)',
+                transform: 'translateY(6px)',
+              }}
+            />
             <button
               onClick={onSurpriseMe}
               disabled={loading}
-              className="inline-flex items-center justify-center gap-2 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.85)] font-medium py-2.5 px-5 rounded-[12px] transition-all duration-200 disabled:opacity-50"
+              className="relative inline-flex items-center justify-center gap-2 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.85)] font-medium py-2.5 px-5 rounded-[12px] transition-all duration-200 disabled:opacity-50"
             >
               {loading ? (
                 <>
