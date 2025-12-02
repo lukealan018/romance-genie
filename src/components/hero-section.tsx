@@ -89,7 +89,7 @@ export const HeroSection = ({
                   transition={{ delay: 0.2 }}
                 >
                   <p className="text-[rgba(255,255,255,0.72)] text-base">Welcome back,</p>
-                  <h1 className="text-[38px] font-bold text-[rgba(58,122,254,0.9)]">
+                  <h1 className="text-[34px] font-bold text-[rgba(58,122,254,0.9)]">
                     {userName}
                   </h1>
                 </motion.div>
