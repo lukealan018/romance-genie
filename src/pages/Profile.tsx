@@ -198,10 +198,9 @@ const Profile = () => {
       </header>
 
       <main className="px-4 py-6 pb-32 max-w-lg mx-auto space-y-[18px]">
-        {/* Card 1: Basic Information */}
+        {/* Card 1: Your Info */}
         <div className="card-luxury fade-slide-in">
-          <h2 className="text-luxury-heading mb-1">Basic Information</h2>
-          <p className="text-luxury-subtitle mb-6">Your personal details</p>
+          <h2 className="text-luxury-heading mb-6">Your Info</h2>
 
           <div className="space-y-5">
             <div>
@@ -245,13 +244,13 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Card 2: Your Preferences */}
+        {/* Card 2: Preferences */}
         <div className="card-luxury fade-slide-in" style={{ animationDelay: "0.05s" }}>
-          <h2 className="text-luxury-heading mb-1">Your Preferences</h2>
-          <p className="text-luxury-subtitle mb-6">Help us find places you'll love</p>
+          <h2 className="text-luxury-heading mb-1">Preferences</h2>
+          <p className="text-luxury-subtitle mb-6">Tailor your recommendations</p>
 
           {/* Cuisines */}
-          <div className="mb-6">
+          <div>
             <Label className="text-sm font-medium text-foreground mb-3 block">Favorite Cuisines</Label>
             <div className="flex flex-wrap gap-2">
               {PRIMARY_CUISINES.map((cuisine) => (
@@ -272,6 +271,9 @@ const Profile = () => {
               </button>
             </div>
           </div>
+
+          {/* Section Divider */}
+          <div className="section-divider" />
 
           {/* Activities */}
           <div>
@@ -299,20 +301,17 @@ const Profile = () => {
 
         {/* Card 3: Recommendation Style */}
         <div className="card-luxury fade-slide-in" style={{ animationDelay: "0.1s" }}>
-          <h2 className="text-luxury-heading mb-1">Recommendation Style</h2>
-          <p className="text-luxury-subtitle mb-6">Choose how adventurous you want your suggestions to be</p>
+          <h2 className="text-luxury-heading mb-6">Recommendation Style</h2>
 
           <div className="flex gap-2">
             {RECOMMENDATION_STYLES.map((style) => (
               <button
                 key={style.value}
                 onClick={() => setNoveltyPreference(style.value)}
-                className={`chip-luxury flex-1 flex flex-col items-center py-3 ${
-                  noveltyPreference === style.value ? "selected" : ""
-                }`}
+                className={`rec-style-btn ${noveltyPreference === style.value ? "selected" : ""}`}
               >
-                <span className="font-medium">{style.label}</span>
-                <span className="text-xs opacity-60 mt-0.5">{style.description}</span>
+                <span className="rec-label">{style.label}</span>
+                <span className="rec-subtitle">{style.description}</span>
               </button>
             ))}
           </div>
@@ -321,7 +320,7 @@ const Profile = () => {
         {/* Card 4: Dietary Needs */}
         <div className="card-luxury fade-slide-in" style={{ animationDelay: "0.15s" }}>
           <h2 className="text-luxury-heading mb-1">Dietary Needs</h2>
-          <p className="text-luxury-subtitle mb-6">We'll prioritize restaurants that accommodate you</p>
+          <p className="text-luxury-subtitle mb-6">Optional dietary filters</p>
 
           <div className="flex flex-wrap gap-2">
             {PRIMARY_DIETARY.map((item) => (
@@ -337,7 +336,7 @@ const Profile = () => {
               onClick={() => setReligiousSheetOpen(true)}
               className="chip-luxury ml-auto"
             >
-              Religious Restrictions
+              Religious
             </button>
           </div>
         </div>
