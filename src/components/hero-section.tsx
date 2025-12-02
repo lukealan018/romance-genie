@@ -127,12 +127,12 @@ export const HeroSection = ({
             <motion.div 
               className="absolute inset-0 pointer-events-none"
               animate={{
-                opacity: isListening ? 1 : 0.6,
+                opacity: isListening ? 1 : 0.8,
               }}
               style={{
                 background: isListening 
                   ? 'radial-gradient(ellipse 90% 70% at 50% 100%, rgba(58,122,254,0.25) 0%, transparent 70%)'
-                  : 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(58,122,254,0.16) 0%, transparent 70%)',
+                  : 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(58,122,254,0.20) 0%, transparent 70%)',
                 filter: isListening ? 'blur(40px)' : 'blur(28px)',
                 transform: 'translateY(8px)',
               }}
@@ -164,8 +164,8 @@ export const HeroSection = ({
                 isListening 
                   ? 'bg-[rgba(58,122,254,0.12)] border border-[rgba(58,122,254,0.35)] text-[rgba(255,255,255,0.95)]'
                   : loading
-                    ? 'bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-[rgba(255,255,255,0.82)]'
-                    : 'bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.82)]'
+                    ? 'bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-[rgba(255,255,255,0.90)]'
+                    : 'bg-[rgba(58,122,254,0.22)] border border-[rgba(58,122,254,0.55)] hover:bg-[rgba(58,122,254,0.28)] hover:border-[rgba(58,122,254,0.65)] text-[rgba(255,255,255,0.90)]'
               }`}
             >
               {/* Inner pulse animation when listening */}
@@ -243,24 +243,24 @@ export const HeroSection = ({
             <div 
               className="absolute inset-0 pointer-events-none"
               style={{
-                background: 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(58,122,254,0.16) 0%, transparent 70%)',
-                filter: 'blur(26px)',
+                background: 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(58,122,254,0.10) 0%, transparent 70%)',
+                filter: 'blur(18px)',
                 transform: 'translateY(6px)',
               }}
             />
             <button
               onClick={onSurpriseMe}
               disabled={loading}
-              className="relative inline-flex items-center justify-center gap-2 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.85)] font-medium py-2.5 px-5 rounded-[12px] transition-all duration-200 disabled:opacity-50"
+              className="relative inline-flex items-center justify-center gap-2 bg-[rgba(23,32,65,0.45)] border border-[rgba(58,122,254,0.40)] hover:bg-[rgba(23,32,65,0.55)] hover:border-[rgba(58,122,254,0.55)] text-[rgba(255,255,255,0.90)] font-medium py-2.5 px-5 rounded-[12px] transition-all duration-200 disabled:opacity-50"
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin text-[rgba(58,122,254,0.85)]" />
+                  <Loader2 className="h-4 w-4 animate-spin text-[#3A7AFE]" />
                   <span>Finding magic...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4 text-[rgba(58,122,254,0.95)]" strokeWidth={1.5} />
+                  <Sparkles className="h-4 w-4 text-[#3A7AFE]" strokeWidth={1.5} />
                   <span>Surprise Me</span>
                 </>
               )}
