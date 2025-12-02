@@ -2,12 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Luxury Design System - Rich, elegant, high-end aesthetic
+   Inspired by: Ritz Carlton, AMEX Platinum, Chase Sapphire
+   All colors in HSL format
 */
 
 @layer base {
   :root {
+    /* Luxury dark theme as default */
+    --background: 210 27% 5%;
+    --foreground: 0 0% 100%;
+
+    --card: 213 27% 9%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 213 27% 9%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 220 99% 61%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 213 27% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 213 27% 12%;
+    --muted-foreground: 0 0% 100% / 0.55;
+
+    --accent: 220 99% 61%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 100% / 0.06;
+    --input: 0 0% 100% / 0.06;
+    --ring: 220 99% 61%;
+
+    /* Luxury design tokens */
+    --radius: 18px;
+    --radius-sm: 12px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+
+    --space-1: 8px;
+    --space-2: 12px;
+    --space-3: 18px;
+    --space-4: 22px;
+
+    --text-xs: 12px;
+    --text-sm: 14px;
+    --text-md: 16px;
+    --text-lg: 19px;
+    --text-xl: 24px;
+
+    /* Luxury chip colors */
+    --chip-bg: 0 0% 100% / 0.1;
+    --chip-border: 0 0% 100% / 0.18;
+    --chip-selected-bg: 220 99% 61% / 0.18;
+    --chip-selected-border: 220 99% 61%;
+
+    /* Luxury button colors */
+    --button-secondary-bg: 0 0% 100% / 0.06;
+    --button-secondary-text: 0 0% 100% / 0.85;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(220 99% 61%) 0%, hsl(220 99% 55%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(213 27% 9%) 0%, hsl(213 27% 7%) 100%);
+    
+    /* Shadows - minimal for luxury feel */
+    --shadow-subtle: 0 4px 20px -4px hsl(0 0% 0% / 0.3);
+    
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Light theme option (preserved for flexibility) */
+  .light {
     --background: 210 20% 97%;
     --foreground: 222 47% 11%;
 
@@ -17,96 +86,32 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 211 35% 45%;
+    --primary: 220 99% 61%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 211 45% 60%;
 
-    --secondary: 180 32% 41%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 210 20% 95%;
+    --secondary-foreground: 222 47% 11%;
 
     --muted: 210 20% 95%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 146 50% 36%;
+    --accent: 220 99% 61%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 215 20% 88%;
     --input: 215 20% 88%;
-    --ring: 211 35% 45%;
+    --ring: 220 99% 61%;
 
-    --teal: 180 32% 41%;
-    --warn: 25 70% 55%;
-    --violet: 246 28% 52%;
+    --chip-bg: 215 20% 95%;
+    --chip-border: 215 20% 85%;
+    --chip-selected-bg: 220 99% 61% / 0.15;
+    --chip-selected-border: 220 99% 61%;
 
-    --radius: 0.75rem;
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-
-    --space-1: 8px;
-    --space-2: 12px;
-    --space-3: 16px;
-    --space-4: 24px;
-
-    --text-xs: 12px;
-    --text-sm: 14px;
-    --text-md: 16px;
-    --text-lg: 18px;
-    --text-xl: 22px;
-
-    --gradient-professional: linear-gradient(135deg, hsl(211 35% 45%) 0%, hsl(180 32% 41%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(210 20% 97%) 0%, hsl(210 20% 95%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(211 35% 40%) 0%, hsl(146 50% 36%) 50%, hsl(180 32% 41%) 100%);
-    
-    --shadow-elegant: 0 10px 40px -10px hsl(211 35% 45% / 0.15);
-    --shadow-card: 0 4px 20px -4px hsl(211 35% 45% / 0.08);
-    
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 20% 98%;
-
-    --card: 222 40% 11%;
-    --card-foreground: 210 20% 98%;
-
-    --popover: 222 40% 11%;
-    --popover-foreground: 210 20% 98%;
-
-    --primary: 211 45% 55%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 211 55% 65%;
-
-    --secondary: 180 40% 50%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 222 30% 18%;
-    --muted-foreground: 215 16% 60%;
-
-    --accent: 146 50% 45%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 62.8% 50.6%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 222 30% 20%;
-    --input: 222 30% 20%;
-    --ring: 211 45% 55%;
-
-    --teal: 180 40% 50%;
-    --warn: 25 70% 60%;
-    --violet: 246 35% 60%;
-
-    --gradient-professional: linear-gradient(135deg, hsl(211 45% 50%) 0%, hsl(180 40% 45%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(222 47% 8%) 0%, hsl(222 40% 12%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(211 45% 45%) 0%, hsl(146 50% 40%) 50%, hsl(180 40% 45%) 100%);
-    
-    --shadow-elegant: 0 10px 40px -10px hsl(211 45% 35% / 0.3);
-    --shadow-card: 0 4px 20px -4px hsl(0 0% 0% / 0.3);
+    --button-secondary-bg: 215 20% 95%;
+    --button-secondary-text: 222 47% 11%;
   }
 }
 
@@ -122,66 +127,161 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
 @layer utilities {
-  .h1 {
-    font-size: var(--text-xl);
+  /* Typography utilities */
+  .text-luxury-heading {
+    font-size: 19px;
     font-weight: 600;
-  }
-
-  .h2 {
-    font-size: var(--text-lg);
-    font-weight: 600;
-  }
-
-  .muted {
-    color: hsl(var(--muted-foreground));
-    font-size: var(--text-sm);
-  }
-
-  .section {
-    margin-block: var(--space-4);
-  }
-
-  .chip {
-    border: 1px solid hsl(var(--border));
-    background: hsl(var(--card));
-    border-radius: var(--radius-sm);
-    padding: 6px 10px;
-    font-size: var(--text-sm);
     color: hsl(var(--foreground));
+    letter-spacing: -0.01em;
+  }
+
+  .text-luxury-subtitle {
+    font-size: 14px;
+    font-weight: 400;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .text-luxury-body {
+    font-size: 16px;
+    font-weight: 400;
+    color: hsl(var(--foreground));
+  }
+
+  /* Luxury card styling */
+  .card-luxury {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+  }
+
+  /* Luxury chip styling */
+  .chip-luxury {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    background: hsl(var(--chip-bg));
+    border: 1px solid hsl(var(--chip-border));
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    color: hsl(var(--foreground));
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    user-select: none;
+  }
+
+  .chip-luxury:hover {
+    background: hsl(var(--chip-bg));
+    border-color: hsl(var(--foreground) / 0.3);
+  }
+
+  .chip-luxury.selected {
+    background: hsl(var(--chip-selected-bg));
+    border-color: hsl(var(--chip-selected-border));
+    color: hsl(var(--primary));
+  }
+
+  /* Luxury button styling */
+  .btn-luxury-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    background: hsl(var(--primary));
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 600;
+    color: hsl(var(--primary-foreground));
     cursor: pointer;
     transition: var(--transition-smooth);
   }
 
-  .chip + .chip {
-    margin-left: var(--space-1);
+  .btn-luxury-primary:hover {
+    background: hsl(220 99% 55%);
   }
 
-  .chip.selected {
-    background: hsl(var(--teal));
-    border-color: hsl(var(--teal));
-    color: hsl(var(--secondary-foreground));
+  .btn-luxury-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
-  .card {
-    background: hsl(var(--card));
-    border-radius: var(--radius-lg);
-    padding: var(--space-3);
-    box-shadow: var(--shadow-card);
+  .btn-luxury-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    background: hsl(var(--button-secondary-bg));
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 500;
+    color: hsl(var(--button-secondary-text));
+    cursor: pointer;
+    transition: var(--transition-smooth);
   }
 
-  .card + .card {
-    margin-top: var(--space-3);
+  .btn-luxury-secondary:hover {
+    background: hsl(0 0% 100% / 0.1);
   }
 
+  /* Luxury input styling */
+  .input-luxury {
+    width: 100%;
+    padding: 12px 16px;
+    background: hsl(var(--input));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    color: hsl(var(--foreground));
+    transition: var(--transition-smooth);
+  }
+
+  .input-luxury::placeholder {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .input-luxury:focus {
+    outline: none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
+  }
+
+  /* Luxury slider styling */
+  .slider-luxury [data-radix-slider-track] {
+    background: hsl(var(--chip-bg));
+    height: 6px;
+    border-radius: 3px;
+  }
+
+  .slider-luxury [data-radix-slider-range] {
+    background: hsl(var(--primary));
+    border-radius: 3px;
+  }
+
+  .slider-luxury [data-radix-slider-thumb] {
+    width: 20px;
+    height: 20px;
+    background: hsl(var(--primary));
+    border: 2px solid hsl(var(--foreground));
+    border-radius: 50%;
+    box-shadow: 0 2px 8px hsl(0 0% 0% / 0.3);
+  }
+
+  /* Animation utilities */
   @keyframes fadeSlideIn {
     from {
       opacity: 0;
-      transform: translateY(6px);
+      transform: translateY(8px);
     }
     to {
       opacity: 1;
@@ -190,7 +290,7 @@ All colors MUST be HSL.
   }
 
   .fade-slide-in {
-    animation: fadeSlideIn 180ms ease-out;
+    animation: fadeSlideIn 0.3s ease-out;
   }
 
   @keyframes gradient {
@@ -208,7 +308,7 @@ All colors MUST be HSL.
   }
 }
 
-/* Comprehensive iOS Safari zoom prevention */
+/* iOS Safari zoom prevention */
 input, textarea, select {
   font-size: 16px;
   touch-action: manipulation;
@@ -219,9 +319,7 @@ input:focus, textarea:focus, select:focus {
   font-size: 16px;
 }
 
-/* Force 16px minimum on mobile for all form-related text to prevent iOS zoom */
 @media screen and (max-width: 639px) {
-  /* All form-related text elements must be 16px minimum */
   label,
   .text-sm,
   .text-xs,
@@ -232,14 +330,12 @@ input:focus, textarea:focus, select:focus {
     font-size: 16px !important;
   }
   
-  /* Card descriptions and muted text */
   [class*="text-muted"],
   [class*="CardDescription"],
   .text-muted-foreground {
     font-size: 16px !important;
   }
   
-  /* Ensure badges are also 16px */
   [class*="badge"],
   .badge {
     font-size: 16px !important;
