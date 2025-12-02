@@ -49,6 +49,15 @@ export const HeroSection = ({
         transition={{ duration: 0.6 }}
         className="relative px-6 pt-8 pb-10 bg-[#11171D] border border-[rgba(255,255,255,0.06)] rounded-[18px] overflow-hidden"
       >
+        {/* Signature luxury radial glow */}
+        <div 
+          className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40%] aspect-square pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, rgba(58,122,254,0.16) 0%, rgba(120,80,255,0.10) 40%, transparent 70%)',
+            filter: 'blur(40px)',
+          }}
+        />
+        
         {/* Subtle gradient overlay at top */}
         <div className="absolute inset-0 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-transparent pointer-events-none" />
         
