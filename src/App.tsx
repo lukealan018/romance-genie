@@ -11,7 +11,6 @@ import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import OnboardingWrapper from "./pages/OnboardingWrapper";
 import Profile from "./pages/Profile";
-import ProfileEdit from "./pages/ProfileEdit";
 import PlanPage from "./pages/PlanPage";
 import History from "./pages/History";
 import Calendar from "./pages/Calendar";
@@ -33,7 +32,6 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/profile" element={<Profile />} />
-              <Route path="/profile/edit" element={<ProfileEdit />} />
               <Route path="/plan" element={<PlanPage />} />
               <Route path="/history" element={<History />} />
               <Route path="/calendar" element={<Calendar />} />
