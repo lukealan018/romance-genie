@@ -49,8 +49,8 @@ export const HeroSection = ({
         transition={{ duration: 0.6 }}
         className="relative px-6 pt-8 pb-10 bg-[#11171D] border border-[rgba(255,255,255,0.06)] rounded-[18px] overflow-hidden"
       >
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+        {/* Subtle gradient overlay at top */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(255,255,255,0.03)] to-transparent pointer-events-none" />
         
         <div className="relative z-10 text-center space-y-6">
           {/* Welcome Message */}
@@ -63,7 +63,7 @@ export const HeroSection = ({
                   transition={{ delay: 0.2 }}
                 >
                   <p className="text-[rgba(255,255,255,0.55)] text-base">Welcome back,</p>
-                  <h1 className="text-[26px] font-bold text-[rgba(255,255,255,0.9)]">
+                  <h1 className="text-[26px] font-bold text-[rgba(58,122,254,0.9)]">
                     {userName}
                   </h1>
                 </motion.div>
@@ -78,7 +78,7 @@ export const HeroSection = ({
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <h1 className="text-[26px] font-bold text-[rgba(255,255,255,0.9)]">
+                  <h1 className="text-[26px] font-bold text-[rgba(58,122,254,0.9)]">
                     Your Perfect Night
                   </h1>
                   <p className="text-[rgba(255,255,255,0.55)] text-base mt-1">Awaits</p>
@@ -90,7 +90,7 @@ export const HeroSection = ({
             )}
           </div>
 
-          {/* Primary CTA - Luxury Voice Button */}
+          {/* Primary CTA - Luxury Matte Voice Button */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -99,12 +99,12 @@ export const HeroSection = ({
             <button
               onClick={onVoiceInput}
               disabled={loading || isListening}
-              className="w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.15)] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.25)] text-white font-medium py-5 px-6 rounded-[14px] transition-all duration-200 relative overflow-hidden disabled:opacity-50"
+              className="w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.85)] font-medium py-5 px-6 rounded-[16px] transition-all duration-200 relative overflow-hidden disabled:opacity-50"
             >
               {/* Pulse animation when listening */}
               {isListening && (
                 <motion.div
-                  className="absolute inset-0 bg-primary/10"
+                  className="absolute inset-0 bg-[rgba(58,122,254,0.1)]"
                   animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 />
@@ -117,18 +117,18 @@ export const HeroSection = ({
                       animate={{ scale: [1, 1.2, 1] }}
                       transition={{ duration: 0.8, repeat: Infinity }}
                     >
-                      <Mic className="h-5 w-5" strokeWidth={1.5} />
+                      <Mic className="h-5 w-5 text-[#3A7AFE]" strokeWidth={1.5} />
                     </motion.div>
                     <span>Listening...</span>
                   </>
                 ) : loading ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin text-[#3A7AFE]" />
                     <span>Thinking...</span>
                   </>
                 ) : (
                   <>
-                    <Mic className="h-5 w-5" strokeWidth={1.5} />
+                    <Mic className="h-5 w-5 text-[#3A7AFE]" strokeWidth={1.5} />
                     <span>{voiceButtonText}</span>
                   </>
                 )}
@@ -170,12 +170,12 @@ export const HeroSection = ({
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin text-[rgba(58,122,254,0.85)]" />
                   <span>Finding magic...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4" strokeWidth={1.5} />
+                  <Sparkles className="h-4 w-4 text-[rgba(58,122,254,0.85)]" strokeWidth={1.5} />
                   <span>Surprise Me</span>
                 </>
               )}
