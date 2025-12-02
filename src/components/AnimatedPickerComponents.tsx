@@ -56,7 +56,7 @@ export const AnimatedPickerButton = ({
           className="absolute inset-0 bg-gradient-to-r from-[#3A7AFE]/0 via-[#3A7AFE]/15 to-[#3A7AFE]/0"
           initial={{ x: '-100%' }}
           whileHover={{ x: '100%' }}
-          transition={{ duration: 0.72 }}
+          transition={{ duration: 0.9 }}
         />
         
         {/* Content */}
