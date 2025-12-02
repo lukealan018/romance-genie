@@ -162,10 +162,10 @@ export const HeroSection = ({
               disabled={loading}
               className={`relative w-full font-medium py-5 px-6 rounded-[16px] transition-all duration-300 overflow-hidden ${
                 isListening 
-                  ? 'bg-[rgba(58,122,254,0.22)] border border-[rgba(58,122,254,0.60)] text-[rgba(255,255,255,0.95)]'
+                  ? 'bg-[rgba(58,122,254,0.22)] border-2 border-[rgba(58,122,254,0.70)] text-[rgba(255,255,255,0.95)]'
                   : loading
-                    ? 'bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-[rgba(255,255,255,0.90)]'
-                    : 'bg-[rgba(58,122,254,0.38)] border border-[rgba(58,122,254,0.85)] hover:bg-[rgba(58,122,254,0.45)] hover:border-[rgba(58,122,254,0.95)] text-[rgba(255,255,255,0.95)]'
+                    ? 'bg-[rgba(255,255,255,0.08)] border-2 border-[rgba(255,255,255,0.15)] text-[rgba(255,255,255,0.90)]'
+                    : 'bg-[rgba(58,122,254,0.38)] border-2 border-[rgba(58,122,254,0.95)] hover:bg-[rgba(58,122,254,0.45)] hover:border-[rgba(58,122,254,1)] text-[rgba(255,255,255,0.95)]'
               }`}
             >
               {/* Inner pulse animation when listening */}
@@ -251,7 +251,7 @@ export const HeroSection = ({
             <button
               onClick={onSurpriseMe}
               disabled={loading}
-              className="relative inline-flex items-center justify-center gap-2 bg-[rgba(58,122,254,0.26)] border border-[rgba(58,122,254,0.70)] hover:bg-[rgba(58,122,254,0.34)] hover:border-[rgba(58,122,254,0.85)] text-[rgba(255,255,255,0.95)] font-medium py-2.5 px-5 rounded-[12px] transition-all duration-200 disabled:opacity-50"
+              className="relative inline-flex items-center justify-center gap-2 bg-[rgba(58,122,254,0.26)] border-2 border-[rgba(58,122,254,0.82)] hover:bg-[rgba(58,122,254,0.34)] hover:border-[rgba(58,122,254,0.95)] text-[rgba(255,255,255,0.95)] font-medium py-2.5 px-5 rounded-[12px] transition-all duration-200 disabled:opacity-50"
             >
               {loading ? (
                 <>
