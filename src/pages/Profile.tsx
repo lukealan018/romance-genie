@@ -334,7 +334,7 @@ const Profile = () => {
             ))}
             <button
               onClick={() => setReligiousSheetOpen(true)}
-              className="chip-luxury ml-auto"
+              className="chip-luxury"
             >
               Religious
             </button>
