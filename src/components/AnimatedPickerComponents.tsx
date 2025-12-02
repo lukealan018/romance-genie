@@ -27,22 +27,21 @@ export const AnimatedPickerButton = ({
     >
       <Button
         onClick={onClick}
-        variant={isSelected ? "default" : "outline"}
+        variant="outline"
         className={`
           relative overflow-hidden transition-all duration-300
           ${isSelected 
-            ? 'bg-gradient-to-r from-[#3A7AFE] to-[#5B8FFF] hover:from-[#2D6AEE] hover:to-[#4B7FEF] text-white border-transparent shadow-lg' 
+            ? 'bg-[#3A7AFE]/10 border-[#3A7AFE] text-[#3A7AFE] hover:bg-[#3A7AFE]/15' 
             : 'bg-slate-800/50 hover:bg-slate-700/50 border-slate-600/50 hover:border-[#3A7AFE]/50 text-slate-300 hover:text-white'
           }
         `}
       >
-        {/* Glow effect on selection */}
+        {/* Subtle glow effect on selection */}
         {isSelected && (
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-[#3A7AFE]/30 to-[#5B8FFF]/30"
+            className="absolute inset-0 bg-[#3A7AFE]/5"
             animate={{
-              opacity: [0.5, 1, 0.5],
-              scale: [1, 1.05, 1],
+              opacity: [0.3, 0.6, 0.3],
             }}
             transition={{
               duration: 2,
@@ -54,7 +53,7 @@ export const AnimatedPickerButton = ({
         
         {/* Hover gradient overlay - ghost trail */}
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-[#3A7AFE]/0 via-[#5B8FFF]/25 to-[#3A7AFE]/0"
+          className="absolute inset-0 bg-gradient-to-r from-[#3A7AFE]/0 via-[#3A7AFE]/15 to-[#3A7AFE]/0"
           initial={{ x: '-100%' }}
           whileHover={{ x: '100%' }}
           transition={{ duration: 0.72 }}
