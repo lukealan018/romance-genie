@@ -31,7 +31,7 @@ export const AnimatedPickerButton = ({
         className={`
           relative overflow-hidden transition-all duration-300
           ${isSelected 
-            ? 'bg-[#3A7AFE]/10 border-[#3A7AFE] text-[#3A7AFE] hover:bg-[#3A7AFE]/15' 
+            ? 'bg-[#3A7AFE]/10 border-[#3A7AFE] !text-[#3A7AFE] hover:bg-[#3A7AFE]/15 hover:!text-[#3A7AFE]' 
             : 'bg-slate-800/50 hover:bg-slate-700/50 border-slate-600/50 hover:border-[#3A7AFE]/50 text-slate-300 hover:text-white'
           }
         `}
@@ -60,8 +60,8 @@ export const AnimatedPickerButton = ({
         />
         
         {/* Content */}
-        <div className="relative z-10 flex items-center gap-2">
-          {Icon && <Icon className="h-4 w-4" />}
+        <div className={`relative z-10 flex items-center gap-2 ${isSelected ? 'text-[#3A7AFE]' : ''}`}>
+          {Icon && <Icon className={`h-4 w-4 ${isSelected ? 'text-[#3A7AFE]' : ''}`} />}
           <span>{label}</span>
         </div>
       </Button>
