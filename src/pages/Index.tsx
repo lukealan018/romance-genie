@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, User, Calendar as CalendarIcon, Heart } from "lucide-react";
+import { Loader2, User, Calendar as CalendarIcon, Heart, Utensils, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -109,10 +109,27 @@ const Index = () => {
           <>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {searchMode === 'both' && "🍽️ + 🎉 Full Date Night"}
-                  {searchMode === 'restaurant_only' && "🍽️ Just Dinner"}
-                  {searchMode === 'activity_only' && "🎉 Just Activity"}
+                <span className="text-sm text-[rgba(255,255,255,0.75)] flex items-center gap-1.5">
+                  {searchMode === 'both' && (
+                    <>
+                      <Utensils className="w-4 h-4" strokeWidth={1.5} />
+                      <span>+</span>
+                      <Sparkles className="w-4 h-4" strokeWidth={1.5} />
+                      <span>Full Date Night</span>
+                    </>
+                  )}
+                  {searchMode === 'restaurant_only' && (
+                    <>
+                      <Utensils className="w-4 h-4" strokeWidth={1.5} />
+                      <span>Just Dinner</span>
+                    </>
+                  )}
+                  {searchMode === 'activity_only' && (
+                    <>
+                      <Sparkles className="w-4 h-4" strokeWidth={1.5} />
+                      <span>Just Activity</span>
+                    </>
+                  )}
                 </span>
               </div>
               <Button 

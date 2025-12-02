@@ -41,7 +41,7 @@ export const HeroSection = ({
   }[searchMode];
 
   return (
-    <div className="space-y-6 pb-6">
+    <div className="space-y-6 py-5">
       {/* Luxury Hero Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -50,7 +50,7 @@ export const HeroSection = ({
         className="relative px-6 pt-8 pb-10 bg-[#11171D] border border-[rgba(255,255,255,0.06)] rounded-[18px] overflow-hidden"
       >
         {/* Subtle gradient overlay at top */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(255,255,255,0.03)] to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-transparent pointer-events-none" />
         
         <div className="relative z-10 text-center space-y-6">
           {/* Welcome Message */}
@@ -62,12 +62,12 @@ export const HeroSection = ({
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <p className="text-[rgba(255,255,255,0.55)] text-base">Welcome back,</p>
+                  <p className="text-[rgba(255,255,255,0.72)] text-base">Welcome back,</p>
                   <h1 className="text-[26px] font-bold text-[rgba(58,122,254,0.9)]">
                     {userName}
                   </h1>
                 </motion.div>
-                <p className="text-[rgba(255,255,255,0.55)] text-sm mt-2">
+                <p className="text-[rgba(255,255,255,0.72)] text-sm mt-2">
                   Ready for tonight's adventure?
                 </p>
               </>
@@ -99,7 +99,7 @@ export const HeroSection = ({
             <button
               onClick={onVoiceInput}
               disabled={loading || isListening}
-              className="w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.85)] font-medium py-5 px-6 rounded-[16px] transition-all duration-200 relative overflow-hidden disabled:opacity-50"
+              className="w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.82)] font-medium py-5 px-6 rounded-[16px] transition-all duration-200 relative overflow-hidden disabled:opacity-50"
             >
               {/* Pulse animation when listening */}
               {isListening && (
@@ -145,7 +145,7 @@ export const HeroSection = ({
             <Button
               variant="ghost"
               onClick={onTogglePickers}
-              className="text-[rgba(255,255,255,0.45)] hover:text-[rgba(255,255,255,0.7)] hover:bg-transparent text-sm"
+              className="text-[rgba(255,255,255,0.62)] hover:text-[rgba(255,255,255,0.8)] hover:bg-transparent text-sm"
             >
               <span>{toggleText}</span>
               <motion.div
@@ -175,7 +175,7 @@ export const HeroSection = ({
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4 text-[rgba(58,122,254,0.85)]" strokeWidth={1.5} />
+                  <Sparkles className="h-4 w-4 text-[rgba(58,122,254,0.95)]" strokeWidth={1.5} />
                   <span>Surprise Me</span>
                 </>
               )}
