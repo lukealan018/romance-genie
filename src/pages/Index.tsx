@@ -69,7 +69,15 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+    <div 
+      className="min-h-screen"
+      style={{
+        background: `
+          radial-gradient(circle at top left, rgba(43,62,102,0.65) 0%, rgba(20,25,35,1) 35%),
+          radial-gradient(circle at bottom right, rgba(30,45,85,0.55) 0%, rgba(10,12,18,1) 40%)
+        `,
+      }}
+    >
       <div className="container max-w-2xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between gap-2 mb-4">
           <WeatherWidget
