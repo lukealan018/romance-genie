@@ -109,24 +109,24 @@ const Index = () => {
           <>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-[rgba(255,255,255,0.75)] flex items-center gap-1.5">
+                <span className="text-sm text-[rgba(255,255,255,0.78)] flex items-center gap-2">
                   {searchMode === 'both' && (
                     <>
-                      <Utensils className="w-4 h-4" strokeWidth={1.5} />
+                      <Utensils className="w-4 h-4 text-[rgba(255,255,255,0.78)]" strokeWidth={2} />
                       <span>+</span>
-                      <Sparkles className="w-4 h-4" strokeWidth={1.5} />
+                      <Sparkles className="w-4 h-4 text-[rgba(255,255,255,0.78)]" strokeWidth={2} />
                       <span>Full Date Night</span>
                     </>
                   )}
                   {searchMode === 'restaurant_only' && (
                     <>
-                      <Utensils className="w-4 h-4" strokeWidth={1.5} />
+                      <Utensils className="w-4 h-4 text-[rgba(255,255,255,0.78)]" strokeWidth={2} />
                       <span>Just Dinner</span>
                     </>
                   )}
                   {searchMode === 'activity_only' && (
                     <>
-                      <Sparkles className="w-4 h-4" strokeWidth={1.5} />
+                      <Sparkles className="w-4 h-4 text-[rgba(255,255,255,0.78)]" strokeWidth={2} />
                       <span>Just Activity</span>
                     </>
                   )}
