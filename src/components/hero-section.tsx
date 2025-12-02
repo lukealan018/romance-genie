@@ -123,26 +123,60 @@ export const HeroSection = ({
             transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
             className="relative"
           >
-            {/* Button glow underneath */}
-            <div 
+            {/* Button glow underneath - enhanced when listening */}
+            <motion.div 
               className="absolute inset-0 pointer-events-none"
+              animate={{
+                opacity: isListening ? 1 : 0.6,
+              }}
               style={{
-                background: 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(58,122,254,0.16) 0%, transparent 70%)',
-                filter: 'blur(28px)',
+                background: isListening 
+                  ? 'radial-gradient(ellipse 90% 70% at 50% 100%, rgba(58,122,254,0.25) 0%, transparent 70%)'
+                  : 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(58,122,254,0.16) 0%, transparent 70%)',
+                filter: isListening ? 'blur(40px)' : 'blur(28px)',
                 transform: 'translateY(8px)',
               }}
             />
+            
+            {/* Breathing border glow when listening */}
+            {isListening && (
+              <motion.div
+                className="absolute -inset-[2px] rounded-[18px] pointer-events-none"
+                animate={{
+                  opacity: [0.4, 0.8, 0.4],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(58,122,254,0.35) 0%, rgba(120,80,255,0.25) 100%)',
+                  filter: 'blur(4px)',
+                }}
+              />
+            )}
+            
             <button
               onClick={onVoiceInput}
-              disabled={loading || isListening}
-              className="relative w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.82)] font-medium py-5 px-6 rounded-[16px] transition-all duration-200 overflow-hidden disabled:opacity-50"
+              disabled={loading}
+              className={`relative w-full font-medium py-5 px-6 rounded-[16px] transition-all duration-300 overflow-hidden ${
+                isListening 
+                  ? 'bg-[rgba(58,122,254,0.12)] border border-[rgba(58,122,254,0.35)] text-[rgba(255,255,255,0.95)]'
+                  : loading
+                    ? 'bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-[rgba(255,255,255,0.82)]'
+                    : 'bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.82)]'
+              }`}
             >
-              {/* Pulse animation when listening */}
+              {/* Inner pulse animation when listening */}
               {isListening && (
                 <motion.div
-                  className="absolute inset-0 bg-[rgba(58,122,254,0.1)]"
-                  animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="absolute inset-0 bg-[rgba(58,122,254,0.08)]"
+                  animate={{ 
+                    scale: [1, 1.3, 1], 
+                    opacity: [0.4, 0, 0.4] 
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 />
               )}
               
@@ -150,17 +184,22 @@ export const HeroSection = ({
                 {isListening ? (
                   <>
                     <motion.div
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 0.8, repeat: Infinity }}
+                      animate={{ scale: [1, 1.15, 1] }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
                     >
-                      <Mic className="h-5 w-5 text-[#3A7AFE]" strokeWidth={1.5} />
+                      <Mic className="h-5 w-5 text-[#3A7AFE]" strokeWidth={2} />
                     </motion.div>
-                    <span>Listening...</span>
+                    <span className="font-medium">Listening...</span>
                   </>
                 ) : loading ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin text-[#3A7AFE]" />
-                    <span>Thinking...</span>
+                    <motion.span
+                      animate={{ opacity: [1, 0.5, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      Processing...
+                    </motion.span>
                   </>
                 ) : (
                   <>
