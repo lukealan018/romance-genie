@@ -1,31 +1,26 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Save, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 
 // Primary options shown directly on page
 const PRIMARY_CUISINES = ["italian", "mexican", "sushi", "steakhouse", "thai", "american"];
-const EXTENDED_CUISINES = ["japanese", "chinese", "indian", "korean", "mediterranean", "french", "vietnamese", "bbq", "seafood", "pizza"];
+const EXTENDED_CUISINES = ["japanese", "chinese", "indian", "korean", "mediterranean", "french", "vietnamese", "bbq", "seafood", "pizza", "greek", "spanish", "caribbean", "ethiopian", "peruvian"];
 
 const PRIMARY_ACTIVITIES = ["movies", "live_music", "comedy", "mini_golf", "escape_room"];
-const EXTENDED_ACTIVITIES = ["bowling", "arcade", "museum", "wine", "hike", "karaoke", "spa", "art_gallery"];
+const EXTENDED_ACTIVITIES = ["bowling", "arcade", "museum", "wine_tasting", "hiking", "karaoke", "spa", "art_gallery", "theater", "concert", "dancing", "trivia", "axe_throwing", "pottery"];
 
 const PRIMARY_DIETARY = ["vegetarian", "vegan", "gluten_free"];
 const RELIGIOUS_DIETARY = ["halal", "kosher"];
 
 const RECOMMENDATION_STYLES = [
   { value: "popular", label: "Popular", description: "Well-known favorites" },
-  { value: "balanced", label: "Balanced", description: "Mix of popular & hidden gems" },
-  { value: "hidden_gems", label: "Hidden Gems", description: "Unique local discoveries" },
+  { value: "balanced", label: "Balanced", description: "Mix of both" },
+  { value: "hidden_gems", label: "Hidden Gems", description: "Unique local spots" },
 ];
 
 const Profile = () => {
@@ -188,58 +183,55 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 pb-8">
-      <div className="max-w-xl mx-auto space-y-6 py-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/")}
-            className="shrink-0"
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
+        <div className="flex items-center gap-3 px-4 py-4">
+          <button 
+            onClick={() => navigate("/")} 
+            className="p-2 -ml-2 hover:bg-muted rounded-full transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-            <p className="text-sm text-muted-foreground">Manage your preferences</p>
-          </div>
+            <ArrowLeft className="h-5 w-5 text-foreground" />
+          </button>
+          <h1 className="text-luxury-heading">Profile</h1>
         </div>
+      </header>
 
+      <main className="px-4 py-6 pb-32 max-w-lg mx-auto space-y-[18px]">
         {/* Card 1: Basic Information */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Basic Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="nickname" className="text-sm font-medium">Name</Label>
-              <Input
-                id="nickname"
-                placeholder="Your name"
+        <div className="card-luxury fade-slide-in">
+          <h2 className="text-luxury-heading mb-1">Basic Information</h2>
+          <p className="text-luxury-subtitle mb-6">Your personal details</p>
+
+          <div className="space-y-5">
+            <div>
+              <Label className="text-sm font-medium text-foreground mb-2 block">Name</Label>
+              <input
+                type="text"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
+                placeholder="Enter your name"
+                className="input-luxury"
                 maxLength={50}
-                className="h-11"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="zip" className="text-sm font-medium">Home ZIP Code</Label>
-              <Input
-                id="zip"
-                placeholder="90210"
+            <div>
+              <Label className="text-sm font-medium text-foreground mb-2 block">Home ZIP Code</Label>
+              <input
+                type="text"
                 value={homeZip}
                 onChange={(e) => setHomeZip(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                placeholder="12345"
+                className="input-luxury"
                 maxLength={5}
-                className="h-11"
               />
             </div>
 
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <Label className="text-sm font-medium">Search Radius</Label>
-                <span className="text-sm font-semibold text-primary">{defaultRadius} miles</span>
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <Label className="text-sm font-medium text-foreground">Search Radius</Label>
+                <span className="text-primary font-semibold">{defaultRadius} miles</span>
               </div>
               <Slider
                 value={[defaultRadius]}
@@ -247,255 +239,182 @@ const Profile = () => {
                 min={3}
                 max={25}
                 step={1}
-                className="py-2"
+                className="w-full"
               />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>3 mi</span>
-                <span>25 mi</span>
-              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Card 2: Your Preferences */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Your Preferences</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Cuisines */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Favorite Cuisines</Label>
-              <div className="flex flex-wrap gap-2 items-center">
-                {PRIMARY_CUISINES.map((cuisine) => (
-                  <Badge
-                    key={cuisine}
-                    variant={selectedCuisines.includes(cuisine) ? "default" : "outline"}
-                    className={cn(
-                      "cursor-pointer transition-all duration-200 hover:scale-105",
-                      selectedCuisines.includes(cuisine) 
-                        ? "bg-primary text-primary-foreground" 
-                        : "hover:bg-accent"
-                    )}
-                    onClick={() => toggleItem(cuisine, selectedCuisines, setSelectedCuisines)}
-                  >
-                    {formatLabel(cuisine)}
-                  </Badge>
-                ))}
-                <Sheet open={cuisineSheetOpen} onOpenChange={setCuisineSheetOpen}>
-                  <SheetTrigger asChild>
-                    <Badge
-                      variant="outline"
-                      className="cursor-pointer ml-auto border-dashed hover:bg-accent"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      More
-                    </Badge>
-                  </SheetTrigger>
-                  <SheetContent side="bottom" className="h-[50vh]">
-                    <SheetHeader>
-                      <SheetTitle>More Cuisines</SheetTitle>
-                      <SheetDescription>Select additional cuisine preferences</SheetDescription>
-                    </SheetHeader>
-                    <div className="flex flex-wrap gap-2 mt-6">
-                      {EXTENDED_CUISINES.map((cuisine) => (
-                        <Badge
-                          key={cuisine}
-                          variant={selectedCuisines.includes(cuisine) ? "default" : "outline"}
-                          className={cn(
-                            "cursor-pointer transition-all duration-200 hover:scale-105",
-                            selectedCuisines.includes(cuisine) 
-                              ? "bg-primary text-primary-foreground" 
-                              : "hover:bg-accent"
-                          )}
-                          onClick={() => toggleItem(cuisine, selectedCuisines, setSelectedCuisines)}
-                        >
-                          {formatLabel(cuisine)}
-                        </Badge>
-                      ))}
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
-            </div>
+        <div className="card-luxury fade-slide-in" style={{ animationDelay: "0.05s" }}>
+          <h2 className="text-luxury-heading mb-1">Your Preferences</h2>
+          <p className="text-luxury-subtitle mb-6">Help us find places you'll love</p>
 
-            {/* Activities */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Favorite Activities</Label>
-              <div className="flex flex-wrap gap-2 items-center">
-                {PRIMARY_ACTIVITIES.map((activity) => (
-                  <Badge
-                    key={activity}
-                    variant={selectedActivities.includes(activity) ? "default" : "outline"}
-                    className={cn(
-                      "cursor-pointer transition-all duration-200 hover:scale-105",
-                      selectedActivities.includes(activity) 
-                        ? "bg-primary text-primary-foreground" 
-                        : "hover:bg-accent"
-                    )}
-                    onClick={() => toggleItem(activity, selectedActivities, setSelectedActivities)}
-                  >
-                    {formatLabel(activity)}
-                  </Badge>
-                ))}
-                <Sheet open={activitySheetOpen} onOpenChange={setActivitySheetOpen}>
-                  <SheetTrigger asChild>
-                    <Badge
-                      variant="outline"
-                      className="cursor-pointer ml-auto border-dashed hover:bg-accent"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      More
-                    </Badge>
-                  </SheetTrigger>
-                  <SheetContent side="bottom" className="h-[50vh]">
-                    <SheetHeader>
-                      <SheetTitle>More Activities</SheetTitle>
-                      <SheetDescription>Select additional activity preferences</SheetDescription>
-                    </SheetHeader>
-                    <div className="flex flex-wrap gap-2 mt-6">
-                      {EXTENDED_ACTIVITIES.map((activity) => (
-                        <Badge
-                          key={activity}
-                          variant={selectedActivities.includes(activity) ? "default" : "outline"}
-                          className={cn(
-                            "cursor-pointer transition-all duration-200 hover:scale-105",
-                            selectedActivities.includes(activity) 
-                              ? "bg-primary text-primary-foreground" 
-                              : "hover:bg-accent"
-                          )}
-                          onClick={() => toggleItem(activity, selectedActivities, setSelectedActivities)}
-                        >
-                          {formatLabel(activity)}
-                        </Badge>
-                      ))}
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Card 3: Recommendation Style */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Recommendation Style</CardTitle>
-            <CardDescription>Choose how adventurous you want your suggestions to be</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-2">
-              {RECOMMENDATION_STYLES.map((style) => (
+          {/* Cuisines */}
+          <div className="mb-6">
+            <Label className="text-sm font-medium text-foreground mb-3 block">Favorite Cuisines</Label>
+            <div className="flex flex-wrap gap-2">
+              {PRIMARY_CUISINES.map((cuisine) => (
                 <button
-                  key={style.value}
-                  onClick={() => setNoveltyPreference(style.value)}
-                  className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-lg border transition-all duration-200",
-                    noveltyPreference === style.value
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border hover:border-primary/50 hover:bg-accent"
-                  )}
+                  key={cuisine}
+                  onClick={() => toggleItem(cuisine, selectedCuisines, setSelectedCuisines)}
+                  className={`chip-luxury ${selectedCuisines.includes(cuisine) ? "selected" : ""}`}
                 >
-                  <span className="font-medium text-sm">{style.label}</span>
+                  {formatLabel(cuisine)}
                 </button>
               ))}
+              <button
+                onClick={() => setCuisineSheetOpen(true)}
+                className="chip-luxury ml-auto flex items-center gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                More
+              </button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Activities */}
+          <div>
+            <Label className="text-sm font-medium text-foreground mb-3 block">Favorite Activities</Label>
+            <div className="flex flex-wrap gap-2">
+              {PRIMARY_ACTIVITIES.map((activity) => (
+                <button
+                  key={activity}
+                  onClick={() => toggleItem(activity, selectedActivities, setSelectedActivities)}
+                  className={`chip-luxury ${selectedActivities.includes(activity) ? "selected" : ""}`}
+                >
+                  {formatLabel(activity)}
+                </button>
+              ))}
+              <button
+                onClick={() => setActivitySheetOpen(true)}
+                className="chip-luxury ml-auto flex items-center gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                More
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Recommendation Style */}
+        <div className="card-luxury fade-slide-in" style={{ animationDelay: "0.1s" }}>
+          <h2 className="text-luxury-heading mb-1">Recommendation Style</h2>
+          <p className="text-luxury-subtitle mb-6">Choose how adventurous you want your suggestions to be</p>
+
+          <div className="flex gap-2">
+            {RECOMMENDATION_STYLES.map((style) => (
+              <button
+                key={style.value}
+                onClick={() => setNoveltyPreference(style.value)}
+                className={`chip-luxury flex-1 flex flex-col items-center py-3 ${
+                  noveltyPreference === style.value ? "selected" : ""
+                }`}
+              >
+                <span className="font-medium">{style.label}</span>
+                <span className="text-xs opacity-60 mt-0.5">{style.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Card 4: Dietary Needs */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Dietary Needs</CardTitle>
-            <CardDescription>Optional dietary restrictions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2 items-center">
-              {PRIMARY_DIETARY.map((diet) => (
-                <Badge
-                  key={diet}
-                  variant={selectedDietary.includes(diet) ? "default" : "outline"}
-                  className={cn(
-                    "cursor-pointer transition-all duration-200 hover:scale-105",
-                    selectedDietary.includes(diet) 
-                      ? "bg-primary text-primary-foreground" 
-                      : "hover:bg-accent"
-                  )}
-                  onClick={() => toggleItem(diet, selectedDietary, setSelectedDietary)}
-                >
-                  {formatLabel(diet)}
-                </Badge>
-              ))}
-              <Sheet open={religiousSheetOpen} onOpenChange={setReligiousSheetOpen}>
-                <SheetTrigger asChild>
-                  <Badge
-                    variant={RELIGIOUS_DIETARY.some(d => selectedDietary.includes(d)) ? "default" : "outline"}
-                    className={cn(
-                      "cursor-pointer transition-all duration-200 hover:scale-105",
-                      RELIGIOUS_DIETARY.some(d => selectedDietary.includes(d))
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-accent"
-                    )}
-                  >
-                    Religious
-                  </Badge>
-                </SheetTrigger>
-                <SheetContent side="bottom" className="h-[40vh]">
-                  <SheetHeader>
-                    <SheetTitle>Religious Restrictions</SheetTitle>
-                    <SheetDescription>Select any religious dietary requirements</SheetDescription>
-                  </SheetHeader>
-                  <div className="flex flex-wrap gap-3 mt-6">
-                    {RELIGIOUS_DIETARY.map((diet) => (
-                      <Badge
-                        key={diet}
-                        variant={selectedDietary.includes(diet) ? "default" : "outline"}
-                        className={cn(
-                          "cursor-pointer transition-all duration-200 hover:scale-105 text-base py-2 px-4",
-                          selectedDietary.includes(diet) 
-                            ? "bg-primary text-primary-foreground" 
-                            : "hover:bg-accent"
-                        )}
-                        onClick={() => toggleItem(diet, selectedDietary, setSelectedDietary)}
-                      >
-                        {formatLabel(diet)}
-                      </Badge>
-                    ))}
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="card-luxury fade-slide-in" style={{ animationDelay: "0.15s" }}>
+          <h2 className="text-luxury-heading mb-1">Dietary Needs</h2>
+          <p className="text-luxury-subtitle mb-6">We'll prioritize restaurants that accommodate you</p>
 
-        {/* Bottom Buttons */}
-        <div className="flex gap-3 pt-2">
-          <Button
-            variant="outline"
-            onClick={() => navigate("/")}
-            className="flex-1 h-12"
-          >
+          <div className="flex flex-wrap gap-2">
+            {PRIMARY_DIETARY.map((item) => (
+              <button
+                key={item}
+                onClick={() => toggleItem(item, selectedDietary, setSelectedDietary)}
+                className={`chip-luxury ${selectedDietary.includes(item) ? "selected" : ""}`}
+              >
+                {formatLabel(item)}
+              </button>
+            ))}
+            <button
+              onClick={() => setReligiousSheetOpen(true)}
+              className="chip-luxury ml-auto"
+            >
+              Religious Restrictions
+            </button>
+          </div>
+        </div>
+      </main>
+
+      {/* Bottom Actions */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur-sm border-t border-border">
+        <div className="max-w-lg mx-auto flex gap-3">
+          <button onClick={() => navigate(-1)} className="btn-luxury-secondary flex-1">
             Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-1 h-12"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
-              </>
-            )}
-          </Button>
+          </button>
+          <button onClick={handleSave} disabled={saving} className="btn-luxury-primary flex-1">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Save Changes
+          </button>
         </div>
       </div>
+
+      {/* Cuisine Sheet */}
+      <Sheet open={cuisineSheetOpen} onOpenChange={setCuisineSheetOpen}>
+        <SheetContent side="bottom" className="bg-card border-border rounded-t-[18px]">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-luxury-heading">More Cuisines</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-wrap gap-2 pb-8">
+            {EXTENDED_CUISINES.map((cuisine) => (
+              <button
+                key={cuisine}
+                onClick={() => toggleItem(cuisine, selectedCuisines, setSelectedCuisines)}
+                className={`chip-luxury ${selectedCuisines.includes(cuisine) ? "selected" : ""}`}
+              >
+                {formatLabel(cuisine)}
+              </button>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Activity Sheet */}
+      <Sheet open={activitySheetOpen} onOpenChange={setActivitySheetOpen}>
+        <SheetContent side="bottom" className="bg-card border-border rounded-t-[18px]">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-luxury-heading">More Activities</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-wrap gap-2 pb-8">
+            {EXTENDED_ACTIVITIES.map((activity) => (
+              <button
+                key={activity}
+                onClick={() => toggleItem(activity, selectedActivities, setSelectedActivities)}
+                className={`chip-luxury ${selectedActivities.includes(activity) ? "selected" : ""}`}
+              >
+                {formatLabel(activity)}
+              </button>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Religious Dietary Sheet */}
+      <Sheet open={religiousSheetOpen} onOpenChange={setReligiousSheetOpen}>
+        <SheetContent side="bottom" className="bg-card border-border rounded-t-[18px]">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-luxury-heading">Religious Restrictions</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-wrap gap-2 pb-8">
+            {RELIGIOUS_DIETARY.map((item) => (
+              <button
+                key={item}
+                onClick={() => toggleItem(item, selectedDietary, setSelectedDietary)}
+                className={`chip-luxury ${selectedDietary.includes(item) ? "selected" : ""}`}
+              >
+                {formatLabel(item)}
+              </button>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
