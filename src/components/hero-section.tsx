@@ -89,7 +89,7 @@ export const HeroSection = ({
                   transition={{ delay: 0.2 }}
                 >
                   <p className="text-[rgba(255,255,255,0.72)] text-base">Welcome back,</p>
-                  <h1 className="text-[26px] font-bold text-[rgba(58,122,254,0.9)]">
+                  <h1 className="text-[38px] font-bold text-[rgba(58,122,254,0.9)]">
                     {userName}
                   </h1>
                 </motion.div>
@@ -261,7 +261,7 @@ export const HeroSection = ({
               ) : (
                 <>
                   <Sparkles className="h-4 w-4 text-[#3A7AFE]" strokeWidth={1.5} />
-                  <span>Surprise Me</span>
+                  <span>Surprise Me!</span>
                 </>
               )}
             </button>
