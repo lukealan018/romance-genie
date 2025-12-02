@@ -104,7 +104,7 @@ export const HeroSection = ({
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-              <h1 className="text-[31px] font-bold text-[rgba(58,122,254,0.9)]">
+              <h1 className="text-[38px] font-bold text-[rgba(58,122,254,0.9)]">
                     Your Perfect Night
                   </h1>
                   <p className="text-[rgba(255,255,255,0.55)] text-base mt-1">Awaits</p>
