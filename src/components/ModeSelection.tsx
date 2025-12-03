@@ -15,24 +15,18 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
       icon: Heart,
       title: "Full Date Night",
       subtitle: "Dinner + Activity",
-      gradient: "from-purple-600 to-pink-600",
-      hoverGradient: "from-purple-700 to-pink-700",
     },
     {
       id: "restaurant_only" as SearchMode,
       icon: Utensils,
       title: "Just Dinner",
       subtitle: "Find the perfect spot",
-      gradient: "from-blue-600 to-cyan-600",
-      hoverGradient: "from-blue-700 to-cyan-700",
     },
     {
       id: "activity_only" as SearchMode,
       icon: PartyPopper,
       title: "Just Activity",
       subtitle: "Something fun to do",
-      gradient: "from-orange-600 to-red-600",
-      hoverGradient: "from-orange-700 to-red-700",
     },
   ];
 
@@ -40,15 +34,18 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
     <div className="space-y-6 pb-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-white mb-2">
+        <h2 
+          className="text-2xl font-bold mb-2"
+          style={{ color: 'var(--header-title-color)' }}
+        >
           What's the vibe tonight?
         </h2>
-        <p className="text-slate-400 text-sm">
+        <p className="text-[rgba(255,255,255,0.55)] text-sm">
           Choose what you're looking for
         </p>
       </div>
 
-      {/* Mode Cards */}
+      {/* Mode Cards - Theme aware */}
       <div className="grid grid-cols-1 gap-4 px-4">
         {modes.map((mode, index) => {
           const Icon = mode.icon;
@@ -61,42 +58,66 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
               onClick={() => onModeSelect(mode.id)}
-              className={`
-                relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300
-                ${isSelected 
-                  ? `bg-gradient-to-r ${mode.gradient} shadow-2xl scale-105` 
-                  : 'bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700'
-                }
-              `}
+              className="relative overflow-hidden rounded-[18px] p-6 text-left transition-all duration-300"
+              style={{
+                background: isSelected 
+                  ? 'var(--btn-primary-bg)' 
+                  : 'var(--card-surface-gradient)',
+                border: isSelected 
+                  ? `1.5px solid var(--btn-primary-border)` 
+                  : '1px solid rgba(255,255,255,0.08)',
+                boxShadow: isSelected 
+                  ? 'var(--btn-primary-glow)' 
+                  : 'none',
+                transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+              }}
             >
-              {/* Background gradient effect when selected */}
+              {/* Background glow effect when selected */}
               {isSelected && (
                 <motion.div
-                  className={`absolute inset-0 bg-gradient-to-r ${mode.hoverGradient} opacity-0`}
-                  animate={{ opacity: [0, 0.3, 0] }}
+                  className="absolute inset-0 pointer-events-none"
+                  animate={{ opacity: [0.2, 0.4, 0.2] }}
                   transition={{ duration: 2, repeat: Infinity }}
+                  style={{
+                    background: `radial-gradient(circle at center, var(--glow-primary) 0%, transparent 70%)`,
+                  }}
                 />
               )}
 
               {/* Content */}
               <div className="relative z-10 flex items-center gap-4">
                 {/* Icon */}
-                <div className={`
-                  w-14 h-14 rounded-full flex items-center justify-center
-                  ${isSelected 
-                    ? 'bg-white/20' 
-                    : `bg-gradient-to-r ${mode.gradient}`
-                  }
-                `}>
-                  <Icon className={`h-7 w-7 ${isSelected ? 'text-white' : 'text-white'}`} />
+                <div 
+                  className="w-14 h-14 rounded-full flex items-center justify-center"
+                  style={{
+                    background: isSelected 
+                      ? 'rgba(255,255,255,0.15)' 
+                      : `rgba(var(--theme-accent-rgb), 0.2)`,
+                    border: isSelected 
+                      ? '1px solid rgba(255,255,255,0.2)' 
+                      : `1px solid rgba(var(--theme-accent-rgb), 0.3)`,
+                  }}
+                >
+                  <Icon 
+                    className="h-7 w-7" 
+                    style={{ 
+                      color: isSelected ? 'rgba(255,255,255,0.95)' : 'var(--theme-accent-light)' 
+                    }} 
+                  />
                 </div>
 
                 {/* Text */}
                 <div className="flex-1">
-                  <h3 className={`text-xl font-bold ${isSelected ? 'text-white' : 'text-white'}`}>
+                  <h3 
+                    className="text-xl font-bold"
+                    style={{ color: isSelected ? 'rgba(255,255,255,0.95)' : 'var(--header-title-color)' }}
+                  >
                     {mode.title}
                   </h3>
-                  <p className={`text-sm ${isSelected ? 'text-white/80' : 'text-slate-400'}`}>
+                  <p 
+                    className="text-sm"
+                    style={{ color: isSelected ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.55)' }}
+                  >
                     {mode.subtitle}
                   </p>
                 </div>
@@ -109,7 +130,8 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
                     className="w-6 h-6 rounded-full bg-white flex items-center justify-center"
                   >
                     <svg
-                      className="w-4 h-4 text-purple-600"
+                      className="w-4 h-4"
+                      style={{ color: 'var(--theme-accent)' }}
                       fill="none"
                       strokeLinecap="round"
                       strokeLinejoin="round"

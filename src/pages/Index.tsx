@@ -92,15 +92,33 @@ const Index = () => {
             onSwitchToHome={weather.switchToHome}
           />
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/history')} title="Saved Plans">
-              <Heart className="w-5 h-5" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/history')} 
+              title="Saved Plans"
+              className="header-icon hover:bg-transparent"
+            >
+              <Heart className="w-5 h-5" style={{ color: 'var(--header-icon-color)', filter: 'drop-shadow(var(--header-icon-glow))' }} />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/calendar')} title="Calendar">
-              <CalendarIcon className="w-5 h-5" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/calendar')} 
+              title="Calendar"
+              className="header-icon hover:bg-transparent"
+            >
+              <CalendarIcon className="w-5 h-5" style={{ color: 'var(--header-icon-color)', filter: 'drop-shadow(var(--header-icon-glow))' }} />
             </Button>
             <NotificationBell />
-            <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} title="Profile">
-              <User className="w-5 h-5" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/profile')} 
+              title="Profile"
+              className="header-icon hover:bg-transparent"
+            >
+              <User className="w-5 h-5" style={{ color: 'var(--header-icon-color)', filter: 'drop-shadow(var(--header-icon-glow))' }} />
             </Button>
           </div>
         </div>
