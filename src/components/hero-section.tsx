@@ -219,7 +219,7 @@ export const HeroSection = ({
                   </>
                 ) : (
                   <>
-                    <Mic className="h-5 w-5" style={{ color: 'var(--theme-accent-light)' }} strokeWidth={1.5} />
+                    <Mic className="h-6 w-6" style={{ color: '#FFFFFF', filter: 'drop-shadow(0 0 6px rgba(96, 165, 250, 0.8))' }} strokeWidth={2.5} />
                     <span>{voiceButtonText}</span>
                   </>
                 )}
@@ -277,12 +277,12 @@ export const HeroSection = ({
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" style={{ color: 'var(--theme-accent)' }} />
+                  <Loader2 className="h-4 w-4 animate-spin" style={{ color: '#60A5FA' }} />
                   <span>Finding magic...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4" style={{ color: 'var(--theme-accent-light)' }} strokeWidth={1.5} />
+                  <Sparkles className="h-5 w-5" style={{ color: '#FFFFFF', filter: 'drop-shadow(0 0 5px rgba(96, 165, 250, 0.9))' }} strokeWidth={2} />
                   <span>Surprise Me!</span>
                 </>
               )}
