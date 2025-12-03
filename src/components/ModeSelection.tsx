@@ -98,35 +98,47 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
 
               {/* Content */}
               <div className="relative z-10 flex items-center gap-4">
-                {/* Icon Circle - Glassmorphic */}
+                {/* Icon Circle - Glassmorphic with vibrant sapphire */}
                 <div 
                   className="w-14 h-14 rounded-full flex items-center justify-center relative overflow-hidden"
                   style={{
                     background: isSelected 
                       ? 'rgba(255,255,255,0.18)' 
-                      : 'rgba(var(--theme-accent-rgb), 0.25)',
+                      : 'linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(37, 99, 235, 0.2) 100%)',
                     border: isSelected 
                       ? '1.5px solid rgba(255,255,255,0.25)' 
-                      : '1.5px solid rgba(var(--theme-accent-rgb), 0.4)',
+                      : '1.5px solid rgba(96, 165, 250, 0.5)',
                     boxShadow: isSelected 
                       ? '0 0 20px var(--glow-primary)'
-                      : '0 0 15px rgba(var(--theme-accent-rgb), 0.2)',
+                      : '0 0 24px rgba(59, 130, 246, 0.45), inset 0 1px 0 rgba(255,255,255,0.12)',
                     backdropFilter: 'blur(8px)',
                   }}
                 >
+                  {/* Inner radial glow for depth */}
+                  {!isSelected && (
+                    <div 
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background: 'radial-gradient(circle at 30% 30%, rgba(96, 165, 250, 0.35) 0%, transparent 60%)',
+                        borderRadius: '50%',
+                      }}
+                    />
+                  )}
                   {/* Icon shine */}
                   <div 
                     className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none"
                     style={{
-                      background: 'linear-gradient(180deg, rgba(255,255,255,0.11) 0%, transparent 100%)',
+                      background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%)',
                       borderRadius: '50%',
                     }}
                   />
                   <Icon 
                     className="h-7 w-7 relative z-10" 
                     style={{ 
-                      color: isSelected ? 'rgba(255,255,255,0.95)' : 'var(--theme-accent-light)',
-                      filter: `drop-shadow(0 0 6px ${isSelected ? 'rgba(255,255,255,0.5)' : 'var(--glow-primary)'})`,
+                      color: isSelected ? 'rgba(255,255,255,0.95)' : '#7DD3FC',
+                      filter: isSelected 
+                        ? 'drop-shadow(0 0 8px rgba(255,255,255,0.6))' 
+                        : 'drop-shadow(0 0 8px #3B82F6) drop-shadow(0 0 16px rgba(59, 130, 246, 0.7))',
                     }} 
                   />
                 </div>
