@@ -28,18 +28,18 @@ export const AnimatedPickerButton = ({
       <Button
         onClick={onClick}
         variant="outline"
-        className={`
-          relative overflow-hidden transition-all duration-300
-          ${isSelected 
-            ? 'bg-[#3A7AFE]/10 border-[#3A7AFE] !text-[#3A7AFE] hover:bg-[#3A7AFE]/15 hover:!text-[#3A7AFE]' 
-            : 'bg-slate-800/50 hover:bg-slate-700/50 border-[#3A7AFE]/30 hover:border-[#3A7AFE]/60 text-slate-300 hover:text-white'
-          }
-        `}
+        className="relative overflow-hidden transition-all duration-300 border-[1.5px]"
+        style={{
+          background: isSelected ? 'var(--chip-selected-bg)' : 'var(--chip-bg)',
+          borderColor: isSelected ? 'var(--chip-selected-border)' : 'var(--chip-border)',
+          color: isSelected ? 'var(--chip-selected-text)' : 'var(--chip-text)',
+        }}
       >
         {/* Subtle glow effect on selection */}
         {isSelected && (
           <motion.div
-            className="absolute inset-0 bg-[#3A7AFE]/5"
+            className="absolute inset-0"
+            style={{ background: 'rgba(var(--theme-accent-rgb), 0.05)' }}
             animate={{
               opacity: [0.3, 0.6, 0.3],
             }}
@@ -53,15 +53,21 @@ export const AnimatedPickerButton = ({
         
         {/* Hover gradient overlay - ghost trail */}
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-[#3A7AFE]/0 via-[#3A7AFE]/15 to-[#3A7AFE]/0"
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(to right, transparent 0%, rgba(var(--theme-accent-rgb), 0.15) 50%, transparent 100%)',
+          }}
           initial={{ x: '-100%' }}
           whileHover={{ x: '100%' }}
           transition={{ duration: 0.9 }}
         />
         
         {/* Content */}
-        <div className={`relative z-10 flex items-center gap-2 ${isSelected ? 'text-[#3A7AFE]' : ''}`}>
-          {Icon && <Icon className={`h-4 w-4 ${isSelected ? 'text-[#3A7AFE]' : ''}`} />}
+        <div 
+          className="relative z-10 flex items-center gap-2"
+          style={{ color: isSelected ? 'var(--chip-selected-text)' : 'var(--chip-text)' }}
+        >
+          {Icon && <Icon className="h-4 w-4" style={{ color: isSelected ? 'var(--chip-selected-text)' : 'var(--chip-text)' }} />}
           <span>{label}</span>
         </div>
       </Button>

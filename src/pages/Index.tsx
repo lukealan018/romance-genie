@@ -14,6 +14,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { FloatingPlanAheadButton } from "@/components/FloatingPlanAheadButton";
 import { PlanAheadDialog } from "@/components/PlanAheadDialog";
 import { DateChoiceDialog } from "@/components/DateChoiceDialog";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { toast } from "@/hooks/use-toast";
 import { usePlanStore } from "@/store/planStore";
 import { useWeather } from "@/hooks/useWeather";
@@ -140,17 +141,7 @@ const Index = () => {
                   )}
                 </span>
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => {
-                  usePlanStore.getState().setSearchMode(null);
-                  setShowPickers(false);
-                  resetPlan();
-                }}
-              >
-                Change Mode
-              </Button>
+              <ThemeSwitcher variant="pill" />
             </div>
 
             <HeroSection

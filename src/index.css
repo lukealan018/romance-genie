@@ -2,43 +2,100 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Luxury Design System - Rich, elegant, high-end aesthetic
-   Inspired by: Ritz Carlton, AMEX Platinum, Chase Sapphire
-   All colors in HSL format
-*/
+/* ============================================
+   LUXURY THEME SYSTEM
+   Three distinct themes: Sapphire Night, Rose Twilight, Midnight Matte
+   ============================================ */
 
 @layer base {
-  :root {
-    /* Luxury dark theme as default */
-    --background: 210 27% 5%;
+  /* ============================================
+     THEME #1: SAPPHIRE NIGHT (DEFAULT)
+     Rich sapphire blue luxury aesthetic
+     ============================================ */
+  :root,
+  .sapphire-night {
+    /* Core backgrounds */
+    --background: 220 33% 4%; /* #05070D */
     --foreground: 0 0% 100%;
-
-    --card: 213 27% 9%;
+    
+    /* Card surfaces */
+    --card: 217 31% 13%; /* #151E30 → #0A0E16 gradient base */
     --card-foreground: 0 0% 100%;
-
-    --popover: 213 27% 9%;
+    
+    /* Popover */
+    --popover: 217 31% 10%;
     --popover-foreground: 0 0% 100%;
-
-    --primary: 220 99% 61%;
+    
+    /* Primary accent - Sapphire Blue */
+    --primary: 220 99% 61%; /* #3A7AFE */
     --primary-foreground: 0 0% 100%;
-
-    --secondary: 213 27% 15%;
+    
+    /* Secondary */
+    --secondary: 217 31% 15%;
     --secondary-foreground: 0 0% 100%;
-
-    --muted: 213 27% 12%;
+    
+    /* Muted */
+    --muted: 217 31% 12%;
     --muted-foreground: 0 0% 100% / 0.55;
-
+    
+    /* Accent */
     --accent: 220 99% 61%;
     --accent-foreground: 0 0% 100%;
-
+    
+    /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-
+    
+    /* Borders & inputs */
     --border: 0 0% 100% / 0.06;
     --input: 0 0% 100% / 0.06;
     --ring: 220 99% 61%;
-
-    /* Luxury design tokens */
+    
+    /* Theme-specific tokens */
+    --theme-accent: #3A7AFE;
+    --theme-accent-rgb: 58, 122, 254;
+    --theme-accent-light: #78AFFF;
+    --theme-accent-lighter: #5096FF;
+    
+    /* Hero gradient */
+    --hero-gradient: linear-gradient(160deg, #141C29 0%, #10182A 40%, #05070D 100%);
+    
+    /* Card surface gradient */
+    --card-surface-gradient: linear-gradient(145deg, #151E30 0%, #101724 45%, #0A0E16 100%);
+    
+    /* Header gradient */
+    --header-gradient: linear-gradient(180deg, rgba(15,22,35,1) 0%, rgba(15,22,35,0.9) 40%, rgba(15,22,35,0) 100%);
+    
+    /* Primary button */
+    --btn-primary-bg: linear-gradient(145deg, rgba(58,122,254,0.95) 0%, rgba(80,150,255,0.88) 50%, rgba(58,122,254,0.82) 100%);
+    --btn-primary-border: rgba(120,175,255,0.95);
+    --btn-primary-text: rgba(255,255,255,0.95);
+    --btn-primary-glow: 0 0 32px rgba(58,122,254,0.35);
+    
+    /* Secondary button */
+    --btn-secondary-bg: linear-gradient(145deg, rgba(58,122,254,0.45) 0%, rgba(80,150,255,0.38) 50%, rgba(58,122,254,0.32) 100%);
+    --btn-secondary-border: rgba(120,175,255,0.8);
+    --btn-secondary-text: rgba(255,255,255,0.90);
+    --btn-secondary-glow: 0 0 22px rgba(58,122,254,0.25);
+    
+    /* Chips */
+    --chip-bg: rgba(255,255,255,0.04);
+    --chip-border: rgba(255,255,255,0.14);
+    --chip-text: rgba(255,255,255,0.78);
+    --chip-selected-bg: rgba(58,122,254,0.32);
+    --chip-selected-border: rgba(58,122,254,0.85);
+    --chip-selected-text: #E5EDFF;
+    
+    /* Header icons */
+    --header-icon-color: rgba(255,255,255,0.9);
+    --header-icon-glow: 0 0 8px rgba(58,122,254,0.25);
+    --header-title-color: rgba(231,238,255,0.85);
+    
+    /* Glow effects */
+    --glow-primary: rgba(58,122,254,0.25);
+    --glow-secondary: rgba(120,80,255,0.15);
+    
+    /* Design tokens */
     --radius: 18px;
     --radius-sm: 12px;
     --radius-md: 14px;
@@ -54,33 +111,177 @@
     --text-md: 16px;
     --text-lg: 19px;
     --text-xl: 24px;
-
-    /* Luxury chip colors */
-    --chip-bg: 0 0% 100% / 0.08;
-    --chip-border: 0 0% 100% / 0.15;
-    --chip-text: 0 0% 100% / 0.85;
-    --chip-selected-bg: 220 99% 61% / 0.18;
-    --chip-selected-border: 220 99% 61%;
-    --chip-selected-text: 220 99% 61%;
-
-    /* Luxury button colors */
-    --button-secondary-bg: 0 0% 100% / 0.06;
-    --button-secondary-text: 0 0% 100% / 0.45;
     
     /* Section divider */
     --divider: 0 0% 100% / 0.04;
-
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(220 99% 61%) 0%, hsl(220 99% 55%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(213 27% 9%) 0%, hsl(213 27% 7%) 100%);
     
-    /* Shadows - minimal for luxury feel */
+    /* Shadows */
     --shadow-subtle: 0 4px 20px -4px hsl(0 0% 0% / 0.3);
     
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Light theme option (preserved for flexibility) */
+  /* ============================================
+     THEME #2: ROSE TWILIGHT (Pink Mode)
+     Feminine pink/purple luxury aesthetic
+     ============================================ */
+  .rose-twilight {
+    /* Core backgrounds - same structure */
+    --background: 320 33% 4%;
+    --foreground: 0 0% 100%;
+    
+    --card: 320 31% 13%;
+    --card-foreground: 0 0% 100%;
+    
+    --popover: 320 31% 10%;
+    --popover-foreground: 0 0% 100%;
+    
+    /* Primary accent - Rose Pink */
+    --primary: 338 100% 65%; /* #FF4F9A */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 320 31% 15%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 320 31% 12%;
+    --muted-foreground: 0 0% 100% / 0.55;
+    
+    --accent: 338 100% 65%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 0 0% 100% / 0.06;
+    --input: 0 0% 100% / 0.06;
+    --ring: 338 100% 65%;
+    
+    /* Theme-specific tokens */
+    --theme-accent: #FF4F9A;
+    --theme-accent-rgb: 255, 79, 154;
+    --theme-accent-light: #FF7AD9;
+    --theme-accent-lighter: #F94DCD;
+    
+    /* Hero gradient - pink tones */
+    --hero-gradient: linear-gradient(160deg, #291424 0%, #2A1028 40%, #0D0507 100%);
+    
+    /* Card surface gradient */
+    --card-surface-gradient: linear-gradient(145deg, #301520 0%, #241018 45%, #160A0E 100%);
+    
+    /* Header gradient */
+    --header-gradient: linear-gradient(180deg, rgba(35,15,25,1) 0%, rgba(35,15,25,0.9) 40%, rgba(35,15,25,0) 100%);
+    
+    /* Primary button */
+    --btn-primary-bg: linear-gradient(145deg, rgba(255,79,154,0.95) 0%, rgba(255,122,217,0.88) 50%, rgba(249,77,205,0.82) 100%);
+    --btn-primary-border: rgba(255,175,220,0.95);
+    --btn-primary-text: rgba(255,255,255,0.95);
+    --btn-primary-glow: 0 0 32px rgba(255,79,154,0.35);
+    
+    /* Secondary button */
+    --btn-secondary-bg: linear-gradient(145deg, rgba(255,79,154,0.45) 0%, rgba(255,122,217,0.38) 50%, rgba(249,77,205,0.32) 100%);
+    --btn-secondary-border: rgba(255,175,220,0.8);
+    --btn-secondary-text: rgba(255,255,255,0.90);
+    --btn-secondary-glow: 0 0 22px rgba(255,79,154,0.25);
+    
+    /* Chips */
+    --chip-bg: rgba(255,255,255,0.04);
+    --chip-border: rgba(255,255,255,0.14);
+    --chip-text: rgba(255,255,255,0.78);
+    --chip-selected-bg: rgba(255,79,154,0.32);
+    --chip-selected-border: rgba(255,79,154,0.85);
+    --chip-selected-text: #FFE5F0;
+    
+    /* Header icons */
+    --header-icon-color: rgba(255,255,255,0.9);
+    --header-icon-glow: 0 0 8px rgba(255,79,154,0.25);
+    --header-title-color: rgba(255,238,245,0.85);
+    
+    /* Glow effects */
+    --glow-primary: rgba(255,79,154,0.25);
+    --glow-secondary: rgba(200,80,255,0.15);
+  }
+
+  /* ============================================
+     THEME #3: MIDNIGHT MATTE (Ultra-minimal)
+     Tesla-style calm, low-contrast experience
+     ============================================ */
+  .midnight-matte {
+    /* Core backgrounds */
+    --background: 220 33% 4%; /* #05070D */
+    --foreground: 0 0% 100%;
+    
+    --card: 220 25% 6%; /* #0B1018 */
+    --card-foreground: 0 0% 100%;
+    
+    --popover: 220 25% 8%;
+    --popover-foreground: 0 0% 100%;
+    
+    /* Primary accent - Muted Blue */
+    --primary: 220 50% 30%; /* #223B73 */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 220 30% 15%; /* #18243D */
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 220 25% 12%;
+    --muted-foreground: 0 0% 100% / 0.45;
+    
+    --accent: 220 50% 35%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 60% 50%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 0 0% 100% / 0.08;
+    --input: 0 0% 100% / 0.06;
+    --ring: 220 50% 40%;
+    
+    /* Theme-specific tokens */
+    --theme-accent: #223B73;
+    --theme-accent-rgb: 34, 59, 115;
+    --theme-accent-light: #3A5A9E;
+    --theme-accent-lighter: #4B6DB5;
+    
+    /* Hero gradient - flat */
+    --hero-gradient: #05070D;
+    
+    /* Card surface - flat */
+    --card-surface-gradient: #0B1018;
+    
+    /* Header gradient - subtle */
+    --header-gradient: linear-gradient(180deg, rgba(11,16,24,1) 0%, rgba(11,16,24,0.8) 50%, rgba(11,16,24,0) 100%);
+    
+    /* Primary button - flat */
+    --btn-primary-bg: #223B73;
+    --btn-primary-border: rgba(58,90,158,0.6);
+    --btn-primary-text: rgba(255,255,255,0.90);
+    --btn-primary-glow: none;
+    
+    /* Secondary button - flat */
+    --btn-secondary-bg: #18243D;
+    --btn-secondary-border: rgba(58,90,158,0.4);
+    --btn-secondary-text: rgba(255,255,255,0.75);
+    --btn-secondary-glow: none;
+    
+    /* Chips - minimal */
+    --chip-bg: rgba(255,255,255,0.04);
+    --chip-border: rgba(255,255,255,0.10);
+    --chip-text: rgba(255,255,255,0.65);
+    --chip-selected-bg: rgba(34,59,115,0.4);
+    --chip-selected-border: rgba(58,90,158,0.6);
+    --chip-selected-text: rgba(255,255,255,0.85);
+    
+    /* Header icons - no glow */
+    --header-icon-color: rgba(255,255,255,0.7);
+    --header-icon-glow: none;
+    --header-title-color: rgba(255,255,255,0.75);
+    
+    /* Glow effects - disabled */
+    --glow-primary: transparent;
+    --glow-secondary: transparent;
+  }
+
+  /* Light theme (preserved for flexibility) */
   .light {
     --background: 210 20% 97%;
     --foreground: 222 47% 11%;
@@ -114,9 +315,6 @@
     --chip-border: 215 20% 85%;
     --chip-selected-bg: 220 99% 61% / 0.15;
     --chip-selected-border: 220 99% 61%;
-
-    --button-secondary-bg: 215 20% 95%;
-    --button-secondary-text: 222 47% 11%;
   }
 }
 
@@ -174,31 +372,31 @@
     margin: 18px 0;
   }
 
-  /* Luxury chip styling */
+  /* Theme-aware chip styling */
   .chip-luxury {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 8px 16px;
-    background: hsl(var(--chip-bg));
-    border: 1px solid hsl(var(--chip-border));
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
     border-radius: var(--radius-sm);
     font-size: 14px;
     font-weight: 500;
-    color: hsl(var(--chip-text));
+    color: var(--chip-text);
     cursor: pointer;
     transition: var(--transition-smooth);
     user-select: none;
   }
 
   .chip-luxury:hover {
-    border-color: hsl(var(--chip-selected-border) / 0.5);
+    border-color: var(--chip-selected-border);
   }
 
   .chip-luxury.selected {
-    background: hsl(var(--chip-selected-bg));
-    border-color: hsl(var(--chip-selected-border));
-    color: hsl(var(--chip-selected-text));
+    background: var(--chip-selected-bg);
+    border-color: var(--chip-selected-border);
+    color: var(--chip-selected-text);
   }
 
   /* Recommendation style buttons */
@@ -209,20 +407,20 @@
     justify-content: center;
     flex: 1;
     padding: 12px 8px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: var(--transition-smooth);
   }
 
   .rec-style-btn:hover {
-    border-color: hsl(var(--chip-selected-border) / 0.5);
+    border-color: var(--chip-selected-border);
   }
 
   .rec-style-btn.selected {
-    background: hsl(var(--chip-selected-bg));
-    border-color: hsl(var(--chip-selected-border));
+    background: var(--chip-selected-bg);
+    border-color: var(--chip-selected-border);
   }
 
   .rec-style-btn .rec-label {
@@ -237,7 +435,54 @@
     margin-top: 2px;
   }
 
-  /* Luxury button styling */
+  /* Theme-aware primary button */
+  .btn-theme-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    background: var(--btn-primary-bg);
+    border: 1.5px solid var(--btn-primary-border);
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--btn-primary-text);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    box-shadow: var(--btn-primary-glow);
+  }
+
+  .btn-theme-primary:hover {
+    filter: brightness(1.1);
+  }
+
+  .btn-theme-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Theme-aware secondary button */
+  .btn-theme-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    background: var(--btn-secondary-bg);
+    border: 1.5px solid var(--btn-secondary-border);
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--btn-secondary-text);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    box-shadow: var(--btn-secondary-glow);
+  }
+
+  .btn-theme-secondary:hover {
+    filter: brightness(1.1);
+  }
+
+  /* Legacy button styles (preserved) */
   .btn-luxury-primary {
     display: inline-flex;
     align-items: center;
@@ -272,7 +517,7 @@
     border-radius: var(--radius-md);
     font-size: 15px;
     font-weight: 500;
-    color: hsl(var(--button-secondary-text));
+    color: hsl(var(--muted-foreground));
     cursor: pointer;
     transition: var(--transition-smooth);
   }
@@ -299,8 +544,8 @@
 
   .input-luxury:focus {
     outline: none;
-    border-color: hsl(var(--primary));
-    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
+    border-color: var(--theme-accent);
+    box-shadow: 0 0 0 3px rgba(var(--theme-accent-rgb), 0.15);
   }
 
   /* Luxury slider styling */
@@ -311,17 +556,28 @@
   }
 
   .slider-luxury [data-radix-slider-range] {
-    background: rgba(58, 122, 254, 0.45);
+    background: rgba(var(--theme-accent-rgb), 0.45);
     border-radius: 3px;
   }
 
   .slider-luxury [data-radix-slider-thumb] {
     width: 20px;
     height: 20px;
-    background: #3A7AFE;
+    background: var(--theme-accent);
     border: 2px solid hsl(var(--background));
     border-radius: 50%;
     box-shadow: 0 2px 8px hsl(0 0% 0% / 0.3);
+  }
+
+  /* Header icon styling */
+  .header-icon {
+    color: var(--header-icon-color);
+    filter: drop-shadow(var(--header-icon-glow));
+    transition: var(--transition-smooth);
+  }
+
+  .header-icon:hover {
+    filter: drop-shadow(0 0 12px rgba(var(--theme-accent-rgb), 0.4));
   }
 
   /* Animation utilities */
