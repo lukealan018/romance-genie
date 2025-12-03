@@ -10,132 +10,131 @@
 @layer base {
   /* ============================================
      THEME #1: SAPPHIRE NIGHT (DEFAULT)
-     Deep vibrant blue with strong neon glows
+     Sophisticated dark sapphire - luxury aesthetic
      ============================================ */
   :root,
   .sapphire-night {
-    /* Core backgrounds - richer, more saturated */
-    --background: 220 60% 6%;
-    --foreground: 0 0% 100%;
+    /* Core backgrounds - deep, near-black with subtle blue */
+    --background: 220 30% 4%;
+    --foreground: 210 20% 95%;
     
-    /* Card surfaces */
-    --card: 220 55% 12%;
-    --card-foreground: 0 0% 100%;
+    /* Card surfaces - very dark with hint of blue */
+    --card: 220 25% 8%;
+    --card-foreground: 210 20% 95%;
     
     /* Popover */
-    --popover: 220 55% 10%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 220 25% 6%;
+    --popover-foreground: 210 20% 95%;
     
-    /* Primary accent - Vivid Sapphire Blue */
-    --primary: 220 100% 60%;
+    /* Primary accent - Rich Sapphire Blue (not neon) */
+    --primary: 217 91% 50%;
     --primary-foreground: 0 0% 100%;
     
     /* Secondary */
-    --secondary: 220 55% 16%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 220 25% 12%;
+    --secondary-foreground: 210 20% 90%;
     
     /* Muted */
-    --muted: 220 55% 14%;
-    --muted-foreground: 220 40% 80%;
+    --muted: 220 25% 10%;
+    --muted-foreground: 215 20% 65%;
     
     /* Accent */
-    --accent: 220 100% 60%;
+    --accent: 217 85% 55%;
     --accent-foreground: 0 0% 100%;
     
     /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Borders & inputs */
-    --border: 220 40% 25%;
-    --input: 220 40% 18%;
-    --ring: 220 100% 60%;
+    /* Borders & inputs - subtle, not bright */
+    --border: 215 25% 18%;
+    --input: 220 25% 12%;
+    --ring: 217 80% 50%;
     
-    /* Theme-specific tokens - SAPPHIRE NEON */
-    --theme-accent: #3B82F6;
-    --theme-accent-rgb: 59, 130, 246;
-    --theme-accent-light: #60A5FA;
-    --theme-accent-lighter: #BFDBFE;
+    /* Theme-specific tokens - SOPHISTICATED SAPPHIRE */
+    --theme-accent: #2563EB;
+    --theme-accent-rgb: 37, 99, 235;
+    --theme-accent-light: #3B82F6;
+    --theme-accent-lighter: #93C5FD;
     
-    /* Page background - DEEP LAYERED RADIAL GLOWS */
+    /* Page background - DEEP DARK with subtle sapphire undertones */
     --page-gradient: 
-      radial-gradient(ellipse 150% 100% at 50% 130%, rgba(37, 99, 235, 0.65) 0%, transparent 55%),
-      radial-gradient(ellipse 100% 80% at 0% 80%, rgba(30, 64, 175, 0.55) 0%, transparent 45%),
-      radial-gradient(ellipse 80% 60% at 100% 20%, rgba(59, 130, 246, 0.35) 0%, transparent 40%),
-      radial-gradient(ellipse 60% 40% at 30% 10%, rgba(96, 165, 250, 0.2) 0%, transparent 35%),
-      linear-gradient(165deg, #020617 0%, #0C1929 25%, #0F2847 55%, #0A1E3A 80%, #050D18 100%);
+      radial-gradient(ellipse 120% 80% at 50% 100%, rgba(15, 40, 90, 0.35) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 60% at 0% 80%, rgba(10, 30, 70, 0.25) 0%, transparent 40%),
+      radial-gradient(ellipse 60% 50% at 100% 20%, rgba(20, 50, 100, 0.15) 0%, transparent 35%),
+      linear-gradient(180deg, #030712 0%, #050a14 30%, #071020 60%, #040810 100%);
     
-    /* Hero gradient - GLASS with blue tint */
-    --hero-gradient: linear-gradient(145deg, rgba(15, 35, 70, 0.75) 0%, rgba(10, 25, 55, 0.7) 100%);
+    /* Hero gradient - subtle frosted glass */
+    --hero-gradient: linear-gradient(145deg, rgba(12, 25, 50, 0.5) 0%, rgba(8, 18, 40, 0.45) 100%);
     
-    /* Card surface - ENHANCED GLASSMORPHISM */
-    --card-surface-gradient: linear-gradient(145deg, rgba(15, 40, 80, 0.65) 0%, rgba(10, 30, 65, 0.55) 100%);
-    --card-blur: 24px;
-    --card-glow: 0 0 60px rgba(59, 130, 246, 0.2), 0 0 100px rgba(37, 99, 235, 0.1);
+    /* Card surface - SUBTLE GLASSMORPHISM */
+    --card-surface-gradient: linear-gradient(145deg, rgba(15, 30, 60, 0.4) 0%, rgba(10, 22, 45, 0.35) 100%);
+    --card-blur: 20px;
+    --card-glow: 0 4px 30px rgba(0, 0, 0, 0.3);
     
-    /* Card glass styling - VIVID blue glow */
-    --card-glass-border: rgba(96, 165, 250, 0.35);
-    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, transparent 40%);
+    /* Card glass styling - refined thin border */
+    --card-glass-border: rgba(59, 130, 246, 0.2);
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
     
     /* Header gradient */
-    --header-gradient: linear-gradient(180deg, rgba(5, 13, 24, 1) 0%, rgba(5, 13, 24, 0.95) 40%, rgba(5, 13, 24, 0) 100%);
+    --header-gradient: linear-gradient(180deg, rgba(3, 7, 18, 1) 0%, rgba(3, 7, 18, 0.95) 40%, rgba(3, 7, 18, 0) 100%);
     
-    /* Primary button - INTENSE NEON GLOW with glossy shine */
-    --btn-primary-bg: linear-gradient(145deg, #1D4ED8 0%, #3B82F6 45%, #2563EB 100%);
-    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.1) 40%, transparent 60%);
-    --btn-primary-border: rgba(96, 165, 250, 0.7);
+    /* Primary button - SOPHISTICATED sapphire gradient */
+    --btn-primary-bg: linear-gradient(145deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%);
+    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 40%, transparent 60%);
+    --btn-primary-border: rgba(59, 130, 246, 0.4);
     --btn-primary-text: #ffffff;
-    --btn-primary-glow: 0 0 25px rgba(59, 130, 246, 0.8), 0 0 50px rgba(59, 130, 246, 0.5), 0 0 80px rgba(59, 130, 246, 0.3), 0 4px 15px rgba(0, 0, 0, 0.3);
+    --btn-primary-glow: 0 0 20px rgba(37, 99, 235, 0.3), 0 4px 15px rgba(0, 0, 0, 0.4);
     
-    /* Secondary button - SAPPHIRE GRADIENT */
-    --btn-secondary-bg: linear-gradient(145deg, #1E40AF 0%, #2563EB 45%, #3B82F6 100%);
-    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.08) 40%, transparent 60%);
-    --btn-secondary-border: rgba(96, 165, 250, 0.6);
+    /* Secondary button - frosted with blue tint */
+    --btn-secondary-bg: linear-gradient(145deg, rgba(30, 58, 138, 0.6) 0%, rgba(37, 99, 235, 0.5) 100%);
+    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 40%, transparent 60%);
+    --btn-secondary-border: rgba(59, 130, 246, 0.35);
     --btn-secondary-text: #ffffff;
-    --btn-secondary-glow: 0 0 20px rgba(59, 130, 246, 0.7), 0 0 40px rgba(59, 130, 246, 0.4), 0 0 60px rgba(59, 130, 246, 0.2);
+    --btn-secondary-glow: 0 0 15px rgba(37, 99, 235, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3);
     
-    /* Chips - NEON GLOW style */
-    --chip-bg: rgba(15, 40, 80, 0.6);
-    --chip-border: rgba(96, 165, 250, 0.4);
-    --chip-text: #BFDBFE;
-    --chip-glow: 0 0 15px rgba(59, 130, 246, 0.2);
-    --chip-selected-bg: rgba(59, 130, 246, 0.35);
-    --chip-selected-border: rgba(96, 165, 250, 0.8);
+    /* Chips - subtle glass style */
+    --chip-bg: rgba(15, 30, 60, 0.5);
+    --chip-border: rgba(59, 130, 246, 0.25);
+    --chip-text: #93C5FD;
+    --chip-glow: none;
+    --chip-selected-bg: rgba(37, 99, 235, 0.3);
+    --chip-selected-border: rgba(59, 130, 246, 0.5);
     --chip-selected-text: #FFFFFF;
-    --chip-selected-glow: 0 0 25px rgba(59, 130, 246, 0.5);
+    --chip-selected-glow: 0 0 12px rgba(37, 99, 235, 0.25);
     
-    /* Header icons - VIVID with glow */
-    --header-icon-color: #60A5FA;
-    --header-icon-glow: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
-    --header-title-color: #E0EDFF;
+    /* Header icons - clean sapphire */
+    --header-icon-color: #3B82F6;
+    --header-icon-glow: drop-shadow(0 0 4px rgba(37, 99, 235, 0.3));
+    --header-title-color: #E2E8F0;
     
-    /* Username color - branded Sapphire accent */
-    --username-color: #60A5FA;
-    --supporting-text-color: #BFDBFE;
+    /* Username color - sapphire accent */
+    --username-color: #3B82F6;
+    --supporting-text-color: #94A3B8;
     
-    /* Glow effects - INTENSE */
-    --glow-primary: rgba(59, 130, 246, 0.6);
-    --glow-secondary: rgba(96, 165, 250, 0.4);
+    /* Glow effects - SUBTLE */
+    --glow-primary: rgba(37, 99, 235, 0.25);
+    --glow-secondary: rgba(59, 130, 246, 0.15);
     
-    /* Weather pill - GLASS with glow */
-    --weather-pill-bg: rgba(15, 35, 70, 0.75);
-    --weather-pill-border: rgba(96, 165, 250, 0.5);
-    --weather-pill-text: #BFDBFE;
-    --weather-pill-icon: #60A5FA;
-    --weather-pill-glow: 0 0 20px rgba(59, 130, 246, 0.25);
+    /* Weather pill - frosted glass */
+    --weather-pill-bg: rgba(15, 30, 60, 0.6);
+    --weather-pill-border: rgba(59, 130, 246, 0.25);
+    --weather-pill-text: #CBD5E1;
+    --weather-pill-icon: #3B82F6;
+    --weather-pill-glow: 0 4px 15px rgba(0, 0, 0, 0.3);
     
     /* Slider controls */
-    --slider-track: rgba(30, 64, 175, 0.4);
-    --slider-filled: #3B82F6;
-    --slider-thumb: #60A5FA;
-    --slider-thumb-glow: 0 0 15px rgba(59, 130, 246, 0.7);
-    --slider-label: #BFDBFE;
+    --slider-track: rgba(30, 58, 138, 0.3);
+    --slider-filled: #2563EB;
+    --slider-thumb: #3B82F6;
+    --slider-thumb-glow: 0 0 10px rgba(37, 99, 235, 0.4);
+    --slider-label: #94A3B8;
     
     /* Design tokens */
-    --radius: 18px;
-    --radius-sm: 12px;
-    --radius-md: 14px;
-    --radius-lg: 18px;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
 
     --space-1: 8px;
     --space-2: 12px;
@@ -149,10 +148,10 @@
     --text-xl: 24px;
     
     /* Section divider */
-    --divider: 220 40% 25%;
+    --divider: 215 25% 18%;
     
     /* Shadows */
-    --shadow-subtle: 0 4px 20px -4px hsl(0 0% 0% / 0.4);
+    --shadow-subtle: 0 4px 20px -4px hsl(0 0% 0% / 0.5);
     
     /* Theme transitions */
     --theme-transition: background 450ms ease, box-shadow 300ms ease, color 200ms ease, border-color 300ms ease;
@@ -160,116 +159,115 @@
 
   /* ============================================
      THEME #2: ROSE TWILIGHT
-     NEON-GLOSS AESTHETIC - Rich, vibrant, glowing
+     Sophisticated dark rose - luxury aesthetic
      ============================================ */
   .rose-twilight {
-    /* Core backgrounds - deep rich magenta */
-    --background: 330 100% 6%;
-    --foreground: 0 0% 100%;
+    /* Core backgrounds - deep, near-black with subtle rose */
+    --background: 330 25% 4%;
+    --foreground: 340 20% 95%;
     
-    --card: 330 90% 12%;
-    --card-foreground: 0 0% 100%;
+    --card: 330 20% 8%;
+    --card-foreground: 340 20% 95%;
     
-    --popover: 330 90% 10%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 330 20% 6%;
+    --popover-foreground: 340 20% 95%;
     
-    /* Primary accent - VIVID Neon Pink */
-    --primary: 330 100% 60%;
+    /* Primary accent - Rich Rose */
+    --primary: 330 80% 55%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 330 90% 14%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 330 20% 12%;
+    --secondary-foreground: 340 20% 90%;
     
-    --muted: 330 90% 12%;
-    --muted-foreground: 330 70% 85%;
+    --muted: 330 20% 10%;
+    --muted-foreground: 330 15% 65%;
     
-    --accent: 330 100% 65%;
+    --accent: 330 75% 58%;
     --accent-foreground: 0 0% 100%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 330 70% 28%;
-    --input: 330 90% 14%;
-    --ring: 330 100% 65%;
+    --border: 330 20% 18%;
+    --input: 330 20% 12%;
+    --ring: 330 70% 55%;
     
-    /* Theme-specific tokens - NEON PINK */
-    --theme-accent: #FF2D8A;
-    --theme-accent-rgb: 255, 45, 138;
-    --theme-accent-light: #FF5CAD;
-    --theme-accent-lighter: #FFB8DC;
+    /* Theme-specific tokens - SOPHISTICATED ROSE */
+    --theme-accent: #DB2777;
+    --theme-accent-rgb: 219, 39, 119;
+    --theme-accent-light: #EC4899;
+    --theme-accent-lighter: #F9A8D4;
     
-    /* Page background - LAYERED RADIAL GLOWS for maximum depth */
+    /* Page background - DEEP DARK with subtle rose undertones */
     --page-gradient: 
-      radial-gradient(ellipse 150% 100% at 30% -30%, rgba(255, 0, 100, 0.55) 0%, transparent 50%),
-      radial-gradient(ellipse 120% 100% at 100% 120%, rgba(200, 0, 120, 0.6) 0%, transparent 50%),
-      radial-gradient(ellipse 100% 80% at 0% 100%, rgba(150, 0, 90, 0.5) 0%, transparent 50%),
-      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(100, 0, 60, 0.35) 0%, transparent 55%),
-      linear-gradient(165deg, #120008 0%, #2A0018 25%, #450028 55%, #5C0038 80%, #3A0020 100%);
+      radial-gradient(ellipse 120% 80% at 50% 100%, rgba(80, 20, 50, 0.3) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 60% at 0% 80%, rgba(60, 15, 40, 0.2) 0%, transparent 40%),
+      radial-gradient(ellipse 60% 50% at 100% 20%, rgba(90, 25, 55, 0.15) 0%, transparent 35%),
+      linear-gradient(180deg, #08030a 0%, #0c0610 30%, #10081a 60%, #06030c 100%);
     
-    /* Hero gradient - GLASS with pink tint */
-    --hero-gradient: linear-gradient(145deg, rgba(80, 0, 50, 0.65) 0%, rgba(60, 0, 40, 0.55) 100%);
+    /* Hero gradient - subtle frosted glass */
+    --hero-gradient: linear-gradient(145deg, rgba(40, 15, 30, 0.5) 0%, rgba(25, 10, 20, 0.45) 100%);
     
-    /* Card surface - GLASS-MORPHISM */
-    --card-surface-gradient: linear-gradient(145deg, rgba(80, 0, 50, 0.55) 0%, rgba(60, 0, 40, 0.45) 100%);
-    --card-blur: 24px;
-    --card-glow: 0 0 60px rgba(255, 45, 138, 0.2), 0 0 100px rgba(255, 45, 138, 0.1);
-    --card-glass-border: rgba(255, 100, 180, 0.35);
-    --card-glass-shine: linear-gradient(135deg, rgba(255, 180, 220, 0.15) 0%, transparent 40%);
+    /* Card surface - SUBTLE GLASSMORPHISM */
+    --card-surface-gradient: linear-gradient(145deg, rgba(50, 20, 40, 0.4) 0%, rgba(35, 12, 28, 0.35) 100%);
+    --card-blur: 20px;
+    --card-glow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    --card-glass-border: rgba(219, 39, 119, 0.2);
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
     
     /* Header gradient */
-    --header-gradient: linear-gradient(180deg, rgba(18, 0, 8, 1) 0%, rgba(18, 0, 8, 0.95) 40%, rgba(18, 0, 8, 0) 100%);
+    --header-gradient: linear-gradient(180deg, rgba(8, 3, 10, 1) 0%, rgba(8, 3, 10, 0.95) 40%, rgba(8, 3, 10, 0) 100%);
     
-    /* Primary button - INTENSE NEON GLOW with glossy shine */
-    --btn-primary-bg: linear-gradient(145deg, #DB1472 0%, #FF2D8A 45%, #FF5CAD 100%);
-    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.15) 40%, transparent 60%);
-    --btn-primary-border: rgba(255, 150, 210, 0.8);
+    /* Primary button - SOPHISTICATED rose gradient */
+    --btn-primary-bg: linear-gradient(145deg, #BE185D 0%, #DB2777 50%, #EC4899 100%);
+    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 40%, transparent 60%);
+    --btn-primary-border: rgba(236, 72, 153, 0.4);
     --btn-primary-text: #ffffff;
-    --btn-primary-glow: 0 0 25px rgba(255, 45, 138, 0.8), 0 0 50px rgba(255, 45, 138, 0.5), 0 0 80px rgba(255, 45, 138, 0.3), 0 4px 15px rgba(0, 0, 0, 0.3);
+    --btn-primary-glow: 0 0 20px rgba(219, 39, 119, 0.25), 0 4px 15px rgba(0, 0, 0, 0.4);
     
-    /* Secondary button - Pink glow */
-    --btn-secondary-bg: linear-gradient(145deg, #C01270 0%, #FF2D8A 45%, #FF5CAD 100%);
-    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.1) 40%, transparent 60%);
-    --btn-secondary-border: rgba(255, 150, 210, 0.7);
+    /* Secondary button - frosted with rose tint */
+    --btn-secondary-bg: linear-gradient(145deg, rgba(157, 23, 77, 0.6) 0%, rgba(190, 24, 93, 0.5) 100%);
+    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 40%, transparent 60%);
+    --btn-secondary-border: rgba(236, 72, 153, 0.35);
     --btn-secondary-text: #ffffff;
-    --btn-secondary-glow: 0 0 20px rgba(255, 45, 138, 0.7), 0 0 40px rgba(255, 45, 138, 0.4), 0 0 60px rgba(255, 45, 138, 0.2);
+    --btn-secondary-glow: 0 0 15px rgba(219, 39, 119, 0.15), 0 4px 12px rgba(0, 0, 0, 0.3);
     
-    /* Chips - NEON GLASS style */
-    --chip-bg: rgba(80, 0, 50, 0.55);
-    --chip-border: rgba(255, 100, 180, 0.45);
-    --chip-text: #FFD4EC;
-    --chip-glow: 0 0 15px rgba(255, 45, 138, 0.2);
-    --chip-selected-bg: rgba(255, 45, 138, 0.4);
-    --chip-selected-border: rgba(255, 150, 210, 0.85);
+    /* Chips - subtle glass style */
+    --chip-bg: rgba(50, 20, 40, 0.5);
+    --chip-border: rgba(219, 39, 119, 0.25);
+    --chip-text: #F9A8D4;
+    --chip-glow: none;
+    --chip-selected-bg: rgba(190, 24, 93, 0.3);
+    --chip-selected-border: rgba(236, 72, 153, 0.5);
     --chip-selected-text: #FFFFFF;
-    --chip-selected-glow: 0 0 25px rgba(255, 45, 138, 0.5);
+    --chip-selected-glow: 0 0 12px rgba(219, 39, 119, 0.25);
     
-    /* Weather pill - GLASS with glow */
-    --weather-pill-bg: rgba(60, 0, 40, 0.75);
-    --weather-pill-border: rgba(255, 100, 180, 0.55);
-    --weather-pill-text: #FFD4EC;
-    --weather-pill-icon: #FF7CC4;
-    --weather-pill-glow: 0 0 20px rgba(255, 45, 138, 0.25);
+    /* Weather pill - frosted glass */
+    --weather-pill-bg: rgba(50, 20, 40, 0.6);
+    --weather-pill-border: rgba(219, 39, 119, 0.25);
+    --weather-pill-text: #F5D0E4;
+    --weather-pill-icon: #EC4899;
+    --weather-pill-glow: 0 4px 15px rgba(0, 0, 0, 0.3);
     
-    /* Header icons - BRIGHT pink with glow */
-    --header-icon-color: #FF7CC4;
-    --header-icon-glow: drop-shadow(0 0 8px rgba(255, 45, 138, 0.6));
-    --header-title-color: #FFE4F2;
+    /* Header icons - clean rose */
+    --header-icon-color: #EC4899;
+    --header-icon-glow: drop-shadow(0 0 4px rgba(219, 39, 119, 0.3));
+    --header-title-color: #F5E6EC;
     
-    /* Username color - NEON Pink accent */
-    --username-color: #FF5CAD;
-    --supporting-text-color: #FFD4EC;
+    /* Username color - rose accent */
+    --username-color: #EC4899;
+    --supporting-text-color: #D1A3B8;
     
-    /* Glow effects - INTENSE */
-    --glow-primary: rgba(255, 45, 138, 0.6);
-    --glow-secondary: rgba(255, 92, 173, 0.4);
+    /* Glow effects - SUBTLE */
+    --glow-primary: rgba(219, 39, 119, 0.25);
+    --glow-secondary: rgba(236, 72, 153, 0.15);
     
-    /* Slider controls - NEON pink */
-    --slider-track: rgba(100, 0, 60, 0.5);
-    --slider-filled: #FF5CAD;
-    --slider-thumb: #FFD4EC;
-    --slider-thumb-glow: 0 0 15px rgba(255, 92, 173, 0.8);
-    --slider-label: #FFBADC;
+    /* Slider controls */
+    --slider-track: rgba(157, 23, 77, 0.3);
+    --slider-filled: #DB2777;
+    --slider-thumb: #EC4899;
+    --slider-thumb-glow: 0 0 10px rgba(219, 39, 119, 0.4);
+    --slider-label: #D1A3B8;
   }
 
   /* ============================================
@@ -385,14 +383,13 @@
      THEME-SPECIFIC BACKGROUND APPLICATIONS
      ============================================ */
   
-  /* Default - Sapphire Night */
+  /* Default - Sapphire Night - DEEP DARK with subtle blue */
   .themed-page-bg {
     background: 
-      radial-gradient(ellipse 150% 100% at 50% 130%, rgba(37, 99, 235, 0.65) 0%, transparent 55%),
-      radial-gradient(ellipse 100% 80% at 0% 80%, rgba(30, 64, 175, 0.55) 0%, transparent 45%),
-      radial-gradient(ellipse 80% 60% at 100% 20%, rgba(59, 130, 246, 0.35) 0%, transparent 40%),
-      radial-gradient(ellipse 60% 40% at 30% 10%, rgba(96, 165, 250, 0.2) 0%, transparent 35%),
-      linear-gradient(165deg, #020617 0%, #0C1929 25%, #0F2847 55%, #0A1E3A 80%, #050D18 100%);
+      radial-gradient(ellipse 120% 80% at 50% 100%, rgba(15, 40, 90, 0.35) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 60% at 0% 80%, rgba(10, 30, 70, 0.25) 0%, transparent 40%),
+      radial-gradient(ellipse 60% 50% at 100% 20%, rgba(20, 50, 100, 0.15) 0%, transparent 35%),
+      linear-gradient(180deg, #030712 0%, #050a14 30%, #071020 60%, #040810 100%);
     min-height: 100%;
   }
 
@@ -401,11 +398,9 @@
   .rose-twilight .themed-page-bg,
   .rose-twilight.themed-page-bg {
     background: 
-      radial-gradient(ellipse 150% 100% at 30% -30%, rgba(255, 0, 100, 0.55) 0%, transparent 50%),
-      radial-gradient(ellipse 120% 100% at 100% 120%, rgba(200, 0, 120, 0.6) 0%, transparent 50%),
-      radial-gradient(ellipse 100% 80% at 0% 100%, rgba(150, 0, 90, 0.5) 0%, transparent 50%),
-      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(100, 0, 60, 0.35) 0%, transparent 55%),
-      linear-gradient(165deg, #120008 0%, #2A0018 25%, #450028 55%, #5C0038 80%, #3A0020 100%) !important;
+      radial-gradient(ellipse 120% 80% at 50% 100%, rgba(80, 0, 50, 0.3) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 60% at 0% 80%, rgba(60, 0, 40, 0.2) 0%, transparent 40%),
+      linear-gradient(180deg, #0a0408 0%, #120810 30%, #1a0c14 60%, #0d0608 100%) !important;
   }
 
   /* Sapphire Night Background */
@@ -413,62 +408,61 @@
   .sapphire-night .themed-page-bg,
   .sapphire-night.themed-page-bg {
     background: 
-      radial-gradient(ellipse 150% 100% at 50% 130%, rgba(37, 99, 235, 0.65) 0%, transparent 55%),
-      radial-gradient(ellipse 100% 80% at 0% 80%, rgba(30, 64, 175, 0.55) 0%, transparent 45%),
-      radial-gradient(ellipse 80% 60% at 100% 20%, rgba(59, 130, 246, 0.35) 0%, transparent 40%),
-      radial-gradient(ellipse 60% 40% at 30% 10%, rgba(96, 165, 250, 0.2) 0%, transparent 35%),
-      linear-gradient(165deg, #020617 0%, #0C1929 25%, #0F2847 55%, #0A1E3A 80%, #050D18 100%) !important;
+      radial-gradient(ellipse 120% 80% at 50% 100%, rgba(15, 40, 90, 0.35) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 60% at 0% 80%, rgba(10, 30, 70, 0.25) 0%, transparent 40%),
+      radial-gradient(ellipse 60% 50% at 100% 20%, rgba(20, 50, 100, 0.15) 0%, transparent 35%),
+      linear-gradient(180deg, #030712 0%, #050a14 30%, #071020 60%, #040810 100%) !important;
   }
 
   /* Midnight Matte Background */
   html.midnight-matte .themed-page-bg,
   .midnight-matte .themed-page-bg,
   .midnight-matte.themed-page-bg {
-    background: linear-gradient(135deg, #0A0A0A 0%, #141414 50%, #0D0D0D 100%) !important;
+    background: linear-gradient(180deg, #0A0A0A 0%, #0d0d0d 50%, #080808 100%) !important;
   }
 
   /* ============================================
      THEME-SPECIFIC BUTTON OVERRIDES
      ============================================ */
   
-  /* Sapphire Night Buttons */
+  /* Sapphire Night Buttons - SOPHISTICATED, subtle glow */
   .sapphire-night .btn-theme-primary,
   :root .btn-theme-primary {
-    background: linear-gradient(145deg, #1D4ED8 0%, #3B82F6 45%, #2563EB 100%) !important;
-    border: 2px solid rgba(96, 165, 250, 0.7) !important;
-    box-shadow: 0 0 25px rgba(59, 130, 246, 0.8), 0 0 50px rgba(59, 130, 246, 0.5), 0 0 80px rgba(59, 130, 246, 0.3), 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+    background: linear-gradient(145deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%) !important;
+    border: 1px solid rgba(59, 130, 246, 0.4) !important;
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.25), 0 4px 15px rgba(0, 0, 0, 0.4) !important;
   }
 
   .sapphire-night .btn-theme-secondary,
   :root .btn-theme-secondary {
-    background: linear-gradient(145deg, #1E40AF 0%, #2563EB 45%, #3B82F6 100%) !important;
-    border: 2px solid rgba(96, 165, 250, 0.6) !important;
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.7), 0 0 40px rgba(59, 130, 246, 0.4), 0 0 60px rgba(59, 130, 246, 0.2) !important;
+    background: linear-gradient(145deg, rgba(30, 58, 138, 0.6) 0%, rgba(37, 99, 235, 0.5) 100%) !important;
+    border: 1px solid rgba(59, 130, 246, 0.35) !important;
+    box-shadow: 0 0 15px rgba(37, 99, 235, 0.15), 0 4px 12px rgba(0, 0, 0, 0.3) !important;
   }
 
-  /* Rose Twilight Buttons */
+  /* Rose Twilight Buttons - refined */
   .rose-twilight .btn-theme-primary {
-    background: linear-gradient(145deg, #DB1472 0%, #FF2D8A 45%, #FF5CAD 100%) !important;
-    border: 2px solid rgba(255, 150, 210, 0.8) !important;
-    box-shadow: 0 0 25px rgba(255, 45, 138, 0.8), 0 0 50px rgba(255, 45, 138, 0.5), 0 0 80px rgba(255, 45, 138, 0.3), 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+    background: linear-gradient(145deg, #BE185D 0%, #DB2777 50%, #EC4899 100%) !important;
+    border: 1px solid rgba(236, 72, 153, 0.4) !important;
+    box-shadow: 0 0 20px rgba(219, 39, 119, 0.25), 0 4px 15px rgba(0, 0, 0, 0.4) !important;
   }
 
   .rose-twilight .btn-theme-secondary {
-    background: linear-gradient(145deg, #C01270 0%, #FF2D8A 45%, #FF5CAD 100%) !important;
-    border: 2px solid rgba(255, 150, 210, 0.7) !important;
-    box-shadow: 0 0 20px rgba(255, 45, 138, 0.7), 0 0 40px rgba(255, 45, 138, 0.4), 0 0 60px rgba(255, 45, 138, 0.2) !important;
+    background: linear-gradient(145deg, rgba(157, 23, 77, 0.6) 0%, rgba(190, 24, 93, 0.5) 100%) !important;
+    border: 1px solid rgba(236, 72, 153, 0.35) !important;
+    box-shadow: 0 0 15px rgba(219, 39, 119, 0.15), 0 4px 12px rgba(0, 0, 0, 0.3) !important;
   }
 
   /* Midnight Matte Buttons */
   .midnight-matte .btn-theme-primary {
     background: linear-gradient(180deg, #2A2A2A 0%, #222222 100%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
   }
 
   .midnight-matte .btn-theme-secondary {
     background: linear-gradient(180deg, #1A1A1A 0%, #161616 100%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
     box-shadow: none !important;
   }
 
@@ -616,7 +610,7 @@
   }
 
   /* ============================================
-     NEON CHIP STYLING - NOT DEFAULT iOS PILLS
+     SOPHISTICATED CHIP STYLING - SUBTLE GLASS
      ============================================ */
   .chip-luxury {
     display: inline-flex;
@@ -624,7 +618,7 @@
     justify-content: center;
     padding: 10px 18px;
     background: var(--chip-bg);
-    border: 1.5px solid var(--chip-border);
+    border: 1px solid var(--chip-border);
     border-radius: var(--radius-sm);
     font-size: 14px;
     font-weight: 500;
@@ -633,8 +627,8 @@
     transition: all 0.25s ease;
     user-select: none;
     box-shadow: var(--chip-glow, none);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     position: relative;
   }
 
@@ -645,7 +639,7 @@
     left: 0;
     right: 0;
     height: 50%;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
     border-radius: var(--radius-sm) var(--radius-sm) 50% 50%;
     pointer-events: none;
   }
@@ -653,7 +647,6 @@
   .chip-luxury:hover {
     border-color: var(--chip-selected-border);
     transform: translateY(-1px);
-    box-shadow: var(--chip-selected-glow, var(--chip-glow, none));
   }
 
   .chip-luxury.selected {
@@ -672,13 +665,13 @@
     flex: 1;
     padding: 14px 10px;
     background: var(--chip-bg);
-    border: 1.5px solid var(--chip-border);
+    border: 1px solid var(--chip-border);
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all 0.25s ease;
     box-shadow: var(--chip-glow, none);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     position: relative;
   }
 
@@ -689,7 +682,7 @@
     left: 0;
     right: 0;
     height: 50%;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 100%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
     border-radius: var(--radius-sm) var(--radius-sm) 50% 50%;
     pointer-events: none;
   }
@@ -718,7 +711,7 @@
   }
 
   /* ============================================
-     NEON BUTTON STYLING - GLOSSY WITH INTENSE GLOW
+     SOPHISTICATED BUTTON STYLING - SUBTLE GLOW
      ============================================ */
   .btn-theme-primary {
     display: inline-flex;
@@ -727,7 +720,7 @@
     gap: 8px;
     padding: 14px 28px;
     background: var(--btn-primary-bg);
-    border: 2px solid var(--btn-primary-border);
+    border: 1px solid var(--btn-primary-border);
     border-radius: var(--radius-md);
     font-size: 16px;
     font-weight: 600;
@@ -737,17 +730,16 @@
     box-shadow: var(--btn-primary-glow);
     position: relative;
     overflow: hidden;
-    text-shadow: 0 0 20px currentColor;
   }
 
-  /* Inner glossy shine overlay */
+  /* Inner glossy shine overlay - SUBTLE */
   .btn-theme-primary::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 55%;
+    height: 50%;
     background: var(--btn-primary-shine);
     border-radius: var(--radius-md) var(--radius-md) 100% 100%;
     pointer-events: none;
@@ -770,7 +762,7 @@
     filter: none;
   }
 
-  /* Theme-aware secondary button - NEON style */
+  /* Theme-aware secondary button - SOPHISTICATED */
   .btn-theme-secondary {
     display: inline-flex;
     align-items: center;
@@ -778,7 +770,7 @@
     gap: 8px;
     padding: 14px 28px;
     background: var(--btn-secondary-bg);
-    border: 2px solid var(--btn-secondary-border);
+    border: 1px solid var(--btn-secondary-border);
     border-radius: var(--radius-md);
     font-size: 16px;
     font-weight: 500;
@@ -788,7 +780,6 @@
     box-shadow: var(--btn-secondary-glow);
     position: relative;
     overflow: hidden;
-    text-shadow: 0 0 15px currentColor;
   }
 
   .btn-theme-secondary::before {
@@ -797,15 +788,15 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 55%;
+    height: 50%;
     background: var(--btn-secondary-shine);
     border-radius: var(--radius-md) var(--radius-md) 100% 100%;
     pointer-events: none;
   }
 
   .btn-theme-secondary:hover {
-    filter: brightness(1.15);
-    transform: translateY(-2px);
+    filter: brightness(1.1);
+    transform: translateY(-1px);
   }
 
   .btn-theme-secondary:active {
@@ -814,12 +805,12 @@
   }
 
   /* ============================================
-     GLASSMORPHISM CARD UTILITY - WITH OUTER GLOW
+     GLASSMORPHISM CARD UTILITY - SUBTLE
      ============================================ */
   .card-glass {
     background: var(--card-surface-gradient);
-    backdrop-filter: blur(var(--card-blur, 24px));
-    -webkit-backdrop-filter: blur(var(--card-blur, 24px));
+    backdrop-filter: blur(var(--card-blur, 20px));
+    -webkit-backdrop-filter: blur(var(--card-blur, 20px));
     border: 1px solid var(--card-glass-border, hsl(var(--border)));
     border-radius: var(--radius-lg);
     position: relative;
@@ -827,24 +818,24 @@
     box-shadow: var(--card-glow, none);
   }
 
-  /* Glass shine overlay */
+  /* Glass shine overlay - VERY SUBTLE */
   .card-glass::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 45%;
-    background: var(--card-glass-shine, linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, transparent 40%));
+    height: 40%;
+    background: var(--card-glass-shine, linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 50%));
     pointer-events: none;
   }
 
   /* ============================================
-     WEATHER PILL - GLASS WITH GLOW
+     WEATHER PILL - SUBTLE GLASS
      ============================================ */
   .weather-pill {
     background: var(--weather-pill-bg);
-    border: 1.5px solid var(--weather-pill-border);
+    border: 1px solid var(--weather-pill-border);
     color: var(--weather-pill-text);
     box-shadow: var(--weather-pill-glow, none);
     backdrop-filter: blur(16px);
