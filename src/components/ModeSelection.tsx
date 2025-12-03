@@ -135,10 +135,10 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
                   <Icon 
                     className="h-7 w-7 relative z-10" 
                     style={{ 
-                      color: isSelected ? 'rgba(255,255,255,0.95)' : '#7DD3FC',
+                      color: isSelected ? 'rgba(255,255,255,0.95)' : '#3B82F6',
                       filter: isSelected 
                         ? 'drop-shadow(0 0 8px rgba(255,255,255,0.6))' 
-                        : 'drop-shadow(0 0 8px #3B82F6) drop-shadow(0 0 16px rgba(59, 130, 246, 0.7))',
+                        : 'drop-shadow(0 0 6px rgba(59, 130, 246, 0.8)) drop-shadow(0 0 12px rgba(37, 99, 235, 0.5))',
                     }} 
                   />
                 </div>
