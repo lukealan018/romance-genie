@@ -70,17 +70,23 @@
     /* Header gradient */
     --header-gradient: linear-gradient(180deg, rgba(15,26,47,1) 0%, rgba(15,26,47,0.9) 40%, rgba(15,26,47,0) 100%);
     
-    /* Primary button - EXACT gradient #1E4FFF → #4C8AFF */
+    /* Primary button - EXACT gradient #1E4FFF → #4C8AFF with shine */
     --btn-primary-bg: linear-gradient(135deg, #1E4FFF 0%, #4C8AFF 100%);
+    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
     --btn-primary-border: rgba(120,146,255,0.45);
     --btn-primary-text: #ffffff;
     --btn-primary-glow: 0 0 18px rgba(50,90,255,0.25);
     
     /* Secondary button */
     --btn-secondary-bg: linear-gradient(135deg, rgba(61,109,255,0.35) 0%, rgba(76,138,255,0.25) 100%);
+    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
     --btn-secondary-border: rgba(120,146,255,0.35);
     --btn-secondary-text: #DDE9FF;
     --btn-secondary-glow: 0 0 14px rgba(50,90,255,0.2);
+    
+    /* Card glass styling */
+    --card-glass-border: rgba(120,146,255,0.2);
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
     
     /* Chips */
     --chip-bg: rgba(255,255,255,0.04);
@@ -146,106 +152,111 @@
 
   /* ============================================
      THEME #2: PINK LUXE (ROSE QUARTZ)
-     Rich pink luxury with depth - USER EXACT SPEC
+     NEON-GLOSS AESTHETIC - Rich, vibrant, glowing
      ============================================ */
   .rose-twilight {
-    /* Core backgrounds */
-    --background: 330 100% 12%;
+    /* Core backgrounds - deeper for contrast */
+    --background: 330 100% 8%;
     --foreground: 0 0% 100%;
     
-    --card: 330 100% 16%;
+    --card: 330 100% 12%;
     --card-foreground: 0 0% 100%;
     
-    --popover: 330 100% 14%;
+    --popover: 330 100% 10%;
     --popover-foreground: 0 0% 100%;
     
-    /* Primary accent - Rich Pink */
-    --primary: 335 100% 62%;
+    /* Primary accent - VIVID Neon Pink */
+    --primary: 330 100% 60%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 330 100% 18%;
+    --secondary: 330 100% 14%;
     --secondary-foreground: 0 0% 100%;
     
-    --muted: 330 100% 15%;
-    --muted-foreground: 335 60% 80%;
+    --muted: 330 100% 12%;
+    --muted-foreground: 330 80% 85%;
     
-    --accent: 335 100% 62%;
+    --accent: 330 100% 65%;
     --accent-foreground: 0 0% 100%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 330 50% 25%;
-    --input: 330 100% 14%;
-    --ring: 335 100% 62%;
+    --border: 330 70% 30%;
+    --input: 330 100% 12%;
+    --ring: 330 100% 65%;
     
-    /* Theme-specific tokens - PINK LUXE EXACT */
-    --theme-accent: #FF3F9B;
-    --theme-accent-rgb: 255, 63, 155;
-    --theme-accent-light: #FF6FBE;
-    --theme-accent-lighter: #FFB4D8;
+    /* Theme-specific tokens - NEON PINK */
+    --theme-accent: #FF2D8A;
+    --theme-accent-rgb: 255, 45, 138;
+    --theme-accent-light: #FF5CAD;
+    --theme-accent-lighter: #FFB8DC;
     
-    /* Page background gradient - LAYERED CORNER GLOWS like mockup */
+    /* Page background - LAYERED RADIAL GLOWS for depth */
     --page-gradient: 
-      radial-gradient(circle at 20% 0%, #5C0036 0%, transparent 55%),
-      radial-gradient(circle at 80% 100%, #A5005F 0%, transparent 60%),
-      linear-gradient(140deg, #34001F 0%, #4C002B 40%, #7D0048 100%);
+      radial-gradient(ellipse 120% 80% at 10% -20%, rgba(255, 0, 102, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse 100% 100% at 90% 110%, rgba(180, 0, 100, 0.5) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(100, 0, 60, 0.3) 0%, transparent 60%),
+      linear-gradient(150deg, #1A0010 0%, #2D0020 30%, #450030 60%, #5C0040 100%);
     
-    /* Hero gradient - pink card with blur */
-    --hero-gradient: linear-gradient(145deg, rgba(58,0,40,0.7) 0%, rgba(85,0,50,0.6) 100%);
+    /* Hero gradient - GLASS with pink tint */
+    --hero-gradient: linear-gradient(145deg, rgba(80, 0, 50, 0.6) 0%, rgba(60, 0, 40, 0.5) 100%);
     
-    /* Card surface gradient - rgba with blur 20px */
-    --card-surface-gradient: rgba(58,0,40,0.7);
-    --card-blur: 20px;
+    /* Card surface - GLASS-MORPHISM */
+    --card-surface-gradient: rgba(60, 0, 40, 0.5);
+    --card-blur: 24px;
+    --card-glass-border: rgba(255, 100, 180, 0.25);
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 150, 200, 0.15) 0%, transparent 50%);
     
     /* Header gradient */
-    --header-gradient: linear-gradient(180deg, rgba(52,0,31,1) 0%, rgba(52,0,31,0.9) 40%, rgba(52,0,31,0) 100%);
+    --header-gradient: linear-gradient(180deg, rgba(26, 0, 16, 1) 0%, rgba(26, 0, 16, 0.9) 40%, rgba(26, 0, 16, 0) 100%);
     
-    /* Primary button - RICH gradient NO white bar */
-    --btn-primary-bg: linear-gradient(135deg, #FF3F9B 0%, #FF6FBE 50%, #FF3F9B 100%);
-    --btn-primary-border: rgba(255,181,220,0.7);
+    /* Primary button - NEON GLOW with inner shine */
+    --btn-primary-bg: linear-gradient(135deg, #FF1A80 0%, #FF4DA6 40%, #FF1A80 100%);
+    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, transparent 50%);
+    --btn-primary-border: rgba(255, 150, 210, 0.8);
     --btn-primary-text: #ffffff;
-    --btn-primary-glow: 0 0 22px rgba(255,79,165,0.45);
+    --btn-primary-glow: 0 0 30px rgba(255, 45, 138, 0.6), 0 0 60px rgba(255, 45, 138, 0.3);
     
-    /* Secondary button - slightly smaller glow */
-    --btn-secondary-bg: linear-gradient(135deg, #FF3F9B 0%, #FF6FBE 50%, #FF3F9B 100%);
-    --btn-secondary-border: rgba(255,181,220,0.6);
+    /* Secondary button - Slightly softer glow */
+    --btn-secondary-bg: linear-gradient(135deg, #FF1A80 0%, #FF4DA6 40%, #FF1A80 100%);
+    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+    --btn-secondary-border: rgba(255, 150, 210, 0.7);
     --btn-secondary-text: #ffffff;
-    --btn-secondary-glow: 0 0 18px rgba(255,79,165,0.35);
+    --btn-secondary-glow: 0 0 24px rgba(255, 45, 138, 0.5), 0 0 48px rgba(255, 45, 138, 0.25);
     
-    /* Chips - darker pink bg, light pink text */
-    --chip-bg: rgba(74,0,43,0.6);
-    --chip-border: rgba(255,137,197,0.4);
-    --chip-text: #FFE3F3;
-    --chip-selected-bg: rgba(255,63,155,0.4);
-    --chip-selected-border: rgba(255,137,197,0.7);
-    --chip-selected-text: #FFE3F3;
-    --chip-ghost-glow: 0 0 28px rgba(255,79,165,0.45);
+    /* Chips - GLASS style */
+    --chip-bg: rgba(80, 0, 50, 0.5);
+    --chip-border: rgba(255, 100, 180, 0.4);
+    --chip-text: #FFD4EC;
+    --chip-selected-bg: rgba(255, 45, 138, 0.35);
+    --chip-selected-border: rgba(255, 150, 210, 0.8);
+    --chip-selected-text: #FFFFFF;
+    --chip-ghost-glow: 0 0 35px rgba(255, 45, 138, 0.5);
     
-    /* Weather pill styling */
-    --weather-pill-bg: rgba(45,0,32,0.75);
-    --weather-pill-border: rgba(255,137,197,0.55);
-    --weather-pill-text: #FFE3F3;
-    --weather-pill-icon: #FF8AC7;
+    /* Weather pill - GLASS */
+    --weather-pill-bg: rgba(50, 0, 35, 0.7);
+    --weather-pill-border: rgba(255, 100, 180, 0.5);
+    --weather-pill-text: #FFD4EC;
+    --weather-pill-icon: #FF7CC4;
     
-    /* Header icons - bright pink */
-    --header-icon-color: #FF8AC7;
-    --header-icon-glow: 0 0 10px rgba(255,79,165,0.35);
-    --header-title-color: #FFE3F3;
+    /* Header icons - BRIGHT pink */
+    --header-icon-color: #FF7CC4;
+    --header-icon-glow: 0 0 12px rgba(255, 45, 138, 0.5);
+    --header-title-color: #FFD4EC;
     
-    /* Username color - branded Pink accent */
-    --username-color: #FF5FB5;
-    --supporting-text-color: #FFE3F3;
+    /* Username color - NEON Pink accent */
+    --username-color: #FF4DA6;
+    --supporting-text-color: #FFD4EC;
     
-    /* Glow effects */
-    --glow-primary: rgba(255,79,165,0.45);
-    --glow-secondary: rgba(255,111,190,0.3);
+    /* Glow effects - INTENSE */
+    --glow-primary: rgba(255, 45, 138, 0.6);
+    --glow-secondary: rgba(255, 77, 166, 0.4);
     
-    /* Slider controls - pink palette */
-    --slider-track: #4A002B;
-    --slider-filled: #FF5FB5;
-    --slider-thumb: #FFE3F3;
-    --slider-thumb-glow: 0 0 10px rgba(255,117,191,0.75);
+    /* Slider controls - NEON pink palette */
+    --slider-track: rgba(80, 0, 50, 0.6);
+    --slider-filled: #FF4DA6;
+    --slider-thumb: #FFD4EC;
+    --slider-thumb-glow: 0 0 14px rgba(255, 77, 166, 0.85);
     --slider-label: #FFBADC;
   }
 
@@ -305,15 +316,21 @@
     
     /* Primary button - #2F2F2F solid with subtle gloss */
     --btn-primary-bg: linear-gradient(180deg, #2F2F2F 0%, #262626 100%);
+    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
     --btn-primary-border: #3A3A3A;
     --btn-primary-text: #E6E6E6;
     --btn-primary-glow: none;
     
     /* Secondary button - flat */
     --btn-secondary-bg: #1A1A1A;
+    --btn-secondary-shine: none;
     --btn-secondary-border: #2A2A2A;
     --btn-secondary-text: #C2C2C2;
     --btn-secondary-glow: none;
+    
+    /* Card glass styling - subtle for matte */
+    --card-glass-border: #2A2A2A;
+    --card-glass-shine: none;
     
     /* Chips - minimal */
     --chip-bg: rgba(255,255,255,0.04);
@@ -505,14 +522,14 @@
     margin-top: 2px;
   }
 
-  /* Theme-aware primary button */
+  /* Theme-aware primary button - NEON GLOW with inner shine */
   .btn-theme-primary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 12px 24px;
     background: var(--btn-primary-bg);
-    border: 1.5px solid var(--btn-primary-border);
+    border: 2px solid var(--btn-primary-border);
     border-radius: var(--radius-md);
     font-size: 15px;
     font-weight: 600;
@@ -520,10 +537,26 @@
     cursor: pointer;
     transition: var(--transition-smooth);
     box-shadow: var(--btn-primary-glow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Inner shine overlay */
+  .btn-theme-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: var(--btn-primary-shine, linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%));
+    border-radius: var(--radius-md) var(--radius-md) 50% 50%;
+    pointer-events: none;
   }
 
   .btn-theme-primary:hover {
-    filter: brightness(1.1);
+    filter: brightness(1.15);
+    transform: translateY(-1px);
   }
 
   .btn-theme-primary:disabled {
@@ -531,14 +564,14 @@
     cursor: not-allowed;
   }
 
-  /* Theme-aware secondary button */
+  /* Theme-aware secondary button - NEON style */
   .btn-theme-secondary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 12px 24px;
     background: var(--btn-secondary-bg);
-    border: 1.5px solid var(--btn-secondary-border);
+    border: 2px solid var(--btn-secondary-border);
     border-radius: var(--radius-md);
     font-size: 15px;
     font-weight: 500;
@@ -546,10 +579,48 @@
     cursor: pointer;
     transition: var(--transition-smooth);
     box-shadow: var(--btn-secondary-glow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-theme-secondary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: var(--btn-secondary-shine, linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%));
+    border-radius: var(--radius-md) var(--radius-md) 50% 50%;
+    pointer-events: none;
   }
 
   .btn-theme-secondary:hover {
-    filter: brightness(1.1);
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+  }
+
+  /* Glass-morphism card utility */
+  .card-glass {
+    background: var(--card-surface-gradient);
+    backdrop-filter: blur(var(--card-blur, 20px));
+    -webkit-backdrop-filter: blur(var(--card-blur, 20px));
+    border: 1px solid var(--card-glass-border, hsl(var(--border)));
+    border-radius: var(--radius-lg);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Glass shine overlay */
+  .card-glass::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: var(--card-glass-shine, linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%));
+    pointer-events: none;
   }
 
   /* Legacy button styles (preserved) */
