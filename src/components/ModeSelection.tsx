@@ -98,37 +98,37 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
 
               {/* Content */}
               <div className="relative z-10 flex items-center gap-4">
-                {/* Icon Circle - Bright royal blue */}
+                {/* Icon Circle - Rich royal blue with bright blue icon */}
                 <div 
                   className="w-14 h-14 rounded-full flex items-center justify-center relative overflow-hidden"
                   style={{
                     background: isSelected 
                       ? 'rgba(255,255,255,0.18)' 
-                      : 'linear-gradient(145deg, #4D7CFF 0%, #3B65E0 100%)',
+                      : 'linear-gradient(145deg, #2563EB 0%, #1D4ED8 100%)',
                     border: isSelected 
                       ? '1.5px solid rgba(255,255,255,0.25)' 
-                      : '1.5px solid rgba(100, 150, 255, 0.7)',
+                      : '1.5px solid rgba(96, 165, 250, 0.5)',
                     boxShadow: isSelected 
                       ? '0 0 20px var(--glow-primary)'
-                      : '0 0 18px rgba(77, 124, 255, 0.6), inset 0 2px 4px rgba(255,255,255,0.25)',
+                      : '0 0 16px rgba(37, 99, 235, 0.5), inset 0 2px 4px rgba(255,255,255,0.2)',
                     backdropFilter: 'blur(8px)',
                   }}
                 >
                   {/* Top shine for gloss */}
                   <div 
-                    className="absolute top-0 left-0 right-0 h-[45%] pointer-events-none"
+                    className="absolute top-0 left-0 right-0 h-[40%] pointer-events-none"
                     style={{
-                      background: 'linear-gradient(180deg, rgba(255,255,255,0.35) 0%, transparent 100%)',
+                      background: 'linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%)',
                       borderRadius: '50%',
                     }}
                   />
                   <Icon 
                     className="h-7 w-7 relative z-10" 
                     style={{ 
-                      color: isSelected ? 'rgba(255,255,255,0.95)' : '#E0EBFF',
+                      color: isSelected ? 'rgba(255,255,255,0.95)' : '#93C5FD',
                       filter: isSelected 
                         ? 'drop-shadow(0 0 8px rgba(255,255,255,0.6))' 
-                        : 'drop-shadow(0 0 2px rgba(255,255,255,0.8))',
+                        : 'drop-shadow(0 0 4px rgba(147, 197, 253, 0.8))',
                       strokeWidth: 2.2,
                     }} 
                   />
