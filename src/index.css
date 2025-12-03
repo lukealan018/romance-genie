@@ -86,14 +86,14 @@
     --btn-primary-bg: linear-gradient(90deg, #1E3A8A 0%, #1D4ED8 30%, #2563EB 50%, #1D4ED8 70%, #1E3A8A 100%);
     --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.08) 40%, transparent 60%);
     --btn-primary-border: #60A5FA;
-    --btn-primary-text: #D9E6FF;
+    --btn-primary-text: #C6DBFF;
     --btn-primary-glow: 0 0 12px rgba(96, 165, 250, 0.5), 0 0 30px rgba(59, 130, 246, 0.4), 0 4px 20px rgba(0, 0, 0, 0.5);
     
     /* Secondary button - VIBRANT sapphire glass */
     --btn-secondary-bg: linear-gradient(145deg, rgba(30, 64, 175, 0.7) 0%, rgba(37, 99, 235, 0.6) 50%, rgba(59, 130, 246, 0.5) 100%);
     --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.05) 40%, transparent 60%);
     --btn-secondary-border: #60A5FA;
-    --btn-secondary-text: #D9E6FF;
+    --btn-secondary-text: #C6DBFF;
     --btn-secondary-glow: 0 0 10px rgba(96, 165, 250, 0.4), 0 0 25px rgba(59, 130, 246, 0.3), 0 4px 15px rgba(0, 0, 0, 0.4);
     
     /* Chips - subtle glass style */
