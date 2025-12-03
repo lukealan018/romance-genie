@@ -59,7 +59,7 @@ export function useAppTheme() {
 }
 
 export const themeDisplayNames: Record<ThemeName, string> = {
-  "sapphire-night": "Sapphire Night",
-  "rose-twilight": "Rose Twilight",
-  "midnight-matte": "Midnight Matte",
+  "sapphire-night": "Sapphire",
+  "rose-twilight": "Pink Glow",
+  "midnight-matte": "Matte",
 };

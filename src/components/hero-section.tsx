@@ -40,12 +40,13 @@ export const HeroSection = ({
   }[searchMode];
 
   return (
-    <div className="space-y-6 py-5 relative">
+    <div className="space-y-6 py-5 relative" style={{ transition: 'var(--theme-transition)' }}>
       {/* Background gradient - theme aware */}
       <div 
         className="absolute inset-0 pointer-events-none -z-10"
         style={{
           background: 'var(--hero-gradient)',
+          transition: 'var(--theme-transition)',
         }}
       />
       
@@ -63,9 +64,10 @@ export const HeroSection = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative px-6 pt-8 pb-10 border border-[rgba(255,255,255,0.06)] rounded-[18px] overflow-hidden"
+        className="relative px-6 pt-8 pb-10 border border-[rgba(255,255,255,0.08)] rounded-[18px] overflow-hidden"
         style={{
           background: 'var(--card-surface-gradient)',
+          transition: 'var(--theme-transition)',
         }}
       >
         {/* Signature luxury radial glow inside card - theme aware */}
@@ -90,12 +92,12 @@ export const HeroSection = ({
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <p className="text-[rgba(255,255,255,0.72)] text-base">Welcome back,</p>
-                  <h1 className="text-[34px] font-bold" style={{ color: 'var(--theme-accent)' }}>
+                  <p style={{ color: 'var(--supporting-text-color)', transition: 'var(--theme-transition)' }} className="text-base">Welcome back,</p>
+                  <h1 className="text-[34px] font-bold" style={{ color: 'var(--username-color)', transition: 'var(--theme-transition)' }}>
                     {userName}
                   </h1>
                 </motion.div>
-                <p className="text-[rgba(255,255,255,0.72)] text-sm mt-2">
+                <p style={{ color: 'var(--supporting-text-color)', transition: 'var(--theme-transition)' }} className="text-sm mt-2">
                   Ready for tonight's adventure?
                 </p>
               </>
