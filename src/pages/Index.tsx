@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, User, Calendar as CalendarIcon, Heart, Utensils, Sparkles } from "lucide-react";
+import { Loader2, User, Calendar as CalendarIcon, Heart, Utensils, Sparkles, Settings2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { FloatingPlanAheadButton } from "@/components/FloatingPlanAheadButton";
 import { PlanAheadDialog } from "@/components/PlanAheadDialog";
 import { DateChoiceDialog } from "@/components/DateChoiceDialog";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 
 import { toast } from "@/hooks/use-toast";
 import { usePlanStore } from "@/store/planStore";
@@ -134,12 +135,16 @@ const Index = () => {
           <>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm flex items-center gap-2" style={{ color: 'var(--chip-text)', transition: 'var(--theme-transition)' }}>
+                {/* Date mode indicator with tap to change */}
+                <button
+                  onClick={() => usePlanStore.getState().setSearchMode(null)}
+                  className="flex items-center gap-2 text-sm"
+                  style={{ color: 'var(--chip-text)', transition: 'var(--theme-transition)' }}
+                >
+                  <Settings2 className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
                   {searchMode === 'both' && (
                     <>
                       <Utensils className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
-                      <span>+</span>
-                      <Sparkles className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
                       <span>Full Date Night</span>
                     </>
                   )}
@@ -155,21 +160,10 @@ const Index = () => {
                       <span>Just Activity</span>
                     </>
                   )}
-                </span>
+                </button>
               </div>
-              {/* Change Mode button for date-mode selection */}
-              <button
-                onClick={() => usePlanStore.getState().setSearchMode(null)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium"
-                style={{
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  color: 'var(--chip-text)',
-                  transition: 'var(--theme-transition)',
-                }}
-              >
-                <span>Change Mode</span>
-              </button>
+              {/* Change Mode button - cycles themes only */}
+              <ThemeSwitcher variant="pill" />
             </div>
 
             <HeroSection
