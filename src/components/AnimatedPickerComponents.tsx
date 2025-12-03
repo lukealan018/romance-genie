@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { LucideIcon } from "lucide-react";
 
 interface AnimatedPickerButtonProps {
@@ -18,62 +17,65 @@ export const AnimatedPickerButton = ({
   delay = 0
 }: AnimatedPickerButtonProps) => {
   return (
-    <motion.div
+    <motion.button
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay }}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: 1.03, y: -2 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className="chip-luxury relative overflow-hidden"
+      style={{
+        background: isSelected ? 'var(--chip-selected-bg)' : 'var(--chip-bg)',
+        borderColor: isSelected ? 'var(--chip-selected-border)' : 'var(--chip-border)',
+        color: isSelected ? 'var(--chip-selected-text)' : 'var(--chip-text)',
+        boxShadow: isSelected ? 'var(--chip-selected-glow)' : 'var(--chip-glow)',
+      }}
     >
-      <Button
-        onClick={onClick}
-        variant="outline"
-        className="relative overflow-hidden border-[1.5px]"
+      {/* Subtle glow pulse on selection */}
+      {isSelected && (
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'rgba(var(--theme-accent-rgb), 0.08)' }}
+          animate={{
+            opacity: [0.4, 0.7, 0.4],
+          }}
+          transition={{
+            duration: 2.5,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+      )}
+      
+      {/* Hover gradient sweep */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
         style={{
-          background: isSelected ? 'var(--chip-selected-bg)' : 'var(--chip-bg)',
-          borderColor: isSelected ? 'var(--chip-selected-border)' : 'var(--chip-border)',
-          color: isSelected ? 'var(--chip-selected-text)' : 'var(--chip-text)',
-          boxShadow: isSelected ? 'var(--chip-ghost-glow)' : 'none',
-          transition: 'background 0.35s ease, box-shadow 0.42s ease, border-color 0.35s ease',
+          background: 'linear-gradient(to right, transparent 0%, rgba(var(--theme-accent-rgb), 0.15) 50%, transparent 100%)',
         }}
+        initial={{ x: '-100%' }}
+        whileHover={{ x: '100%' }}
+        transition={{ duration: 0.8 }}
+      />
+      
+      {/* Content */}
+      <div 
+        className="relative z-10 flex items-center gap-2"
+        style={{ color: isSelected ? 'var(--chip-selected-text)' : 'var(--chip-text)' }}
       >
-        {/* Subtle glow effect on selection */}
-        {isSelected && (
-          <motion.div
-            className="absolute inset-0"
-            style={{ background: 'rgba(var(--theme-accent-rgb), 0.05)' }}
-            animate={{
-              opacity: [0.3, 0.6, 0.3],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
+        {Icon && (
+          <Icon 
+            className="h-4 w-4" 
+            style={{ 
+              color: isSelected ? 'var(--chip-selected-text)' : 'var(--chip-text)',
+              filter: isSelected ? 'var(--header-icon-glow)' : 'none'
+            }} 
           />
         )}
-        
-        {/* Hover gradient overlay - ghost trail extended 15-20% */}
-        <motion.div
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(to right, transparent 0%, rgba(var(--theme-accent-rgb), 0.18) 50%, transparent 100%)',
-          }}
-          initial={{ x: '-100%' }}
-          whileHover={{ x: '100%' }}
-          transition={{ duration: 1.05 }}
-        />
-        
-        {/* Content */}
-        <div 
-          className="relative z-10 flex items-center gap-2"
-          style={{ color: isSelected ? 'var(--chip-selected-text)' : 'var(--chip-text)' }}
-        >
-          {Icon && <Icon className="h-4 w-4" style={{ color: isSelected ? 'var(--chip-selected-text)' : 'var(--chip-text)' }} />}
-          <span>{label}</span>
-        </div>
-      </Button>
-    </motion.div>
+        <span className="font-medium">{label}</span>
+      </div>
+    </motion.button>
   );
 };
 
@@ -103,9 +105,19 @@ export const AnimatedPickerSection = ({
         transition={{ duration: 0.4, delay: 0.1 }}
         className="space-y-1"
       >
-        <h3 className="text-xl font-semibold text-white">{title}</h3>
+        <h3 
+          className="text-xl font-semibold"
+          style={{ color: 'var(--header-title-color, hsl(var(--foreground)))' }}
+        >
+          {title}
+        </h3>
         {subtitle && (
-          <p className="text-sm text-slate-400">{subtitle}</p>
+          <p 
+            className="text-sm"
+            style={{ color: 'var(--supporting-text-color, hsl(var(--muted-foreground)))' }}
+          >
+            {subtitle}
+          </p>
         )}
       </motion.div>
       
