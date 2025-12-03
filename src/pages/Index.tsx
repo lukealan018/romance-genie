@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, User, Calendar as CalendarIcon, Heart, Utensils, Sparkles, Settings2 } from "lucide-react";
+import { Loader2, User, Calendar as CalendarIcon, Heart, Utensils, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +14,6 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { FloatingPlanAheadButton } from "@/components/FloatingPlanAheadButton";
 import { PlanAheadDialog } from "@/components/PlanAheadDialog";
 import { DateChoiceDialog } from "@/components/DateChoiceDialog";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 
 import { toast } from "@/hooks/use-toast";
 import { usePlanStore } from "@/store/planStore";
@@ -127,37 +126,38 @@ const Index = () => {
 
         {searchMode && (
           <>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                {/* Date mode indicator with tap to change */}
-                <button
-                  onClick={() => usePlanStore.getState().setSearchMode(null)}
-                  className="flex items-center gap-2 text-sm"
-                  style={{ color: 'var(--chip-text)', transition: 'var(--theme-transition)' }}
-                >
-                  <Settings2 className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
-                  {searchMode === 'both' && (
-                    <>
-                      <Utensils className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
-                      <span>Full Date Night</span>
-                    </>
-                  )}
-                  {searchMode === 'restaurant_only' && (
-                    <>
-                      <Utensils className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
-                      <span>Just Dinner</span>
-                    </>
-                  )}
-                  {searchMode === 'activity_only' && (
-                    <>
-                      <Sparkles className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
-                      <span>Just Activity</span>
-                    </>
-                  )}
-                </button>
+            <div className="flex items-center justify-between mt-4 mb-6">
+              {/* Date mode indicator */}
+              <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--chip-text)' }}>
+                {searchMode === 'both' && (
+                  <>
+                    <Utensils className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
+                    <span>Full Date Night</span>
+                  </>
+                )}
+                {searchMode === 'restaurant_only' && (
+                  <>
+                    <Utensils className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
+                    <span>Just Dinner</span>
+                  </>
+                )}
+                {searchMode === 'activity_only' && (
+                  <>
+                    <Sparkles className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
+                    <span>Just Activity</span>
+                  </>
+                )}
               </div>
-              {/* Change Mode button - cycles themes only */}
-              <ThemeSwitcher variant="pill" />
+              {/* Change Mode button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => usePlanStore.getState().setSearchMode(null)}
+                className="text-sm"
+                style={{ color: 'var(--chip-text)' }}
+              >
+                Change Mode
+              </Button>
             </div>
 
             <HeroSection
