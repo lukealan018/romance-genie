@@ -31,7 +31,7 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
   ];
 
   return (
-    <div className="space-y-6 pb-6">
+    <div className="space-y-6 pb-6 pt-16">
       {/* Header */}
       <div className="text-center">
         <h2 
