@@ -43,7 +43,7 @@ export default function LoginPage() {
     return (
       <div 
         className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: 'var(--page-gradient)' }}
+        style={{ background: 'var(--page-gradient)', transition: 'background 0.35s ease' }}
       >
         <div 
           className="rounded-2xl shadow-2xl p-8 max-w-md w-full text-center"
@@ -90,7 +90,7 @@ export default function LoginPage() {
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: 'var(--page-gradient)' }}
+      style={{ background: 'var(--page-gradient)', transition: 'background 0.35s ease' }}
     >
       <div 
         className="rounded-2xl shadow-2xl p-8 max-w-md w-full"

@@ -28,11 +28,13 @@ export const AnimatedPickerButton = ({
       <Button
         onClick={onClick}
         variant="outline"
-        className="relative overflow-hidden transition-all duration-300 border-[1.5px]"
+        className="relative overflow-hidden border-[1.5px]"
         style={{
           background: isSelected ? 'var(--chip-selected-bg)' : 'var(--chip-bg)',
           borderColor: isSelected ? 'var(--chip-selected-border)' : 'var(--chip-border)',
           color: isSelected ? 'var(--chip-selected-text)' : 'var(--chip-text)',
+          boxShadow: isSelected ? 'var(--chip-ghost-glow)' : 'none',
+          transition: 'background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease',
         }}
       >
         {/* Subtle glow effect on selection */}

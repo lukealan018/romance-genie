@@ -36,7 +36,7 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
       <div className="text-center">
         <h2 
           className="text-2xl font-bold mb-2"
-          style={{ color: 'var(--header-title-color)' }}
+          style={{ color: 'var(--header-title-color)', transition: 'color 0.35s ease' }}
         >
           What's the vibe tonight?
         </h2>
@@ -58,18 +58,19 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
               onClick={() => onModeSelect(mode.id)}
-              className="relative overflow-hidden rounded-[18px] p-6 text-left transition-all duration-300"
+              className="relative overflow-hidden rounded-[18px] p-6 text-left"
               style={{
                 background: isSelected 
                   ? 'var(--btn-primary-bg)' 
                   : 'var(--card-surface-gradient)',
                 border: isSelected 
-                  ? `1.5px solid var(--btn-primary-border)` 
+                  ? '1.5px solid var(--btn-primary-border)' 
                   : '1px solid rgba(255,255,255,0.08)',
                 boxShadow: isSelected 
                   ? 'var(--btn-primary-glow)' 
                   : 'none',
                 transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                transition: 'background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease, transform 0.2s ease',
               }}
             >
               {/* Background glow effect when selected */}
@@ -92,16 +93,18 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
                   style={{
                     background: isSelected 
                       ? 'rgba(255,255,255,0.15)' 
-                      : `rgba(var(--theme-accent-rgb), 0.2)`,
+                      : 'rgba(var(--theme-accent-rgb), 0.2)',
                     border: isSelected 
                       ? '1px solid rgba(255,255,255,0.2)' 
-                      : `1px solid rgba(var(--theme-accent-rgb), 0.3)`,
+                      : '1px solid rgba(var(--theme-accent-rgb), 0.3)',
+                    transition: 'background 0.35s ease, border-color 0.35s ease',
                   }}
                 >
                   <Icon 
                     className="h-7 w-7" 
                     style={{ 
-                      color: isSelected ? 'rgba(255,255,255,0.95)' : 'var(--theme-accent-light)' 
+                      color: isSelected ? 'rgba(255,255,255,0.95)' : 'var(--theme-accent-light)',
+                      transition: 'color 0.35s ease',
                     }} 
                   />
                 </div>
@@ -110,7 +113,10 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
                 <div className="flex-1">
                   <h3 
                     className="text-xl font-bold"
-                    style={{ color: isSelected ? 'rgba(255,255,255,0.95)' : 'var(--header-title-color)' }}
+                    style={{ 
+                      color: isSelected ? 'rgba(255,255,255,0.95)' : 'var(--header-title-color)',
+                      transition: 'color 0.35s ease',
+                    }}
                   >
                     {mode.title}
                   </h3>

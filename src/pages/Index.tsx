@@ -74,6 +74,7 @@ const Index = () => {
       className="min-h-screen"
       style={{
         background: 'var(--page-gradient)',
+        transition: 'background 0.35s ease',
       }}
     >
       <div className="container max-w-2xl mx-auto px-4 py-8">
