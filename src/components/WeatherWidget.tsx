@@ -1,4 +1,3 @@
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Navigation, Home, Check } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -27,10 +26,10 @@ export const WeatherWidget = ({
 }: WeatherWidgetProps) => {
   if (loading) {
     return (
-      <Card className="px-3 py-1.5 flex items-center gap-2 bg-card/50 border-border/50 max-w-sm">
+      <div className="weather-pill px-3 py-1.5 flex items-center gap-2 max-w-sm">
         <Skeleton className="w-8 h-8 rounded" />
         <Skeleton className="h-4 flex-1" />
-      </Card>
+      </div>
     );
   }
 
@@ -39,22 +38,18 @@ export const WeatherWidget = ({
 
   if (!temperature || !description) {
     return (
-      <Card className="px-3 py-1.5 flex items-center gap-2 bg-card/50 border-border/50 max-w-sm">
-        <MapPin className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-        <span className="text-sm text-muted-foreground whitespace-nowrap">Getting Weather...</span>
-      </Card>
+      <div className="weather-pill px-3 py-1.5 flex items-center gap-2 max-w-sm">
+        <MapPin className="w-5 h-5 weather-icon flex-shrink-0" />
+        <span className="text-sm whitespace-nowrap" style={{ color: 'var(--weather-pill-text)' }}>
+          Getting Weather...
+        </span>
+      </div>
     );
   }
 
   const weatherContent = (
-    <Card 
-      className="px-3 py-1.5 flex items-center gap-2 max-w-sm hover:brightness-110 cursor-pointer"
-      style={{
-        background: 'var(--weather-pill-bg, rgba(16,28,48,0.75))',
-        border: '1px solid var(--weather-pill-border, rgba(120,146,255,0.45))',
-        backdropFilter: 'blur(12px)',
-        transition: 'var(--theme-transition)',
-      }}
+    <div 
+      className="weather-pill px-3 py-1.5 flex items-center gap-2 max-w-sm cursor-pointer transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5"
     >
       {icon && (
         <img
@@ -66,29 +61,28 @@ export const WeatherWidget = ({
       <div className="flex items-center gap-1.5 min-w-0 flex-1">
         {locationSource && (
           <LocationIcon 
-            className="w-4 h-4 flex-shrink-0" 
-            style={{ color: 'var(--weather-pill-icon, var(--header-icon-color))' }}
+            className="w-4 h-4 flex-shrink-0 weather-icon" 
           />
         )}
         {cityName && (
           <>
             <span 
               className="text-base font-semibold truncate"
-              style={{ color: 'var(--weather-pill-text, #DDE9FF)' }}
+              style={{ color: 'var(--weather-pill-text)' }}
             >
               {cityName}
             </span>
-            <span style={{ color: 'var(--weather-pill-text, #DDE9FF)', opacity: 0.6 }}>|</span>
+            <span style={{ color: 'var(--weather-pill-text)', opacity: 0.5 }}>|</span>
           </>
         )}
         <span 
-          className="text-sm whitespace-nowrap"
-          style={{ color: 'var(--weather-pill-text, #DDE9FF)', opacity: 0.85 }}
+          className="text-sm whitespace-nowrap font-medium"
+          style={{ color: 'var(--weather-pill-text)' }}
         >
           {temperature}°F
         </span>
       </div>
-    </Card>
+    </div>
   );
 
   if (!showPopover) {

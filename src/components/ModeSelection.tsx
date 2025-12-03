@@ -40,12 +40,12 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
         >
           What's the vibe tonight?
         </h2>
-        <p className="text-[rgba(255,255,255,0.55)] text-sm">
+        <p style={{ color: 'var(--supporting-text-color)', opacity: 0.7 }} className="text-sm">
           Choose what you're looking for
         </p>
       </div>
 
-      {/* Mode Cards - Theme aware */}
+      {/* Mode Cards - Glassmorphism with neon glow */}
       <div className="grid grid-cols-1 gap-4 px-4">
         {modes.map((mode, index) => {
           const Icon = mode.icon;
@@ -57,28 +57,39 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => onModeSelect(mode.id)}
-              className="relative overflow-hidden rounded-[18px] p-6 text-left"
+              className="card-glass relative overflow-hidden p-6 text-left"
               style={{
                 background: isSelected 
-                  ? 'var(--btn-primary-bg)' 
+                  ? 'var(--chip-selected-bg)' 
                   : 'var(--card-surface-gradient)',
                 border: isSelected 
-                  ? '1.5px solid var(--btn-primary-border)' 
-                  : '1px solid rgba(255,255,255,0.08)',
+                  ? '2px solid var(--chip-selected-border)' 
+                  : '1.5px solid var(--card-glass-border)',
                 boxShadow: isSelected 
-                  ? 'var(--btn-primary-glow)' 
-                  : 'none',
-                transform: isSelected ? 'scale(1.02)' : 'scale(1)',
-                transition: 'background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease, transform 0.2s ease',
+                  ? 'var(--chip-selected-glow), var(--card-glow)' 
+                  : 'var(--card-glow)',
               }}
             >
+              {/* Inner shine overlay */}
+              <div 
+                className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none"
+                style={{
+                  background: isSelected 
+                    ? 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%)'
+                    : 'var(--card-glass-shine)',
+                  borderRadius: '18px 18px 50% 50%',
+                }}
+              />
+
               {/* Background glow effect when selected */}
               {isSelected && (
                 <motion.div
                   className="absolute inset-0 pointer-events-none"
-                  animate={{ opacity: [0.2, 0.4, 0.2] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+                  animate={{ opacity: [0.3, 0.5, 0.3] }}
+                  transition={{ duration: 2.5, repeat: Infinity }}
                   style={{
                     background: `radial-gradient(circle at center, var(--glow-primary) 0%, transparent 70%)`,
                   }}
@@ -87,24 +98,35 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
 
               {/* Content */}
               <div className="relative z-10 flex items-center gap-4">
-                {/* Icon */}
+                {/* Icon Circle - Glassmorphic */}
                 <div 
-                  className="w-14 h-14 rounded-full flex items-center justify-center"
+                  className="w-14 h-14 rounded-full flex items-center justify-center relative overflow-hidden"
                   style={{
                     background: isSelected 
-                      ? 'rgba(255,255,255,0.15)' 
-                      : 'rgba(var(--theme-accent-rgb), 0.2)',
+                      ? 'rgba(255,255,255,0.18)' 
+                      : 'rgba(var(--theme-accent-rgb), 0.25)',
                     border: isSelected 
-                      ? '1px solid rgba(255,255,255,0.2)' 
-                      : '1px solid rgba(var(--theme-accent-rgb), 0.3)',
-                    transition: 'background 0.35s ease, border-color 0.35s ease',
+                      ? '1.5px solid rgba(255,255,255,0.25)' 
+                      : '1.5px solid rgba(var(--theme-accent-rgb), 0.4)',
+                    boxShadow: isSelected 
+                      ? '0 0 20px var(--glow-primary)'
+                      : '0 0 15px rgba(var(--theme-accent-rgb), 0.2)',
+                    backdropFilter: 'blur(8px)',
                   }}
                 >
+                  {/* Icon shine */}
+                  <div 
+                    className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none"
+                    style={{
+                      background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%)',
+                      borderRadius: '50%',
+                    }}
+                  />
                   <Icon 
-                    className="h-7 w-7" 
+                    className="h-7 w-7 relative z-10" 
                     style={{ 
                       color: isSelected ? 'rgba(255,255,255,0.95)' : 'var(--theme-accent-light)',
-                      transition: 'color 0.35s ease',
+                      filter: `drop-shadow(0 0 6px ${isSelected ? 'rgba(255,255,255,0.5)' : 'var(--glow-primary)'})`,
                     }} 
                   />
                 </div>
@@ -114,15 +136,15 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
                   <h3 
                     className="text-xl font-bold"
                     style={{ 
-                      color: isSelected ? 'rgba(255,255,255,0.95)' : 'var(--header-title-color)',
-                      transition: 'color 0.35s ease',
+                      color: isSelected ? 'rgba(255,255,255,0.98)' : 'var(--header-title-color)',
+                      textShadow: isSelected ? '0 0 20px currentColor' : 'none',
                     }}
                   >
                     {mode.title}
                   </h3>
                   <p 
                     className="text-sm"
-                    style={{ color: isSelected ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.55)' }}
+                    style={{ color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--supporting-text-color)' }}
                   >
                     {mode.subtitle}
                   </p>
@@ -133,7 +155,11 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="w-6 h-6 rounded-full bg-white flex items-center justify-center"
+                    className="w-7 h-7 rounded-full flex items-center justify-center"
+                    style={{
+                      background: 'rgba(255,255,255,0.95)',
+                      boxShadow: '0 0 15px rgba(255,255,255,0.5)',
+                    }}
                   >
                     <svg
                       className="w-4 h-4"
