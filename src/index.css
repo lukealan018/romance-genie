@@ -111,8 +111,9 @@
     --header-icon-glow: drop-shadow(0 0 4px rgba(37, 99, 235, 0.3));
     --header-title-color: #A8CBFF;
     
-    /* Username color - sapphire accent */
-    --username-color: #3B82F6;
+    /* Username color - bright sapphire accent with glow */
+    --username-color: #60A5FA;
+    --username-glow: 0 0 20px rgba(59, 130, 246, 0.4), 0 0 40px rgba(37, 99, 235, 0.2);
     --supporting-text-color: #94A3B8;
     
     /* Glow effects - SUBTLE */
@@ -259,8 +260,9 @@
     --header-icon-glow: drop-shadow(0 0 4px rgba(219, 39, 119, 0.3));
     --header-title-color: #FFD6E8;
     
-    /* Username color - rose accent */
-    --username-color: #EC4899;
+    /* Username color - bright rose accent with glow */
+    --username-color: #F472B6;
+    --username-glow: 0 0 20px rgba(236, 72, 153, 0.4), 0 0 40px rgba(219, 39, 119, 0.2);
     --supporting-text-color: #D1A3B8;
     
     /* Glow effects - SUBTLE */
@@ -370,8 +372,9 @@
     --header-icon-glow: none;
     --header-title-color: #E6E6E6;
     
-    /* Username color */
-    --username-color: #E6E6E6;
+    /* Username color with subtle glow */
+    --username-color: #F0F0F0;
+    --username-glow: 0 0 15px rgba(255, 255, 255, 0.15);
     --supporting-text-color: #C2C2C2;
     
     /* Glow effects - disabled */

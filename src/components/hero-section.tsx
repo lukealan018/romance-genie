@@ -96,7 +96,7 @@ export const HeroSection = ({
                   transition={{ delay: 0.2 }}
                 >
                   <p style={{ color: 'var(--supporting-text-color)', transition: 'var(--theme-transition)' }} className="text-base">Welcome back,</p>
-                  <h1 className="text-[34px] font-bold" style={{ color: 'var(--username-color)', transition: 'var(--theme-transition)' }}>
+                  <h1 className="text-[34px] font-bold" style={{ color: 'var(--username-color)', textShadow: 'var(--username-glow)', transition: 'var(--theme-transition)' }}>
                     {userName}
                   </h1>
                 </motion.div>
