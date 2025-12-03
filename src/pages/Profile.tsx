@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
+import { ThemeSelector } from "@/components/ThemeSwitcher";
 
 // Primary options shown directly on page
 const PRIMARY_CUISINES = ["italian", "mexican", "sushi", "steakhouse", "thai", "american"];
@@ -339,6 +340,13 @@ const Profile = () => {
               Religious
             </button>
           </div>
+        </div>
+
+        {/* Card 5: Theme / Appearance */}
+        <div className="card-luxury fade-slide-in" style={{ animationDelay: "0.2s" }}>
+          <h2 className="text-luxury-heading mb-1">Appearance</h2>
+          <p className="text-luxury-subtitle mb-6">Choose your visual theme</p>
+          <ThemeSelector />
         </div>
       </main>
 

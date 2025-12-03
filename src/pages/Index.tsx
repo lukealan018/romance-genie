@@ -14,7 +14,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { FloatingPlanAheadButton } from "@/components/FloatingPlanAheadButton";
 import { PlanAheadDialog } from "@/components/PlanAheadDialog";
 import { DateChoiceDialog } from "@/components/DateChoiceDialog";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+
 import { toast } from "@/hooks/use-toast";
 import { usePlanStore } from "@/store/planStore";
 import { useWeather } from "@/hooks/useWeather";
@@ -134,30 +134,42 @@ const Index = () => {
           <>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-[rgba(255,255,255,0.78)] flex items-center gap-2">
+                <span className="text-sm flex items-center gap-2" style={{ color: 'var(--chip-text)', transition: 'var(--theme-transition)' }}>
                   {searchMode === 'both' && (
                     <>
-                      <Utensils className="w-4 h-4 text-[rgba(255,255,255,0.78)]" strokeWidth={2} />
+                      <Utensils className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
                       <span>+</span>
-                      <Sparkles className="w-4 h-4 text-[rgba(255,255,255,0.78)]" strokeWidth={2} />
+                      <Sparkles className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
                       <span>Full Date Night</span>
                     </>
                   )}
                   {searchMode === 'restaurant_only' && (
                     <>
-                      <Utensils className="w-4 h-4 text-[rgba(255,255,255,0.78)]" strokeWidth={2} />
+                      <Utensils className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
                       <span>Just Dinner</span>
                     </>
                   )}
                   {searchMode === 'activity_only' && (
                     <>
-                      <Sparkles className="w-4 h-4 text-[rgba(255,255,255,0.78)]" strokeWidth={2} />
+                      <Sparkles className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
                       <span>Just Activity</span>
                     </>
                   )}
                 </span>
               </div>
-              <ThemeSwitcher variant="pill" />
+              {/* Change Mode button for date-mode selection */}
+              <button
+                onClick={() => usePlanStore.getState().setSearchMode(null)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'var(--chip-text)',
+                  transition: 'var(--theme-transition)',
+                }}
+              >
+                <span>Change Mode</span>
+              </button>
             </div>
 
             <HeroSection

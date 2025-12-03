@@ -34,7 +34,7 @@ export const AnimatedPickerButton = ({
           borderColor: isSelected ? 'var(--chip-selected-border)' : 'var(--chip-border)',
           color: isSelected ? 'var(--chip-selected-text)' : 'var(--chip-text)',
           boxShadow: isSelected ? 'var(--chip-ghost-glow)' : 'none',
-          transition: 'background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease',
+          transition: 'background 0.35s ease, box-shadow 0.42s ease, border-color 0.35s ease',
         }}
       >
         {/* Subtle glow effect on selection */}
@@ -53,15 +53,15 @@ export const AnimatedPickerButton = ({
           />
         )}
         
-        {/* Hover gradient overlay - ghost trail */}
+        {/* Hover gradient overlay - ghost trail extended 15-20% */}
         <motion.div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(to right, transparent 0%, rgba(var(--theme-accent-rgb), 0.15) 50%, transparent 100%)',
+            background: 'linear-gradient(to right, transparent 0%, rgba(var(--theme-accent-rgb), 0.18) 50%, transparent 100%)',
           }}
           initial={{ x: '-100%' }}
           whileHover={{ x: '100%' }}
-          transition={{ duration: 0.9 }}
+          transition={{ duration: 1.05 }}
         />
         
         {/* Content */}
