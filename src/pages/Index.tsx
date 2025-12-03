@@ -71,13 +71,7 @@ const Index = () => {
   }
 
   return (
-    <div 
-      className="min-h-screen"
-      style={{
-        background: 'var(--page-gradient)',
-        transition: 'background 0.35s ease',
-      }}
-    >
+    <div className="themed-page-bg min-h-screen">
       <div className="container max-w-2xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between gap-2 mb-4">
           <WeatherWidget

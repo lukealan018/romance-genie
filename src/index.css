@@ -57,36 +57,40 @@
     --theme-accent-light: #4C8AFF;
     --theme-accent-lighter: #C9D7FF;
     
-    /* Page background gradient - EXACT from spec */
-    --page-gradient: linear-gradient(140deg, #0F1A2F 0%, #0A1B37 40%, #112B55 100%);
+    /* Page background gradient - RICH with radial hotspots */
+    --page-gradient: 
+      radial-gradient(ellipse 100% 100% at 50% 120%, rgba(0, 100, 255, 0.5) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 60% at 20% 80%, rgba(30, 80, 200, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(40, 60, 150, 0.3) 0%, transparent 40%),
+      linear-gradient(180deg, #0A0F1A 0%, #0D1B35 30%, #102855 70%, #0A1530 100%);
     
-    /* Hero gradient - sapphire card with blur */
-    --hero-gradient: linear-gradient(145deg, rgba(16,28,48,0.75) 0%, rgba(10,27,55,0.7) 100%);
+    /* Hero gradient - rich blue tint */
+    --hero-gradient: linear-gradient(145deg, rgba(15,30,60,0.8) 0%, rgba(10,25,50,0.75) 100%);
     
-    /* Card surface gradient - rgba with blur 20px */
-    --card-surface-gradient: rgba(16,28,48,0.75);
-    --card-blur: 20px;
+    /* Card surface gradient - GLASSY with blue tint */
+    --card-surface-gradient: linear-gradient(145deg, rgba(20,40,80,0.7) 0%, rgba(15,30,60,0.65) 100%);
+    --card-blur: 24px;
     
     /* Header gradient */
-    --header-gradient: linear-gradient(180deg, rgba(15,26,47,1) 0%, rgba(15,26,47,0.9) 40%, rgba(15,26,47,0) 100%);
+    --header-gradient: linear-gradient(180deg, rgba(10,15,26,1) 0%, rgba(10,15,26,0.9) 40%, rgba(10,15,26,0) 100%);
     
-    /* Primary button - EXACT gradient #1E4FFF → #4C8AFF with shine */
-    --btn-primary-bg: linear-gradient(135deg, #1E4FFF 0%, #4C8AFF 100%);
-    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
-    --btn-primary-border: rgba(120,146,255,0.45);
+    /* Primary button - INTENSE NEON GLOW */
+    --btn-primary-bg: linear-gradient(135deg, #2563EB 0%, #3B82F6 50%, #2563EB 100%);
+    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, transparent 50%);
+    --btn-primary-border: rgba(100, 180, 255, 0.6);
     --btn-primary-text: #ffffff;
-    --btn-primary-glow: 0 0 18px rgba(50,90,255,0.25);
+    --btn-primary-glow: 0 0 35px rgba(59, 130, 246, 0.8), 0 0 70px rgba(59, 130, 246, 0.4), 0 0 100px rgba(59, 130, 246, 0.2);
     
-    /* Secondary button */
-    --btn-secondary-bg: linear-gradient(135deg, rgba(61,109,255,0.35) 0%, rgba(76,138,255,0.25) 100%);
-    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-    --btn-secondary-border: rgba(120,146,255,0.35);
-    --btn-secondary-text: #DDE9FF;
-    --btn-secondary-glow: 0 0 14px rgba(50,90,255,0.2);
+    /* Secondary button - BLUE TO PURPLE GRADIENT */
+    --btn-secondary-bg: linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #8B5CF6 100%);
+    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+    --btn-secondary-border: rgba(139, 92, 246, 0.5);
+    --btn-secondary-text: #ffffff;
+    --btn-secondary-glow: 0 0 25px rgba(99, 102, 241, 0.6), 0 0 50px rgba(139, 92, 246, 0.3);
     
-    /* Card glass styling */
-    --card-glass-border: rgba(120,146,255,0.2);
-    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
+    /* Card glass styling - RICHER */
+    --card-glass-border: rgba(100, 150, 255, 0.25);
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
     
     /* Chips */
     --chip-bg: rgba(255,255,255,0.04);
@@ -106,9 +110,9 @@
     --username-color: #3D6DFF;
     --supporting-text-color: #DDE9FF;
     
-    /* Glow effects */
-    --glow-primary: rgba(61,109,255,0.35);
-    --glow-secondary: rgba(76,138,255,0.2);
+    /* Glow effects - INTENSE */
+    --glow-primary: rgba(59, 130, 246, 0.6);
+    --glow-secondary: rgba(96, 165, 250, 0.4);
     
     /* Slider controls - sapphire palette */
     --slider-track: rgba(255,255,255,0.12);
