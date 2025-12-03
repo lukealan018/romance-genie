@@ -228,14 +228,14 @@
     --btn-primary-bg: linear-gradient(145deg, #BE185D 0%, #DB2777 50%, #EC4899 100%);
     --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 40%, transparent 60%);
     --btn-primary-border: rgba(236, 72, 153, 0.4);
-    --btn-primary-text: #ffffff;
+    --btn-primary-text: #F9A8D4;
     --btn-primary-glow: 0 0 20px rgba(219, 39, 119, 0.25), 0 4px 15px rgba(0, 0, 0, 0.4);
     
     /* Secondary button - frosted with rose tint */
     --btn-secondary-bg: linear-gradient(145deg, rgba(157, 23, 77, 0.6) 0%, rgba(190, 24, 93, 0.5) 100%);
     --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 40%, transparent 60%);
     --btn-secondary-border: rgba(236, 72, 153, 0.35);
-    --btn-secondary-text: #ffffff;
+    --btn-secondary-text: #F9A8D4;
     --btn-secondary-glow: 0 0 15px rgba(219, 39, 119, 0.15), 0 4px 12px rgba(0, 0, 0, 0.3);
     
     /* Chips - subtle glass style */
@@ -340,14 +340,14 @@
     --btn-primary-bg: linear-gradient(180deg, #2A2A2A 0%, #222222 100%);
     --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
     --btn-primary-border: rgba(255, 255, 255, 0.12);
-    --btn-primary-text: #E6E6E6;
+    --btn-primary-text: #F0F0F0;
     --btn-primary-glow: 0 4px 15px rgba(0, 0, 0, 0.4);
     
     /* Secondary button - flat */
     --btn-secondary-bg: linear-gradient(180deg, #1A1A1A 0%, #161616 100%);
     --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
     --btn-secondary-border: rgba(255, 255, 255, 0.1);
-    --btn-secondary-text: #C2C2C2;
+    --btn-secondary-text: #D4D4D4;
     --btn-secondary-glow: none;
     
     /* Chips - minimal glass */
