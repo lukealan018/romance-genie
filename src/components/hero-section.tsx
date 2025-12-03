@@ -64,10 +64,13 @@ export const HeroSection = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative px-6 pt-8 pb-10 border border-[rgba(255,255,255,0.08)] rounded-[18px] overflow-hidden"
+        className="relative px-6 pt-8 pb-10 rounded-[18px] overflow-hidden"
         style={{
           background: 'var(--card-surface-gradient)',
-          transition: 'var(--theme-transition)',
+          backdropFilter: 'blur(var(--card-blur, 20px))',
+          WebkitBackdropFilter: 'blur(var(--card-blur, 20px))',
+          border: '1px solid rgba(255,255,255,0.08)',
+          transition: 'background 450ms ease, backdrop-filter 300ms ease',
         }}
       >
         {/* Signature luxury radial glow inside card - theme aware */}
