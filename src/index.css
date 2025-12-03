@@ -82,8 +82,8 @@
     /* Header gradient */
     --header-gradient: linear-gradient(180deg, rgba(3, 7, 18, 1) 0%, rgba(3, 7, 18, 0.95) 40%, rgba(3, 7, 18, 0) 100%);
     
-    /* Primary button - RICH ROYAL SAPPHIRE gradient */
-    --btn-primary-bg: linear-gradient(145deg, #1E40AF 0%, #2563EB 35%, #3B82F6 70%, #60A5FA 100%);
+    /* Primary button - RICH ROYAL SAPPHIRE gradient (dark-bright-dark) */
+    --btn-primary-bg: linear-gradient(90deg, #1E40AF 0%, #2563EB 25%, #3B82F6 50%, #2563EB 75%, #1E40AF 100%);
     --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.08) 40%, transparent 60%);
     --btn-primary-border: #60A5FA;
     --btn-primary-text: #ffffff;
