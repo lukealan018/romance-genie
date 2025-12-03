@@ -64,33 +64,33 @@
       radial-gradient(ellipse 60% 40% at 80% 20%, rgba(40, 60, 150, 0.3) 0%, transparent 40%),
       linear-gradient(180deg, #0A0F1A 0%, #0D1B35 30%, #102855 70%, #0A1530 100%);
     
-    /* Hero gradient - rich blue tint */
-    --hero-gradient: linear-gradient(145deg, rgba(15,30,60,0.8) 0%, rgba(10,25,50,0.75) 100%);
+    /* Hero gradient - deep rich blue tint */
+    --hero-gradient: linear-gradient(145deg, rgba(10,25,55,0.85) 0%, rgba(8,20,45,0.8) 100%);
     
-    /* Card surface gradient - GLASSY with blue tint */
-    --card-surface-gradient: linear-gradient(145deg, rgba(20,40,80,0.7) 0%, rgba(15,30,60,0.65) 100%);
-    --card-blur: 24px;
+    /* Card surface gradient - DEEP SAPPHIRE GLASS */
+    --card-surface-gradient: linear-gradient(145deg, rgba(12,30,65,0.75) 0%, rgba(10,25,55,0.7) 100%);
+    --card-blur: 20px;
     
     /* Header gradient */
     --header-gradient: linear-gradient(180deg, rgba(10,15,26,1) 0%, rgba(10,15,26,0.9) 40%, rgba(10,15,26,0) 100%);
     
-    /* Primary button - INTENSE NEON GLOW */
-    --btn-primary-bg: linear-gradient(135deg, #2563EB 0%, #3B82F6 50%, #2563EB 100%);
-    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, transparent 50%);
-    --btn-primary-border: rgba(100, 180, 255, 0.6);
+    /* Primary button - DEEP SAPPHIRE with subtle gloss */
+    --btn-primary-bg: linear-gradient(135deg, #1E40AF 0%, #2563EB 50%, #1E40AF 100%);
+    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+    --btn-primary-border: rgba(59, 130, 246, 0.5);
     --btn-primary-text: #ffffff;
-    --btn-primary-glow: 0 0 35px rgba(59, 130, 246, 0.8), 0 0 70px rgba(59, 130, 246, 0.4), 0 0 100px rgba(59, 130, 246, 0.2);
+    --btn-primary-glow: 0 0 30px rgba(37, 99, 235, 0.5), 0 0 60px rgba(37, 99, 235, 0.25);
     
     /* Secondary button - BLUE TO PURPLE GRADIENT */
     --btn-secondary-bg: linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #8B5CF6 100%);
-    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
-    --btn-secondary-border: rgba(139, 92, 246, 0.5);
+    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+    --btn-secondary-border: rgba(139, 92, 246, 0.4);
     --btn-secondary-text: #ffffff;
-    --btn-secondary-glow: 0 0 25px rgba(99, 102, 241, 0.6), 0 0 50px rgba(139, 92, 246, 0.3);
+    --btn-secondary-glow: 0 0 20px rgba(99, 102, 241, 0.4), 0 0 40px rgba(139, 92, 246, 0.2);
     
-    /* Card glass styling - RICHER */
-    --card-glass-border: rgba(100, 150, 255, 0.25);
-    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    /* Card glass styling - DEEPER BLUE */
+    --card-glass-border: rgba(59, 130, 246, 0.2);
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 50%);
     
     /* Chips */
     --chip-bg: rgba(255,255,255,0.04);
@@ -110,9 +110,9 @@
     --username-color: #3D6DFF;
     --supporting-text-color: #DDE9FF;
     
-    /* Glow effects - INTENSE */
-    --glow-primary: rgba(59, 130, 246, 0.6);
-    --glow-secondary: rgba(96, 165, 250, 0.4);
+    /* Glow effects - SUBTLE SAPPHIRE */
+    --glow-primary: rgba(37, 99, 235, 0.4);
+    --glow-secondary: rgba(59, 130, 246, 0.25);
     
     /* Slider controls - sapphire palette */
     --slider-track: rgba(255,255,255,0.12);
