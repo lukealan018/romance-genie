@@ -47,7 +47,15 @@ export const WeatherWidget = ({
   }
 
   const weatherContent = (
-    <Card className="px-3 py-1.5 flex items-center gap-2 bg-card/50 border-border/50 max-w-sm hover:bg-card/60 transition-colors cursor-pointer">
+    <Card 
+      className="px-3 py-1.5 flex items-center gap-2 max-w-sm hover:brightness-110 cursor-pointer"
+      style={{
+        background: 'var(--weather-pill-bg, rgba(16,28,48,0.75))',
+        border: '1px solid var(--weather-pill-border, rgba(120,146,255,0.45))',
+        backdropFilter: 'blur(12px)',
+        transition: 'var(--theme-transition)',
+      }}
+    >
       {icon && (
         <img
           src={`https://openweathermap.org/img/wn/${icon}.png`}
@@ -56,14 +64,27 @@ export const WeatherWidget = ({
         />
       )}
       <div className="flex items-center gap-1.5 min-w-0 flex-1">
-        {locationSource && <LocationIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
+        {locationSource && (
+          <LocationIcon 
+            className="w-4 h-4 flex-shrink-0" 
+            style={{ color: 'var(--weather-pill-icon, var(--header-icon-color))' }}
+          />
+        )}
         {cityName && (
           <>
-            <span className="text-base font-semibold text-foreground truncate">{cityName}</span>
-            <span className="text-muted-foreground">|</span>
+            <span 
+              className="text-base font-semibold truncate"
+              style={{ color: 'var(--weather-pill-text, #DDE9FF)' }}
+            >
+              {cityName}
+            </span>
+            <span style={{ color: 'var(--weather-pill-text, #DDE9FF)', opacity: 0.6 }}>|</span>
           </>
         )}
-        <span className="text-sm text-muted-foreground whitespace-nowrap">
+        <span 
+          className="text-sm whitespace-nowrap"
+          style={{ color: 'var(--weather-pill-text, #DDE9FF)', opacity: 0.85 }}
+        >
           {temperature}°F
         </span>
       </div>
