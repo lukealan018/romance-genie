@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, Sparkles, ChevronDown, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,19 +41,19 @@ export const HeroSection = ({
 
   return (
     <div className="space-y-6 py-5 relative">
-      {/* Background gradient behind hero area */}
+      {/* Background gradient - theme aware */}
       <div 
         className="absolute inset-0 pointer-events-none -z-10"
         style={{
-          background: 'linear-gradient(180deg, #11171D 0%, rgba(58,122,254,0.10) 50%, #0A0E12 100%)',
+          background: 'var(--hero-gradient)',
         }}
       />
       
-      {/* Hero card outer glow */}
+      {/* Hero card outer glow - theme aware */}
       <div 
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[50%] aspect-square pointer-events-none -z-10"
         style={{
-          background: 'radial-gradient(circle, rgba(58,122,254,0.18) 0%, rgba(120,80,255,0.10) 40%, transparent 70%)',
+          background: `radial-gradient(circle, var(--glow-primary) 0%, var(--glow-secondary) 40%, transparent 70%)`,
           filter: 'blur(48px)',
         }}
       />
@@ -64,13 +63,16 @@ export const HeroSection = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative px-6 pt-8 pb-10 bg-[#11171D] border border-[rgba(255,255,255,0.06)] rounded-[18px] overflow-hidden"
+        className="relative px-6 pt-8 pb-10 border border-[rgba(255,255,255,0.06)] rounded-[18px] overflow-hidden"
+        style={{
+          background: 'var(--card-surface-gradient)',
+        }}
       >
-        {/* Signature luxury radial glow inside card */}
+        {/* Signature luxury radial glow inside card - theme aware */}
         <div 
           className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40%] aspect-square pointer-events-none"
           style={{
-            background: 'radial-gradient(circle, rgba(58,122,254,0.16) 0%, rgba(120,80,255,0.10) 40%, transparent 70%)',
+            background: `radial-gradient(circle, var(--glow-primary) 0%, var(--glow-secondary) 40%, transparent 70%)`,
             filter: 'blur(40px)',
           }}
         />
@@ -89,7 +91,7 @@ export const HeroSection = ({
                   transition={{ delay: 0.2 }}
                 >
                   <p className="text-[rgba(255,255,255,0.72)] text-base">Welcome back,</p>
-                  <h1 className="text-[34px] font-bold text-[rgba(58,122,254,0.9)]">
+                  <h1 className="text-[34px] font-bold" style={{ color: 'var(--theme-accent)' }}>
                     {userName}
                   </h1>
                 </motion.div>
@@ -104,7 +106,7 @@ export const HeroSection = ({
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-              <h1 className="text-[38px] font-bold text-[rgba(58,122,254,0.9)]">
+                  <h1 className="text-[38px] font-bold" style={{ color: 'var(--theme-accent)' }}>
                     Your Perfect Night
                   </h1>
                   <p className="text-[rgba(255,255,255,0.55)] text-base mt-1">Awaits</p>
@@ -116,7 +118,7 @@ export const HeroSection = ({
             )}
           </div>
 
-          {/* Primary CTA - Luxury Matte Voice Button */}
+          {/* Primary CTA - Theme-aware Luxury Voice Button */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -131,8 +133,8 @@ export const HeroSection = ({
               }}
               style={{
                 background: isListening 
-                  ? 'radial-gradient(ellipse 90% 70% at 50% 100%, rgba(58,122,254,0.25) 0%, transparent 70%)'
-                  : 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(58,122,254,0.20) 0%, transparent 70%)',
+                  ? `radial-gradient(ellipse 90% 70% at 50% 100%, var(--glow-primary) 0%, transparent 70%)`
+                  : `radial-gradient(ellipse 80% 60% at 50% 100%, rgba(var(--theme-accent-rgb),0.20) 0%, transparent 70%)`,
                 filter: isListening ? 'blur(40px)' : 'blur(28px)',
                 transform: 'translateY(8px)',
               }}
@@ -151,7 +153,7 @@ export const HeroSection = ({
                   ease: "easeInOut",
                 }}
                 style={{
-                  background: 'linear-gradient(135deg, rgba(58,122,254,0.35) 0%, rgba(120,80,255,0.25) 100%)',
+                  background: `linear-gradient(135deg, var(--glow-primary) 0%, var(--glow-secondary) 100%)`,
                   filter: 'blur(4px)',
                 }}
               />
@@ -160,18 +162,27 @@ export const HeroSection = ({
             <button
               onClick={onVoiceInput}
               disabled={loading}
-              className={`relative w-full font-medium py-5 px-6 rounded-[16px] transition-all duration-300 overflow-hidden ${
-                isListening 
-                  ? 'bg-[rgba(58,122,254,0.22)] border-2 border-[rgba(58,122,254,0.70)] text-[rgba(255,255,255,0.95)]'
+              className="relative w-full font-medium py-5 px-6 rounded-[16px] transition-all duration-300 overflow-hidden"
+              style={{
+                background: isListening 
+                  ? `rgba(var(--theme-accent-rgb),0.22)`
                   : loading
-                    ? 'bg-[rgba(255,255,255,0.08)] border-2 border-[rgba(255,255,255,0.15)] text-[rgba(255,255,255,0.90)]'
-                    : 'bg-[rgba(58,122,254,0.38)] border-2 border-[rgba(58,122,254,0.95)] hover:bg-[rgba(58,122,254,0.45)] hover:border-[rgba(58,122,254,1)] text-[rgba(255,255,255,0.95)]'
-              }`}
+                    ? 'rgba(255,255,255,0.08)'
+                    : 'var(--btn-primary-bg)',
+                border: isListening
+                  ? `2px solid rgba(var(--theme-accent-rgb),0.70)`
+                  : loading
+                    ? '2px solid rgba(255,255,255,0.15)'
+                    : `1.5px solid var(--btn-primary-border)`,
+                color: 'var(--btn-primary-text)',
+                boxShadow: !isListening && !loading ? 'var(--btn-primary-glow)' : 'none',
+              }}
             >
               {/* Inner pulse animation when listening */}
               {isListening && (
                 <motion.div
-                  className="absolute inset-0 bg-[rgba(58,122,254,0.08)]"
+                  className="absolute inset-0"
+                  style={{ background: `rgba(var(--theme-accent-rgb),0.08)` }}
                   animate={{ 
                     scale: [1, 1.3, 1], 
                     opacity: [0.4, 0, 0.4] 
@@ -187,13 +198,13 @@ export const HeroSection = ({
                       animate={{ scale: [1, 1.15, 1] }}
                       transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
                     >
-                      <Mic className="h-5 w-5 text-[#3A7AFE]" strokeWidth={2} />
+                      <Mic className="h-5 w-5" style={{ color: 'var(--theme-accent)' }} strokeWidth={2} />
                     </motion.div>
                     <span className="font-medium">Listening...</span>
                   </>
                 ) : loading ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin text-[#3A7AFE]" />
+                    <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--theme-accent)' }} />
                     <motion.span
                       animate={{ opacity: [1, 0.5, 1] }}
                       transition={{ duration: 1.5, repeat: Infinity }}
@@ -203,7 +214,7 @@ export const HeroSection = ({
                   </>
                 ) : (
                   <>
-                    <Mic className="h-5 w-5 text-[#3A7AFE]" strokeWidth={1.5} />
+                    <Mic className="h-5 w-5" style={{ color: 'var(--theme-accent-light)' }} strokeWidth={1.5} />
                     <span>{voiceButtonText}</span>
                   </>
                 )}
@@ -243,7 +254,7 @@ export const HeroSection = ({
             <div 
               className="absolute inset-0 pointer-events-none"
               style={{
-                background: 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(58,122,254,0.10) 0%, transparent 70%)',
+                background: `radial-gradient(ellipse 80% 60% at 50% 100%, rgba(var(--theme-accent-rgb),0.10) 0%, transparent 70%)`,
                 filter: 'blur(18px)',
                 transform: 'translateY(6px)',
               }}
@@ -251,16 +262,22 @@ export const HeroSection = ({
             <button
               onClick={onSurpriseMe}
               disabled={loading}
-              className="relative inline-flex items-center justify-center gap-2 bg-[rgba(58,122,254,0.26)] border-2 border-[rgba(58,122,254,0.82)] hover:bg-[rgba(58,122,254,0.34)] hover:border-[rgba(58,122,254,0.95)] text-[rgba(255,255,255,0.95)] font-medium py-2.5 px-5 rounded-[12px] transition-all duration-200 disabled:opacity-50"
+              className="relative inline-flex items-center justify-center gap-2 font-medium py-2.5 px-5 rounded-[12px] transition-all duration-200 disabled:opacity-50"
+              style={{
+                background: 'var(--btn-secondary-bg)',
+                border: `1.5px solid var(--btn-secondary-border)`,
+                color: 'var(--btn-secondary-text)',
+                boxShadow: 'var(--btn-secondary-glow)',
+              }}
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin text-[#3A7AFE]" />
+                  <Loader2 className="h-4 w-4 animate-spin" style={{ color: 'var(--theme-accent)' }} />
                   <span>Finding magic...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4 text-[#3A7AFE]" strokeWidth={1.5} />
+                  <Sparkles className="h-4 w-4" style={{ color: 'var(--theme-accent-light)' }} strokeWidth={1.5} />
                   <span>Surprise Me!</span>
                 </>
               )}
