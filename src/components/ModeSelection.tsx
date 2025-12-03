@@ -98,19 +98,19 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
 
               {/* Content */}
               <div className="relative z-10 flex items-center gap-4">
-                {/* Icon Circle - Rich royal blue with bright blue icon */}
+                {/* Icon Circle - Theme-aware with accent colors */}
                 <div 
                   className="w-14 h-14 rounded-full flex items-center justify-center relative overflow-hidden"
                   style={{
                     background: isSelected 
                       ? 'rgba(255,255,255,0.18)' 
-                      : 'linear-gradient(145deg, #2563EB 0%, #1D4ED8 100%)',
+                      : 'linear-gradient(145deg, var(--theme-accent) 0%, var(--theme-accent-dark) 100%)',
                     border: isSelected 
                       ? '1.5px solid rgba(255,255,255,0.25)' 
-                      : '1.5px solid rgba(96, 165, 250, 0.5)',
+                      : '1.5px solid var(--theme-accent-light)',
                     boxShadow: isSelected 
                       ? '0 0 20px var(--glow-primary)'
-                      : '0 0 16px rgba(37, 99, 235, 0.5), inset 0 2px 4px rgba(255,255,255,0.2)',
+                      : `0 0 16px var(--glow-primary), inset 0 2px 4px rgba(255,255,255,0.2)`,
                     backdropFilter: 'blur(8px)',
                   }}
                 >
@@ -125,10 +125,10 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
                   <Icon 
                     className="h-7 w-7 relative z-10" 
                     style={{ 
-                      color: isSelected ? 'rgba(255,255,255,0.95)' : '#93C5FD',
+                      color: isSelected ? 'rgba(255,255,255,0.95)' : 'var(--theme-accent-bright)',
                       filter: isSelected 
                         ? 'drop-shadow(0 0 8px rgba(255,255,255,0.6))' 
-                        : 'drop-shadow(0 0 4px rgba(147, 197, 253, 0.8))',
+                        : 'drop-shadow(0 0 4px var(--glow-primary))',
                       strokeWidth: 2.2,
                     }} 
                   />
