@@ -45,13 +45,7 @@ export default function LoginPage() {
         className="min-h-screen flex items-center justify-center p-4"
         style={{ background: 'var(--page-gradient)', transition: 'background 0.35s ease' }}
       >
-        <div 
-          className="rounded-2xl shadow-2xl p-8 max-w-md w-full text-center"
-          style={{ 
-            background: 'var(--card-surface-gradient)',
-            border: '1px solid rgba(255,255,255,0.08)'
-          }}
-        >
+        <div className="card-glass rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="mb-6">
             <CheckCircle className="w-20 h-20 mx-auto text-green-500 mb-4" />
             <h2 className="text-3xl font-bold text-white mb-2">Check Your Email!</h2>
@@ -92,13 +86,7 @@ export default function LoginPage() {
       className="min-h-screen flex items-center justify-center p-4"
       style={{ background: 'var(--page-gradient)', transition: 'background 0.35s ease' }}
     >
-      <div 
-        className="rounded-2xl shadow-2xl p-8 max-w-md w-full"
-        style={{ 
-          background: 'var(--card-surface-gradient)',
-          border: '1px solid rgba(255,255,255,0.08)'
-        }}
-      >
+      <div className="card-glass rounded-2xl shadow-2xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
           <Sparkles className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--theme-accent)' }} />
           <h1 className="text-4xl font-bold text-white mb-2">Romance Genie</h1>
@@ -136,22 +124,16 @@ export default function LoginPage() {
           <button
             onClick={handleMagicLink}
             disabled={loading || !email}
-            className="w-full py-3 rounded-lg font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-            style={{
-              background: 'var(--btn-primary-bg)',
-              border: '1.5px solid var(--btn-primary-border)',
-              color: 'var(--btn-primary-text)',
-              boxShadow: 'var(--btn-primary-glow)',
-            }}
+            className="btn-theme-primary w-full py-3 rounded-lg font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                 Sending magic link...
               </>
             ) : (
               <>
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-5 h-5 mr-2" />
                 Send Magic Link
               </>
             )}
