@@ -66,8 +66,8 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
                   ? 'var(--chip-selected-bg)' 
                   : 'var(--card-surface-gradient)',
                 border: isSelected 
-                  ? '2px solid var(--chip-selected-border)' 
-                  : '2px solid var(--card-glass-border)',
+                  ? '3px solid var(--chip-selected-border)' 
+                  : '3px solid var(--card-glass-border)',
                 boxShadow: isSelected 
                   ? 'var(--chip-selected-glow), var(--card-glow)' 
                   : 'var(--card-border-glow, 0 0 12px rgba(59, 130, 246, 0.5)), var(--card-glow)',
