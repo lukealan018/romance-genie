@@ -98,48 +98,38 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
 
               {/* Content */}
               <div className="relative z-10 flex items-center gap-4">
-                {/* Icon Circle - Bold sapphire with gloss */}
+                {/* Icon Circle - Bright royal blue */}
                 <div 
                   className="w-14 h-14 rounded-full flex items-center justify-center relative overflow-hidden"
                   style={{
                     background: isSelected 
                       ? 'rgba(255,255,255,0.18)' 
-                      : 'linear-gradient(145deg, rgba(37, 99, 235, 0.7) 0%, rgba(30, 64, 175, 0.5) 100%)',
+                      : 'linear-gradient(145deg, #4D7CFF 0%, #3B65E0 100%)',
                     border: isSelected 
                       ? '1.5px solid rgba(255,255,255,0.25)' 
-                      : '1.5px solid rgba(59, 130, 246, 0.6)',
+                      : '1.5px solid rgba(100, 150, 255, 0.7)',
                     boxShadow: isSelected 
                       ? '0 0 20px var(--glow-primary)'
-                      : '0 0 20px rgba(37, 99, 235, 0.5), inset 0 2px 4px rgba(255,255,255,0.15), inset 0 -2px 4px rgba(0,0,0,0.2)',
+                      : '0 0 18px rgba(77, 124, 255, 0.6), inset 0 2px 4px rgba(255,255,255,0.25)',
                     backdropFilter: 'blur(8px)',
                   }}
                 >
-                  {/* Inner radial highlight for gloss */}
-                  {!isSelected && (
-                    <div 
-                      className="absolute inset-0 pointer-events-none"
-                      style={{
-                        background: 'radial-gradient(circle at 35% 25%, rgba(96, 165, 250, 0.4) 0%, transparent 50%)',
-                        borderRadius: '50%',
-                      }}
-                    />
-                  )}
-                  {/* Top shine for gloss effect */}
+                  {/* Top shine for gloss */}
                   <div 
                     className="absolute top-0 left-0 right-0 h-[45%] pointer-events-none"
                     style={{
-                      background: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 100%)',
+                      background: 'linear-gradient(180deg, rgba(255,255,255,0.35) 0%, transparent 100%)',
                       borderRadius: '50%',
                     }}
                   />
                   <Icon 
                     className="h-7 w-7 relative z-10" 
                     style={{ 
-                      color: isSelected ? 'rgba(255,255,255,0.95)' : '#1E40AF',
+                      color: isSelected ? 'rgba(255,255,255,0.95)' : '#E0EBFF',
                       filter: isSelected 
                         ? 'drop-shadow(0 0 8px rgba(255,255,255,0.6))' 
-                        : 'drop-shadow(0 0 4px rgba(30, 64, 175, 0.9)) drop-shadow(0 0 8px rgba(37, 99, 235, 0.6))',
-                      strokeWidth: 2.5,
+                        : 'drop-shadow(0 0 2px rgba(255,255,255,0.8))',
+                      strokeWidth: 2.2,
                     }} 
                   />
                 </div>
