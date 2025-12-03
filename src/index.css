@@ -264,9 +264,19 @@
     --slider-label: #FFBADC;
   }
 
-  /* Rose Twilight - Direct background application for reliability */
-  .rose-twilight body,
-  .rose-twilight .themed-page-bg {
+  /* Default fallback - Sapphire Night */
+  .themed-page-bg {
+    background: 
+      radial-gradient(ellipse 100% 100% at 50% 120%, rgba(0, 100, 255, 0.5) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 60% at 20% 80%, rgba(30, 80, 200, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(40, 60, 150, 0.3) 0%, transparent 40%),
+      linear-gradient(180deg, #0A0F1A 0%, #0D1B35 30%, #102855 70%, #0A1530 100%);
+  }
+
+  /* Rose Twilight - RICH PINK BACKGROUND - higher specificity */
+  html.rose-twilight .themed-page-bg,
+  .rose-twilight.themed-page-bg,
+  .rose-twilight body {
     background: 
       radial-gradient(ellipse 120% 80% at 10% -20%, rgba(255, 0, 102, 0.5) 0%, transparent 50%),
       radial-gradient(ellipse 100% 100% at 90% 110%, rgba(200, 0, 120, 0.6) 0%, transparent 50%),
@@ -277,21 +287,8 @@
   /* Rose Twilight buttons - Direct neon glow application */
   .rose-twilight .btn-theme-primary {
     background: linear-gradient(135deg, #FF1A80 0%, #FF4DA6 40%, #FF1A80 100%) !important;
-    border: 2px solid rgba(255, 150, 210, 0.8) !important;
-    box-shadow: 0 0 30px rgba(255, 45, 138, 0.7), 0 0 60px rgba(255, 45, 138, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-  }
-
-  .rose-twilight .btn-theme-secondary {
-    background: linear-gradient(135deg, #FF1A80 0%, #FF4DA6 40%, #FF1A80 100%) !important;
-    border: 2px solid rgba(255, 150, 210, 0.7) !important;
-    box-shadow: 0 0 24px rgba(255, 45, 138, 0.6), 0 0 48px rgba(255, 45, 138, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
-  }
-
-  /* Rose Twilight card glass effect */
-  .rose-twilight .card-glass {
-    background: rgba(60, 0, 40, 0.6) !important;
-    border: 1px solid rgba(255, 100, 180, 0.35) !important;
-    box-shadow: 0 0 40px rgba(255, 45, 138, 0.15), inset 0 1px 0 rgba(255, 150, 200, 0.15) !important;
+    box-shadow: 0 0 30px rgba(255, 45, 138, 0.6), 0 0 60px rgba(255, 45, 138, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+    border: 1px solid rgba(255, 150, 210, 0.8) !important;
   }
 
   /* Rose Twilight icon colors */
@@ -301,8 +298,8 @@
   }
 
   /* Sapphire Night - Rich vibrant background with radial hotspots */
-  .sapphire-night .themed-page-bg,
-  :root .themed-page-bg {
+  html.sapphire-night .themed-page-bg,
+  .sapphire-night.themed-page-bg {
     background: 
       radial-gradient(ellipse 100% 100% at 50% 120%, rgba(0, 100, 255, 0.5) 0%, transparent 50%),
       radial-gradient(ellipse 80% 60% at 20% 80%, rgba(30, 80, 200, 0.4) 0%, transparent 50%),
