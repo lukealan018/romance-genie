@@ -224,19 +224,19 @@
     /* Header gradient */
     --header-gradient: linear-gradient(180deg, rgba(8, 3, 10, 1) 0%, rgba(8, 3, 10, 0.95) 40%, rgba(8, 3, 10, 0) 100%);
     
-    /* Primary button - SOPHISTICATED rose gradient */
-    --btn-primary-bg: linear-gradient(145deg, #BE185D 0%, #DB2777 50%, #EC4899 100%);
-    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 40%, transparent 60%);
-    --btn-primary-border: rgba(236, 72, 153, 0.4);
+    /* Primary button - DEEP Rose with rich darkened edges */
+    --btn-primary-bg: linear-gradient(90deg, #9D174D 0%, #BE185D 25%, #DB2777 50%, #BE185D 75%, #9D174D 100%);
+    --btn-primary-shine: linear-gradient(180deg, rgba(236, 72, 153, 0.4) 0%, rgba(219, 39, 119, 0.2) 35%, rgba(190, 24, 93, 0.08) 60%, transparent 80%);
+    --btn-primary-border: #EC4899;
     --btn-primary-text: #F9A8D4;
-    --btn-primary-glow: 0 0 20px rgba(219, 39, 119, 0.25), 0 4px 15px rgba(0, 0, 0, 0.4);
+    --btn-primary-glow: 0 0 18px rgba(157, 23, 77, 0.8), 0 0 40px rgba(190, 24, 93, 0.6), 0 6px 28px rgba(219, 39, 119, 0.5);
     
-    /* Secondary button - frosted with rose tint */
-    --btn-secondary-bg: linear-gradient(145deg, rgba(157, 23, 77, 0.6) 0%, rgba(190, 24, 93, 0.5) 100%);
-    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 40%, transparent 60%);
-    --btn-secondary-border: rgba(236, 72, 153, 0.35);
+    /* Secondary button - DEEP rose glass with rich darkened edges */
+    --btn-secondary-bg: linear-gradient(90deg, rgba(157, 23, 77, 0.95) 0%, rgba(190, 24, 93, 0.85) 25%, rgba(219, 39, 119, 0.8) 50%, rgba(190, 24, 93, 0.85) 75%, rgba(157, 23, 77, 0.95) 100%);
+    --btn-secondary-shine: linear-gradient(180deg, rgba(236, 72, 153, 0.3) 0%, rgba(219, 39, 119, 0.15) 35%, rgba(190, 24, 93, 0.06) 60%, transparent 80%);
+    --btn-secondary-border: #EC4899;
     --btn-secondary-text: #F9A8D4;
-    --btn-secondary-glow: 0 0 15px rgba(219, 39, 119, 0.15), 0 4px 12px rgba(0, 0, 0, 0.3);
+    --btn-secondary-glow: 0 0 16px rgba(157, 23, 77, 0.7), 0 0 35px rgba(190, 24, 93, 0.5), 0 5px 22px rgba(219, 39, 119, 0.4);
     
     /* Chips - subtle glass style */
     --chip-bg: rgba(50, 20, 40, 0.5);
@@ -336,19 +336,19 @@
     /* Header gradient */
     --header-gradient: linear-gradient(180deg, rgba(10, 10, 10, 1) 0%, rgba(10, 10, 10, 0.95) 40%, rgba(10, 10, 10, 0) 100%);
     
-    /* Primary button - Subtle gloss */
-    --btn-primary-bg: linear-gradient(180deg, #2A2A2A 0%, #222222 100%);
-    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-    --btn-primary-border: rgba(255, 255, 255, 0.12);
+    /* Primary button - DEEP Matte with rich darkened edges */
+    --btn-primary-bg: linear-gradient(90deg, #1A1A1A 0%, #2A2A2A 25%, #363636 50%, #2A2A2A 75%, #1A1A1A 100%);
+    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 35%, rgba(255, 255, 255, 0.02) 60%, transparent 80%);
+    --btn-primary-border: rgba(255, 255, 255, 0.18);
     --btn-primary-text: #F0F0F0;
-    --btn-primary-glow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    --btn-primary-glow: 0 0 18px rgba(40, 40, 40, 0.8), 0 0 40px rgba(60, 60, 60, 0.4), 0 6px 28px rgba(0, 0, 0, 0.5);
     
-    /* Secondary button - flat */
-    --btn-secondary-bg: linear-gradient(180deg, #1A1A1A 0%, #161616 100%);
-    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
-    --btn-secondary-border: rgba(255, 255, 255, 0.1);
+    /* Secondary button - DEEP matte glass with rich darkened edges */
+    --btn-secondary-bg: linear-gradient(90deg, rgba(20, 20, 20, 0.95) 0%, rgba(30, 30, 30, 0.9) 25%, rgba(40, 40, 40, 0.85) 50%, rgba(30, 30, 30, 0.9) 75%, rgba(20, 20, 20, 0.95) 100%);
+    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 35%, rgba(255, 255, 255, 0.01) 60%, transparent 80%);
+    --btn-secondary-border: rgba(255, 255, 255, 0.15);
     --btn-secondary-text: #D4D4D4;
-    --btn-secondary-glow: none;
+    --btn-secondary-glow: 0 0 16px rgba(30, 30, 30, 0.7), 0 0 35px rgba(50, 50, 50, 0.3), 0 5px 22px rgba(0, 0, 0, 0.4);
     
     /* Chips - minimal glass */
     --chip-bg: rgba(30, 30, 30, 0.7);
