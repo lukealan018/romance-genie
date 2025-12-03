@@ -41,10 +41,7 @@ export default function LoginPage() {
 
   if (emailSent) {
     return (
-      <div 
-        className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: 'var(--page-gradient)', transition: 'background 0.35s ease' }}
-      >
+      <div className="themed-page-bg min-h-screen flex items-center justify-center p-4">
         <div className="card-glass rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="mb-6">
             <CheckCircle className="w-20 h-20 mx-auto text-green-500 mb-4" />
@@ -82,13 +79,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div 
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: 'var(--page-gradient)', transition: 'background 0.35s ease' }}
-    >
+    <div className="themed-page-bg min-h-screen flex items-center justify-center p-4">
       <div className="card-glass rounded-2xl shadow-2xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
-          <Sparkles className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--theme-accent)' }} />
+          <Sparkles className="themed-icon w-16 h-16 mx-auto mb-4" />
           <h1 className="text-4xl font-bold text-white mb-2">Romance Genie</h1>
           <p className="text-[rgba(255,255,255,0.6)]">Your perfect night out awaits ✨</p>
         </div>
