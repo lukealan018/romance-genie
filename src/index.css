@@ -74,7 +74,7 @@
     
     /* Card glass styling - refined thin border */
     --card-glass-border: rgba(59, 130, 246, 0.2);
-    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0%, transparent 50%);
     
     /* Header gradient */
     --header-gradient: linear-gradient(180deg, rgba(3, 7, 18, 1) 0%, rgba(3, 7, 18, 0.95) 40%, rgba(3, 7, 18, 0) 100%);
@@ -213,7 +213,7 @@
     --card-blur: 20px;
     --card-glow: 0 4px 30px rgba(0, 0, 0, 0.3);
     --card-glass-border: rgba(219, 39, 119, 0.2);
-    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0%, transparent 50%);
     
     /* Header gradient */
     --header-gradient: linear-gradient(180deg, rgba(8, 3, 10, 1) 0%, rgba(8, 3, 10, 0.95) 40%, rgba(8, 3, 10, 0) 100%);
@@ -851,7 +851,7 @@
     left: 0;
     right: 0;
     height: 50%;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 100%);
     border-radius: 50px 50px 50% 50%;
     pointer-events: none;
   }

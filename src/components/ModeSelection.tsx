@@ -78,7 +78,7 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
                 className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none"
                 style={{
                   background: isSelected 
-                    ? 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%)'
+                    ? 'linear-gradient(180deg, rgba(255,255,255,0.09) 0%, transparent 100%)'
                     : 'var(--card-glass-shine)',
                   borderRadius: '18px 18px 50% 50%',
                 }}
@@ -118,7 +118,7 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
                   <div 
                     className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none"
                     style={{
-                      background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%)',
+                      background: 'linear-gradient(180deg, rgba(255,255,255,0.11) 0%, transparent 100%)',
                       borderRadius: '50%',
                     }}
                   />
