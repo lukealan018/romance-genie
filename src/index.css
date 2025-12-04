@@ -46,10 +46,10 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Borders & inputs - subtle, not bright */
-    --border: 215 25% 18%;
-    --input: 220 25% 12%;
-    --ring: 217 80% 50%;
+    /* Borders & inputs - more visible */
+    --border: 215 30% 28%;
+    --input: 220 25% 14%;
+    --ring: 217 80% 55%;
     
     /* Theme-specific tokens - SOPHISTICATED SAPPHIRE */
     --theme-accent: #2563EB;
@@ -74,10 +74,10 @@
     --card-blur: 20px;
     --card-glow: 0 4px 30px rgba(0, 0, 0, 0.3);
     
-    /* Card glass styling - NEON sapphire border */
-    --card-glass-border: #60A5FA;
-    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0%, transparent 50%);
-    --card-border-glow: 0 0 6px #3B82F6, 0 0 15px rgba(96, 165, 250, 0.6), 0 0 30px rgba(59, 130, 246, 0.35);
+    /* Card glass styling - NEON sapphire border - MORE VISIBLE */
+    --card-glass-border: #7AB8FF;
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+    --card-border-glow: 0 0 8px #60A5FA, 0 0 20px rgba(96, 165, 250, 0.7), 0 0 40px rgba(59, 130, 246, 0.45);
     
     /* Header gradient */
     --header-gradient: linear-gradient(180deg, rgba(3, 7, 18, 1) 0%, rgba(3, 7, 18, 0.95) 40%, rgba(3, 7, 18, 0) 100%);
@@ -96,15 +96,15 @@
     --btn-secondary-text: #7DD3FC;
     --btn-secondary-glow: 0 0 16px rgba(30, 58, 138, 0.7), 0 0 35px rgba(29, 78, 216, 0.5), 0 5px 22px rgba(30, 64, 175, 0.4);
     
-    /* Chips - subtle glass style */
-    --chip-bg: rgba(15, 30, 60, 0.5);
-    --chip-border: rgba(59, 130, 246, 0.25);
+    /* Chips - MORE VISIBLE glass style */
+    --chip-bg: rgba(15, 30, 60, 0.55);
+    --chip-border: rgba(96, 165, 250, 0.45);
     --chip-text: #93C5FD;
-    --chip-glow: none;
-    --chip-selected-bg: rgba(37, 99, 235, 0.3);
-    --chip-selected-border: rgba(59, 130, 246, 0.5);
+    --chip-glow: 0 0 6px rgba(59, 130, 246, 0.15);
+    --chip-selected-bg: rgba(37, 99, 235, 0.35);
+    --chip-selected-border: rgba(96, 165, 250, 0.65);
     --chip-selected-text: #FFFFFF;
-    --chip-selected-glow: 0 0 12px rgba(37, 99, 235, 0.25);
+    --chip-selected-glow: 0 0 15px rgba(37, 99, 235, 0.35);
     
     /* Header icons - clean sapphire */
     --header-icon-color: #3B82F6;
@@ -120,12 +120,12 @@
     --glow-primary: rgba(37, 99, 235, 0.25);
     --glow-secondary: rgba(59, 130, 246, 0.15);
     
-    /* Weather pill - frosted glass */
-    --weather-pill-bg: rgba(15, 30, 60, 0.6);
-    --weather-pill-border: rgba(59, 130, 246, 0.25);
+    /* Weather pill - MORE VISIBLE frosted glass */
+    --weather-pill-bg: rgba(15, 30, 60, 0.65);
+    --weather-pill-border: rgba(96, 165, 250, 0.45);
     --weather-pill-text: #CBD5E1;
-    --weather-pill-icon: #3B82F6;
-    --weather-pill-glow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    --weather-pill-icon: #60A5FA;
+    --weather-pill-glow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(59, 130, 246, 0.15);
     
     /* Slider controls */
     --slider-track: rgba(30, 58, 138, 0.3);
@@ -192,9 +192,9 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 330 45% 35%;
-    --input: 330 25% 18%;
-    --ring: 330 75% 60%;
+    --border: 330 55% 45%;
+    --input: 330 30% 22%;
+    --ring: 330 80% 65%;
     
     /* Theme-specific tokens - VIBRANT HOT PINK */
     --theme-accent: #F43F8B;
@@ -218,9 +218,9 @@
     --card-surface-gradient: linear-gradient(145deg, rgba(90, 40, 65, 0.5) 0%, rgba(60, 28, 48, 0.45) 100%);
     --card-blur: 20px;
     --card-glow: 0 4px 30px rgba(0, 0, 0, 0.2), 0 0 20px rgba(244, 63, 139, 0.1);
-    --card-glass-border: rgba(244, 63, 139, 0.45);
-    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
-    --card-border-glow: 0 0 8px rgba(244, 63, 139, 0.4), 0 0 20px rgba(248, 106, 170, 0.3), 0 0 35px rgba(244, 63, 139, 0.2);
+    --card-glass-border: rgba(248, 106, 170, 0.6);
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+    --card-border-glow: 0 0 10px rgba(244, 63, 139, 0.5), 0 0 25px rgba(248, 106, 170, 0.4), 0 0 45px rgba(244, 63, 139, 0.25);
     
     /* Header gradient - slightly visible */
     --header-gradient: linear-gradient(180deg, rgba(16, 8, 18, 0.98) 0%, rgba(16, 8, 18, 0.9) 40%, rgba(16, 8, 18, 0) 100%);
@@ -239,22 +239,22 @@
     --btn-secondary-text: #FFC0DD;
     --btn-secondary-glow: 0 0 20px rgba(194, 42, 104, 0.8), 0 0 42px rgba(217, 43, 117, 0.6), 0 5px 26px rgba(244, 63, 139, 0.5);
     
-    /* Chips - MORE VISIBLE pink glass */
-    --chip-bg: rgba(90, 40, 65, 0.6);
-    --chip-border: rgba(244, 63, 139, 0.5);
+    /* Chips - BRIGHTER pink glass */
+    --chip-bg: rgba(100, 45, 70, 0.65);
+    --chip-border: rgba(248, 106, 170, 0.65);
     --chip-text: #FFC0DD;
-    --chip-glow: 0 0 8px rgba(244, 63, 139, 0.15);
-    --chip-selected-bg: rgba(217, 43, 117, 0.5);
-    --chip-selected-border: rgba(248, 106, 170, 0.7);
+    --chip-glow: 0 0 10px rgba(244, 63, 139, 0.25);
+    --chip-selected-bg: rgba(217, 43, 117, 0.55);
+    --chip-selected-border: rgba(248, 106, 170, 0.85);
     --chip-selected-text: #FFFFFF;
-    --chip-selected-glow: 0 0 16px rgba(244, 63, 139, 0.4);
+    --chip-selected-glow: 0 0 20px rgba(244, 63, 139, 0.5);
     
-    /* Weather pill - more visible frosted glass */
-    --weather-pill-bg: rgba(90, 40, 65, 0.7);
-    --weather-pill-border: rgba(244, 63, 139, 0.4);
+    /* Weather pill - BRIGHTER frosted glass */
+    --weather-pill-bg: rgba(100, 45, 70, 0.75);
+    --weather-pill-border: rgba(248, 106, 170, 0.55);
     --weather-pill-text: #FFE0EE;
-    --weather-pill-icon: #F86AAA;
-    --weather-pill-glow: 0 4px 15px rgba(0, 0, 0, 0.2), 0 0 12px rgba(244, 63, 139, 0.2);
+    --weather-pill-icon: #FA8DC5;
+    --weather-pill-glow: 0 4px 15px rgba(0, 0, 0, 0.2), 0 0 15px rgba(244, 63, 139, 0.3);
     
     /* Header icons - BRIGHTER pink */
     --header-icon-color: #F86AAA;
@@ -309,9 +309,9 @@
     --destructive: 0 60% 50%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 0 0% 20%;
-    --input: 0 0% 13%;
-    --ring: 0 0% 35%;
+    --border: 0 0% 28%;
+    --input: 0 0% 16%;
+    --ring: 0 0% 42%;
     
     /* Theme-specific tokens - MATTE NOIR */
     --theme-accent: #9A9A9A;
@@ -327,12 +327,12 @@
     /* Hero gradient - flat */
     --hero-gradient: rgba(20, 20, 20, 0.7);
     
-    /* Card surface - flat glass */
-    --card-surface-gradient: rgba(20, 20, 20, 0.7);
+    /* Card surface - flat glass with more visible border */
+    --card-surface-gradient: rgba(22, 22, 22, 0.7);
     --card-blur: 16px;
     --card-glow: none;
-    --card-glass-border: rgba(255, 255, 255, 0.08);
-    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%);
+    --card-glass-border: rgba(255, 255, 255, 0.14);
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, transparent 40%);
     
     /* Header gradient */
     --header-gradient: linear-gradient(180deg, rgba(10, 10, 10, 1) 0%, rgba(10, 10, 10, 0.95) 40%, rgba(10, 10, 10, 0) 100%);
@@ -351,21 +351,21 @@
     --btn-secondary-text: #D4D4D4;
     --btn-secondary-glow: 0 0 16px rgba(30, 30, 30, 0.7), 0 0 35px rgba(50, 50, 50, 0.3), 0 5px 22px rgba(0, 0, 0, 0.4);
     
-    /* Chips - minimal glass */
-    --chip-bg: rgba(30, 30, 30, 0.7);
-    --chip-border: rgba(255, 255, 255, 0.1);
-    --chip-text: #C2C2C2;
+    /* Chips - more visible glass */
+    --chip-bg: rgba(35, 35, 35, 0.75);
+    --chip-border: rgba(255, 255, 255, 0.18);
+    --chip-text: #D0D0D0;
     --chip-glow: none;
-    --chip-selected-bg: rgba(255, 255, 255, 0.1);
-    --chip-selected-border: rgba(255, 255, 255, 0.2);
-    --chip-selected-text: #E6E6E6;
+    --chip-selected-bg: rgba(255, 255, 255, 0.14);
+    --chip-selected-border: rgba(255, 255, 255, 0.28);
+    --chip-selected-text: #F0F0F0;
     --chip-selected-glow: none;
     
-    /* Weather pill - matte glass */
-    --weather-pill-bg: rgba(25, 25, 25, 0.8);
-    --weather-pill-border: rgba(255, 255, 255, 0.12);
+    /* Weather pill - more visible matte glass */
+    --weather-pill-bg: rgba(28, 28, 28, 0.85);
+    --weather-pill-border: rgba(255, 255, 255, 0.2);
     --weather-pill-text: #E6E6E6;
-    --weather-pill-icon: #D0D0D0;
+    --weather-pill-icon: #D8D8D8;
     --weather-pill-glow: none;
     
     /* Header icons */
