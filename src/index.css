@@ -133,8 +133,8 @@
     --slider-thumb: #3B82F6;
     --slider-thumb-glow: 0 0 10px rgba(37, 99, 235, 0.4);
     --slider-label: #94A3B8;
-    --slider-value: #6DB4FF;
-    --slider-value-glow: 0 0 7px rgba(96, 180, 255, 0.05);
+    --slider-value: #7BA3F7;
+    --slider-value-glow: 0 0 7px rgba(96, 150, 250, 0.06);
     
     /* Design tokens */
     --radius: 16px;
