@@ -54,13 +54,13 @@ export const ManualFilters = ({
     <div className="space-y-6 mt-6">
       {(searchMode === 'both' || searchMode === 'restaurant_only') && (
         <>
-          <CuisinePicker
-            selected={cuisine}
-            onSelect={onCuisineChange}
-          />
           <PriceLevelPicker
             selected={priceLevel}
             onSelect={onPriceLevelChange}
+          />
+          <CuisinePicker
+            selected={cuisine}
+            onSelect={onCuisineChange}
           />
         </>
       )}
