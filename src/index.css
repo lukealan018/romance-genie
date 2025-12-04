@@ -98,15 +98,15 @@
     --btn-secondary-text: #7DD3FC;
     --btn-secondary-glow: 0 0 17px rgba(30, 58, 138, 0.65), 0 0 37px rgba(29, 78, 216, 0.45), 0 5px 24px rgba(30, 64, 175, 0.35);
     
-    /* Chips - MORE VISIBLE glass style */
+    /* Chips - BRIGHT glass style with glow */
     --chip-bg: rgba(15, 30, 60, 0.55);
-    --chip-border: rgba(96, 165, 250, 0.45);
-    --chip-text: #93C5FD;
-    --chip-glow: 0 0 6px rgba(59, 130, 246, 0.15);
-    --chip-selected-bg: rgba(37, 99, 235, 0.35);
-    --chip-selected-border: rgba(96, 165, 250, 0.65);
+    --chip-border: rgba(147, 197, 253, 0.55);
+    --chip-text: #B4D4FF;
+    --chip-glow: 0 0 10px rgba(59, 130, 246, 0.25);
+    --chip-selected-bg: rgba(37, 99, 235, 0.4);
+    --chip-selected-border: rgba(147, 197, 253, 0.85);
     --chip-selected-text: #FFFFFF;
-    --chip-selected-glow: 0 0 15px rgba(37, 99, 235, 0.35);
+    --chip-selected-glow: 0 0 18px rgba(59, 130, 246, 0.45);
     
     /* Header icons - clean sapphire */
     --header-icon-color: #3B82F6;
@@ -245,15 +245,15 @@
     --btn-secondary-text: #FFC0DD;
     --btn-secondary-glow: 0 0 24px rgba(194, 42, 104, 0.63), 0 0 51px rgba(217, 43, 117, 0.43), 0 5px 31px rgba(244, 63, 139, 0.33);
     
-    /* Chips - BRIGHTER pink glass */
+    /* Chips - BRIGHTER pink glass with glow */
     --chip-bg: rgba(100, 45, 70, 0.65);
-    --chip-border: rgba(248, 106, 170, 0.65);
-    --chip-text: #FFC0DD;
-    --chip-glow: 0 0 10px rgba(244, 63, 139, 0.25);
+    --chip-border: rgba(255, 150, 200, 0.7);
+    --chip-text: #FFD4E8;
+    --chip-glow: 0 0 12px rgba(244, 63, 139, 0.35);
     --chip-selected-bg: rgba(217, 43, 117, 0.55);
-    --chip-selected-border: rgba(248, 106, 170, 0.85);
+    --chip-selected-border: rgba(255, 170, 210, 0.9);
     --chip-selected-text: #FFFFFF;
-    --chip-selected-glow: 0 0 20px rgba(244, 63, 139, 0.5);
+    --chip-selected-glow: 0 0 22px rgba(244, 63, 139, 0.55);
     
     /* Weather pill - BRIGHTER frosted glass */
     --weather-pill-bg: rgba(100, 45, 70, 0.75);
@@ -362,15 +362,15 @@
     --btn-secondary-text: #D4D4D4;
     --btn-secondary-glow: 0 0 17px rgba(30, 30, 30, 0.65), 0 0 37px rgba(50, 50, 50, 0.25), 0 5px 23px rgba(0, 0, 0, 0.35);
     
-    /* Chips - prominent glass */
+    /* Chips - prominent glass with subtle glow */
     --chip-bg: rgba(40, 40, 40, 0.8);
-    --chip-border: rgba(255, 255, 255, 0.28);
-    --chip-text: #D8D8D8;
-    --chip-glow: none;
-    --chip-selected-bg: rgba(255, 255, 255, 0.18);
-    --chip-selected-border: rgba(255, 255, 255, 0.4);
-    --chip-selected-text: #F5F5F5;
-    --chip-selected-glow: none;
+    --chip-border: rgba(255, 255, 255, 0.38);
+    --chip-text: #E8E8E8;
+    --chip-glow: 0 0 6px rgba(255, 255, 255, 0.08);
+    --chip-selected-bg: rgba(255, 255, 255, 0.2);
+    --chip-selected-border: rgba(255, 255, 255, 0.55);
+    --chip-selected-text: #FFFFFF;
+    --chip-selected-glow: 0 0 12px rgba(255, 255, 255, 0.15);
     
     /* Weather pill - prominent matte glass */
     --weather-pill-bg: rgba(32, 32, 32, 0.88);
@@ -725,13 +725,21 @@
   .rec-style-btn .rec-label {
     font-size: 14px;
     font-weight: 500;
-    color: hsl(var(--foreground));
+    color: var(--chip-text);
+  }
+
+  .rec-style-btn.selected .rec-label {
+    color: var(--chip-selected-text);
   }
 
   .rec-style-btn .rec-subtitle {
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: hsl(var(--muted-foreground) / 0.9);
     margin-top: 2px;
+  }
+
+  .rec-style-btn.selected .rec-subtitle {
+    color: hsl(var(--foreground) / 0.85);
   }
 
   /* ============================================
@@ -885,7 +893,7 @@
     filter: var(--header-icon-glow, none);
   }
 
-  /* Legacy button styles (preserved) */
+  /* Legacy button styles - enhanced with glow */
   .btn-luxury-primary {
     display: inline-flex;
     align-items: center;
@@ -899,10 +907,12 @@
     color: hsl(var(--primary-foreground));
     cursor: pointer;
     transition: var(--transition-smooth);
+    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.35);
   }
 
   .btn-luxury-primary:hover {
     background: hsl(220 99% 55%);
+    box-shadow: 0 0 22px rgba(var(--primary-rgb), 0.5);
   }
 
   .btn-luxury-primary:disabled {
@@ -915,18 +925,21 @@
     align-items: center;
     justify-content: center;
     padding: 12px 24px;
-    background: transparent;
-    border: 1px solid hsl(var(--border));
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
     border-radius: var(--radius-md);
     font-size: 15px;
     font-weight: 500;
-    color: hsl(var(--muted-foreground));
+    color: var(--chip-text);
     cursor: pointer;
     transition: var(--transition-smooth);
+    box-shadow: var(--chip-glow);
   }
 
   .btn-luxury-secondary:hover {
-    background: hsl(0 0% 100% / 0.06);
+    background: var(--chip-selected-bg);
+    border-color: var(--chip-selected-border);
+    box-shadow: var(--chip-selected-glow);
   }
 
   /* Luxury input styling */
