@@ -72,7 +72,7 @@
     /* Card surface - SUBTLE GLASSMORPHISM */
     --card-surface-gradient: linear-gradient(145deg, rgba(15, 30, 60, 0.4) 0%, rgba(10, 22, 45, 0.35) 100%);
     --card-blur: 20px;
-    --card-glow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    --card-glow: 0 0 28px rgba(37, 99, 235, 0.15), 0 0 14px rgba(29, 78, 216, 0.10);
     
     /* Card glass styling - NEON sapphire border - MORE VISIBLE */
     --card-glass-border: #7AB8FF;
@@ -219,7 +219,7 @@
     /* Card surface - deeper with pink tint */
     --card-surface-gradient: linear-gradient(145deg, rgba(70, 20, 50, 0.55) 0%, rgba(45, 10, 35, 0.5) 100%);
     --card-blur: 20px;
-    --card-glow: 0 4px 35px rgba(0, 0, 0, 0.25), 0 0 23px rgba(244, 63, 139, 0.08);
+    --card-glow: 0 0 28px rgba(244, 63, 139, 0.15), 0 0 14px rgba(194, 42, 104, 0.10);
     --card-glass-border: rgba(248, 106, 170, 0.55);
     --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
     --card-border-glow: 0 0 12px rgba(244, 63, 139, 0.38), 0 0 29px rgba(248, 106, 170, 0.28), 0 0 52px rgba(244, 63, 139, 0.13);
@@ -334,7 +334,7 @@
     /* Card surface - flat glass with BRIGHT prominent border */
     --card-surface-gradient: rgba(26, 26, 26, 0.75);
     --card-blur: 16px;
-    --card-glow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --card-glow: 0 0 28px rgba(255, 255, 255, 0.08), 0 0 14px rgba(180, 180, 180, 0.05);
     --card-glass-border: rgba(255, 255, 255, 0.35);
     --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 40%);
     --card-border-glow: 0 0 8px rgba(255, 255, 255, 0.15), 0 0 20px rgba(255, 255, 255, 0.08);
