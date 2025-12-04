@@ -309,9 +309,9 @@
     --destructive: 0 60% 50%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 0 0% 28%;
-    --input: 0 0% 16%;
-    --ring: 0 0% 42%;
+    --border: 0 0% 38%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 50%;
     
     /* Theme-specific tokens - MATTE NOIR */
     --theme-accent: #9A9A9A;
@@ -327,12 +327,12 @@
     /* Hero gradient - flat */
     --hero-gradient: rgba(20, 20, 20, 0.7);
     
-    /* Card surface - flat glass with more visible border */
-    --card-surface-gradient: rgba(22, 22, 22, 0.7);
+    /* Card surface - flat glass with prominent border */
+    --card-surface-gradient: rgba(24, 24, 24, 0.7);
     --card-blur: 16px;
     --card-glow: none;
-    --card-glass-border: rgba(255, 255, 255, 0.14);
-    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, transparent 40%);
+    --card-glass-border: rgba(255, 255, 255, 0.22);
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 40%);
     
     /* Header gradient */
     --header-gradient: linear-gradient(180deg, rgba(10, 10, 10, 1) 0%, rgba(10, 10, 10, 0.95) 40%, rgba(10, 10, 10, 0) 100%);
@@ -351,21 +351,21 @@
     --btn-secondary-text: #D4D4D4;
     --btn-secondary-glow: 0 0 16px rgba(30, 30, 30, 0.7), 0 0 35px rgba(50, 50, 50, 0.3), 0 5px 22px rgba(0, 0, 0, 0.4);
     
-    /* Chips - more visible glass */
-    --chip-bg: rgba(35, 35, 35, 0.75);
-    --chip-border: rgba(255, 255, 255, 0.18);
-    --chip-text: #D0D0D0;
+    /* Chips - prominent glass */
+    --chip-bg: rgba(40, 40, 40, 0.8);
+    --chip-border: rgba(255, 255, 255, 0.28);
+    --chip-text: #D8D8D8;
     --chip-glow: none;
-    --chip-selected-bg: rgba(255, 255, 255, 0.14);
-    --chip-selected-border: rgba(255, 255, 255, 0.28);
-    --chip-selected-text: #F0F0F0;
+    --chip-selected-bg: rgba(255, 255, 255, 0.18);
+    --chip-selected-border: rgba(255, 255, 255, 0.4);
+    --chip-selected-text: #F5F5F5;
     --chip-selected-glow: none;
     
-    /* Weather pill - more visible matte glass */
-    --weather-pill-bg: rgba(28, 28, 28, 0.85);
-    --weather-pill-border: rgba(255, 255, 255, 0.2);
-    --weather-pill-text: #E6E6E6;
-    --weather-pill-icon: #D8D8D8;
+    /* Weather pill - prominent matte glass */
+    --weather-pill-bg: rgba(32, 32, 32, 0.88);
+    --weather-pill-border: rgba(255, 255, 255, 0.3);
+    --weather-pill-text: #EEEEEE;
+    --weather-pill-icon: #E0E0E0;
     --weather-pill-glow: none;
     
     /* Header icons */
