@@ -327,12 +327,13 @@
     /* Hero gradient - flat */
     --hero-gradient: rgba(20, 20, 20, 0.7);
     
-    /* Card surface - flat glass with prominent border */
-    --card-surface-gradient: rgba(24, 24, 24, 0.7);
+    /* Card surface - flat glass with BRIGHT prominent border */
+    --card-surface-gradient: rgba(26, 26, 26, 0.75);
     --card-blur: 16px;
-    --card-glow: none;
-    --card-glass-border: rgba(255, 255, 255, 0.22);
-    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 40%);
+    --card-glow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --card-glass-border: rgba(255, 255, 255, 0.35);
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 40%);
+    --card-border-glow: 0 0 8px rgba(255, 255, 255, 0.15), 0 0 20px rgba(255, 255, 255, 0.08);
     
     /* Header gradient */
     --header-gradient: linear-gradient(180deg, rgba(10, 10, 10, 1) 0%, rgba(10, 10, 10, 0.95) 40%, rgba(10, 10, 10, 0) 100%);
