@@ -278,8 +278,8 @@
     --slider-thumb: #F86AAA;
     --slider-thumb-glow: 0 0 14px rgba(244, 63, 139, 0.55);
     --slider-label: #E5B8CC;
-    --slider-value: #FFB0D8;
-    --slider-value-glow: 0 0 7px rgba(255, 176, 216, 0.05);
+    --slider-value: #FF7ABF;
+    --slider-value-glow: 0 0 8px rgba(255, 120, 190, 0.10);
   }
 
   /* ============================================
@@ -394,7 +394,7 @@
     --slider-thumb-glow: none;
     --slider-label: #C2C2C2;
     --slider-value: #FFFFFF;
-    --slider-value-glow: 0 0 7px rgba(255, 255, 255, 0.04);
+    --slider-value-glow: 0 0 8px rgba(255, 255, 255, 0.10);
   }
 
   /* ============================================
