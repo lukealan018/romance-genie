@@ -15,7 +15,7 @@ export default function CustomButton({
     sm:'h-8 text-[var(--text-sm)]', md:'h-10 text-[var(--text-md)]', lg:'h-12 text-[var(--text-lg)]'
   };
   const variants: Record<Variant,string> = {
-    primary:  'bg-primary/30 text-primary border border-primary/50 shadow-[0_0_16px_rgba(var(--primary-rgb),0.5)] hover:bg-primary/40 disabled:opacity-60 animate-subtle-pulse',
+    primary:  'bg-primary/10 text-primary border border-primary/40 hover:bg-primary/20 hover:border-primary/60 disabled:opacity-60',
     secondary:'bg-card text-primary border border-primary hover:bg-muted disabled:opacity-60',
     quiet:    'bg-transparent text-muted-foreground hover:text-foreground'
   };
