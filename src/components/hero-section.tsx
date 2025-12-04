@@ -130,6 +130,15 @@ export const HeroSection = ({
             transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
             className="relative"
           >
+            {/* Subtle radial gradient behind button - 8-10% opacity */}
+            <div 
+              className="absolute -inset-8 pointer-events-none -z-10"
+              style={{
+                background: `radial-gradient(circle at 50% 50%, rgba(var(--theme-accent-rgb), 0.09) 0%, transparent 60%)`,
+                filter: 'blur(20px)',
+              }}
+            />
+            
             {/* Button glow underneath - enhanced when listening */}
             <motion.div 
               className="absolute inset-0 pointer-events-none"
