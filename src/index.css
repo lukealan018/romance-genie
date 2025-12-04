@@ -184,7 +184,7 @@
     --primary: 330 85% 60%;
     --primary-foreground: 0 0% 100%;
     --primary-rgb: 244, 63, 139;
-    --primary-bright: 330 90% 88%;
+    --primary-bright: 330 100% 92%;
     
     --secondary: 330 25% 16%;
     --secondary-foreground: 340 25% 94%;
@@ -234,15 +234,15 @@
     /* Primary button - VIBRANT Hot Pink with softer glow + inner glass highlight */
     --btn-primary-bg: linear-gradient(90deg, #C22A68 0%, #D92B75 25%, #F43F8B 50%, #D92B75 75%, #C22A68 100%);
     --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.03) 20%, rgba(248, 106, 170, 0.28) 35%, rgba(217, 43, 117, 0.12) 60%, transparent 80%);
-    --btn-primary-border: #F86AAA;
-    --btn-primary-text: #FFC0DD;
+    --btn-primary-border: #FF8DC5;
+    --btn-primary-text: #FFF0F7;
     --btn-primary-glow: 0 0 26px rgba(194, 42, 104, 0.73), 0 0 61px rgba(217, 43, 117, 0.53), 0 6px 39px rgba(244, 63, 139, 0.43);
     
     /* Secondary button - VIBRANT rose glass with inner highlight */
     --btn-secondary-bg: linear-gradient(90deg, rgba(194, 42, 104, 0.95) 0%, rgba(217, 43, 117, 0.9) 25%, rgba(244, 63, 139, 0.85) 50%, rgba(217, 43, 117, 0.9) 75%, rgba(194, 42, 104, 0.95) 100%);
     --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.025) 20%, rgba(248, 106, 170, 0.2) 35%, rgba(217, 43, 117, 0.1) 60%, transparent 80%);
-    --btn-secondary-border: #F86AAA;
-    --btn-secondary-text: #FFC0DD;
+    --btn-secondary-border: #FF8DC5;
+    --btn-secondary-text: #FFF0F7;
     --btn-secondary-glow: 0 0 24px rgba(194, 42, 104, 0.63), 0 0 51px rgba(217, 43, 117, 0.43), 0 5px 31px rgba(244, 63, 139, 0.33);
     
     /* Chips - BRIGHTER pink glass with glow */
