@@ -133,6 +133,8 @@
     --slider-thumb: #3B82F6;
     --slider-thumb-glow: 0 0 10px rgba(37, 99, 235, 0.4);
     --slider-label: #94A3B8;
+    --slider-value: #6DB4FF;
+    --slider-value-glow: 0 0 7px rgba(96, 180, 255, 0.05);
     
     /* Design tokens */
     --radius: 16px;
@@ -276,6 +278,8 @@
     --slider-thumb: #F86AAA;
     --slider-thumb-glow: 0 0 14px rgba(244, 63, 139, 0.55);
     --slider-label: #E5B8CC;
+    --slider-value: #FFB0D8;
+    --slider-value-glow: 0 0 7px rgba(255, 176, 216, 0.05);
   }
 
   /* ============================================
@@ -389,6 +393,8 @@
     --slider-thumb: #E6E6E6;
     --slider-thumb-glow: none;
     --slider-label: #C2C2C2;
+    --slider-value: #FFFFFF;
+    --slider-value-glow: 0 0 7px rgba(255, 255, 255, 0.04);
   }
 
   /* ============================================

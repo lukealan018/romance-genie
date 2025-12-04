@@ -231,7 +231,15 @@ const Profile = () => {
             <div>
               <div className="flex justify-between items-center mb-3">
                 <Label className="text-sm font-medium text-foreground">Search Radius</Label>
-                <span className="text-primary font-semibold">{defaultRadius} miles</span>
+                <span 
+                  className="font-semibold"
+                  style={{ 
+                    color: 'var(--slider-value)', 
+                    textShadow: 'var(--slider-value-glow)' 
+                  }}
+                >
+                  {defaultRadius} miles
+                </span>
               </div>
               <Slider
                 value={[defaultRadius]}
