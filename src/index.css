@@ -206,40 +206,40 @@
     --theme-accent-dark: #D92B75;
     --theme-accent-bright: #FFC0DD;
     
-    /* Page background - richer rose undertones */
+    /* Page background - deep black cherry to warm neon plum */
     --page-gradient: 
-      radial-gradient(ellipse 120% 80% at 50% 100%, rgba(130, 40, 85, 0.4) 0%, transparent 50%),
-      radial-gradient(ellipse 80% 60% at 0% 80%, rgba(100, 35, 70, 0.3) 0%, transparent 40%),
-      radial-gradient(ellipse 60% 50% at 100% 20%, rgba(140, 45, 90, 0.25) 0%, transparent 35%),
-      linear-gradient(180deg, #100812 0%, #180c1a 30%, #220f28 60%, #0e0610 100%);
+      radial-gradient(ellipse 120% 80% at 50% 100%, rgba(60, 0, 46, 0.5) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 60% at 0% 80%, rgba(50, 0, 38, 0.4) 0%, transparent 40%),
+      radial-gradient(ellipse 60% 50% at 100% 20%, rgba(70, 0, 52, 0.3) 0%, transparent 35%),
+      linear-gradient(180deg, #3C002E 0%, #280020 30%, #1A0014 60%, #12000F 100%);
     
     /* Hero gradient - richer pink tones */
-    --hero-gradient: linear-gradient(145deg, rgba(80, 30, 55, 0.6) 0%, rgba(50, 20, 38, 0.55) 100%);
+    --hero-gradient: linear-gradient(145deg, rgba(60, 0, 46, 0.65) 0%, rgba(40, 0, 32, 0.6) 100%);
     
-    /* Card surface - MORE VISIBLE with pink tint */
-    --card-surface-gradient: linear-gradient(145deg, rgba(90, 40, 65, 0.5) 0%, rgba(60, 28, 48, 0.45) 100%);
+    /* Card surface - deeper with pink tint */
+    --card-surface-gradient: linear-gradient(145deg, rgba(70, 20, 50, 0.55) 0%, rgba(45, 10, 35, 0.5) 100%);
     --card-blur: 20px;
-    --card-glow: 0 4px 30px rgba(0, 0, 0, 0.2), 0 0 20px rgba(244, 63, 139, 0.1);
-    --card-glass-border: rgba(248, 106, 170, 0.6);
-    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
-    --card-border-glow: 0 0 10px rgba(244, 63, 139, 0.5), 0 0 25px rgba(248, 106, 170, 0.4), 0 0 45px rgba(244, 63, 139, 0.25);
+    --card-glow: 0 4px 35px rgba(0, 0, 0, 0.25), 0 0 23px rgba(244, 63, 139, 0.08);
+    --card-glass-border: rgba(248, 106, 170, 0.55);
+    --card-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
+    --card-border-glow: 0 0 12px rgba(244, 63, 139, 0.38), 0 0 29px rgba(248, 106, 170, 0.28), 0 0 52px rgba(244, 63, 139, 0.13);
     
     /* Header gradient - slightly visible */
-    --header-gradient: linear-gradient(180deg, rgba(16, 8, 18, 0.98) 0%, rgba(16, 8, 18, 0.9) 40%, rgba(16, 8, 18, 0) 100%);
+    --header-gradient: linear-gradient(180deg, rgba(18, 0, 15, 0.98) 0%, rgba(18, 0, 15, 0.9) 40%, rgba(18, 0, 15, 0) 100%);
     
-    /* Primary button - VIBRANT Hot Pink with glow */
+    /* Primary button - VIBRANT Hot Pink with softer glow + inner glass highlight */
     --btn-primary-bg: linear-gradient(90deg, #C22A68 0%, #D92B75 25%, #F43F8B 50%, #D92B75 75%, #C22A68 100%);
-    --btn-primary-shine: linear-gradient(180deg, rgba(248, 106, 170, 0.5) 0%, rgba(244, 63, 139, 0.28) 35%, rgba(217, 43, 117, 0.12) 60%, transparent 80%);
+    --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.03) 20%, rgba(248, 106, 170, 0.28) 35%, rgba(217, 43, 117, 0.12) 60%, transparent 80%);
     --btn-primary-border: #F86AAA;
     --btn-primary-text: #FFC0DD;
-    --btn-primary-glow: 0 0 23px rgba(194, 42, 104, 0.85), 0 0 53px rgba(217, 43, 117, 0.65), 0 6px 34px rgba(244, 63, 139, 0.55);
+    --btn-primary-glow: 0 0 26px rgba(194, 42, 104, 0.73), 0 0 61px rgba(217, 43, 117, 0.53), 0 6px 39px rgba(244, 63, 139, 0.43);
     
-    /* Secondary button - VIBRANT rose glass */
+    /* Secondary button - VIBRANT rose glass with inner highlight */
     --btn-secondary-bg: linear-gradient(90deg, rgba(194, 42, 104, 0.95) 0%, rgba(217, 43, 117, 0.9) 25%, rgba(244, 63, 139, 0.85) 50%, rgba(217, 43, 117, 0.9) 75%, rgba(194, 42, 104, 0.95) 100%);
-    --btn-secondary-shine: linear-gradient(180deg, rgba(248, 106, 170, 0.4) 0%, rgba(244, 63, 139, 0.2) 35%, rgba(217, 43, 117, 0.1) 60%, transparent 80%);
+    --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.025) 20%, rgba(248, 106, 170, 0.2) 35%, rgba(217, 43, 117, 0.1) 60%, transparent 80%);
     --btn-secondary-border: #F86AAA;
     --btn-secondary-text: #FFC0DD;
-    --btn-secondary-glow: 0 0 21px rgba(194, 42, 104, 0.75), 0 0 44px rgba(217, 43, 117, 0.55), 0 5px 27px rgba(244, 63, 139, 0.45);
+    --btn-secondary-glow: 0 0 24px rgba(194, 42, 104, 0.63), 0 0 51px rgba(217, 43, 117, 0.43), 0 5px 31px rgba(244, 63, 139, 0.33);
     
     /* Chips - BRIGHTER pink glass */
     --chip-bg: rgba(100, 45, 70, 0.65);
@@ -263,10 +263,10 @@
     --header-icon-glow: drop-shadow(0 0 6px rgba(244, 63, 139, 0.5));
     --header-title-color: #FFE8F2;
     
-    /* Username color - vibrant pink accent with strong glow */
-    --username-color: #FA8DC5;
-    --username-glow: 0 0 25px rgba(248, 106, 170, 0.55), 0 0 50px rgba(244, 63, 139, 0.3);
-    --supporting-text-color: #E5B8CC;
+    /* Username color - deeper magenta with subtle glow */
+    --username-color: #E87AB8;
+    --username-glow: 0 0 25px rgba(232, 122, 184, 0.45), 0 0 50px rgba(220, 80, 160, 0.25);
+    --supporting-text-color: #D9A8C2;
     
     /* Glow effects - MORE VISIBLE */
     --glow-primary: rgba(244, 63, 139, 0.4);
