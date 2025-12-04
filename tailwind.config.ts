@@ -82,10 +82,10 @@ export default {
         },
         "subtle-pulse": {
           "0%, 100%": {
-            boxShadow: "0 0 12px rgba(var(--primary-rgb), 0.3)",
+            boxShadow: "0 0 16px rgba(var(--primary-rgb), 0.5)",
           },
           "50%": {
-            boxShadow: "0 0 20px rgba(var(--primary-rgb), 0.45)",
+            boxShadow: "0 0 24px rgba(var(--primary-rgb), 0.65)",
           },
         },
       },
