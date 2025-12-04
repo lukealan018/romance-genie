@@ -91,7 +91,7 @@ const Index = () => {
               title="Saved Plans"
               className="header-icon hover:bg-transparent"
             >
-              <Heart className="w-5 h-5" style={{ color: 'var(--header-icon-color)', filter: 'drop-shadow(var(--header-icon-glow))' }} />
+              <Heart className="w-[22px] h-[22px]" style={{ color: 'var(--header-icon-color)', filter: 'drop-shadow(var(--header-icon-glow))' }} />
             </Button>
             <Button 
               variant="ghost" 
@@ -100,7 +100,7 @@ const Index = () => {
               title="Calendar"
               className="header-icon hover:bg-transparent"
             >
-              <CalendarIcon className="w-5 h-5" style={{ color: 'var(--header-icon-color)', filter: 'drop-shadow(var(--header-icon-glow))' }} />
+              <CalendarIcon className="w-[22px] h-[22px]" style={{ color: 'var(--header-icon-color)', filter: 'drop-shadow(var(--header-icon-glow))' }} />
             </Button>
             <NotificationBell />
             <Button 
@@ -110,7 +110,7 @@ const Index = () => {
               title="Profile"
               className="header-icon hover:bg-transparent"
             >
-              <User className="w-5 h-5" style={{ color: 'var(--header-icon-color)', filter: 'drop-shadow(var(--header-icon-glow))' }} />
+              <User className="w-[22px] h-[22px]" style={{ color: 'var(--header-icon-color)', filter: 'drop-shadow(var(--header-icon-glow))' }} />
             </Button>
           </div>
         </div>
