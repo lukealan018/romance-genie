@@ -230,14 +230,14 @@
     --btn-primary-shine: linear-gradient(180deg, rgba(248, 106, 170, 0.5) 0%, rgba(244, 63, 139, 0.28) 35%, rgba(217, 43, 117, 0.12) 60%, transparent 80%);
     --btn-primary-border: #F86AAA;
     --btn-primary-text: #FFC0DD;
-    --btn-primary-glow: 0 0 22px rgba(194, 42, 104, 0.9), 0 0 50px rgba(217, 43, 117, 0.7), 0 6px 32px rgba(244, 63, 139, 0.6);
+    --btn-primary-glow: 0 0 23px rgba(194, 42, 104, 0.85), 0 0 53px rgba(217, 43, 117, 0.65), 0 6px 34px rgba(244, 63, 139, 0.55);
     
     /* Secondary button - VIBRANT rose glass */
     --btn-secondary-bg: linear-gradient(90deg, rgba(194, 42, 104, 0.95) 0%, rgba(217, 43, 117, 0.9) 25%, rgba(244, 63, 139, 0.85) 50%, rgba(217, 43, 117, 0.9) 75%, rgba(194, 42, 104, 0.95) 100%);
     --btn-secondary-shine: linear-gradient(180deg, rgba(248, 106, 170, 0.4) 0%, rgba(244, 63, 139, 0.2) 35%, rgba(217, 43, 117, 0.1) 60%, transparent 80%);
     --btn-secondary-border: #F86AAA;
     --btn-secondary-text: #FFC0DD;
-    --btn-secondary-glow: 0 0 20px rgba(194, 42, 104, 0.8), 0 0 42px rgba(217, 43, 117, 0.6), 0 5px 26px rgba(244, 63, 139, 0.5);
+    --btn-secondary-glow: 0 0 21px rgba(194, 42, 104, 0.75), 0 0 44px rgba(217, 43, 117, 0.55), 0 5px 27px rgba(244, 63, 139, 0.45);
     
     /* Chips - BRIGHTER pink glass */
     --chip-bg: rgba(100, 45, 70, 0.65);
@@ -343,14 +343,14 @@
     --btn-primary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 35%, rgba(255, 255, 255, 0.02) 60%, transparent 80%);
     --btn-primary-border: rgba(255, 255, 255, 0.18);
     --btn-primary-text: #F0F0F0;
-    --btn-primary-glow: 0 0 18px rgba(40, 40, 40, 0.8), 0 0 40px rgba(60, 60, 60, 0.4), 0 6px 28px rgba(0, 0, 0, 0.5);
+    --btn-primary-glow: 0 0 19px rgba(40, 40, 40, 0.75), 0 0 42px rgba(60, 60, 60, 0.35), 0 6px 30px rgba(0, 0, 0, 0.45);
     
     /* Secondary button - DEEP matte glass with rich darkened edges */
     --btn-secondary-bg: linear-gradient(90deg, rgba(20, 20, 20, 0.95) 0%, rgba(30, 30, 30, 0.9) 25%, rgba(40, 40, 40, 0.85) 50%, rgba(30, 30, 30, 0.9) 75%, rgba(20, 20, 20, 0.95) 100%);
     --btn-secondary-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 35%, rgba(255, 255, 255, 0.01) 60%, transparent 80%);
     --btn-secondary-border: rgba(255, 255, 255, 0.15);
     --btn-secondary-text: #D4D4D4;
-    --btn-secondary-glow: 0 0 16px rgba(30, 30, 30, 0.7), 0 0 35px rgba(50, 50, 50, 0.3), 0 5px 22px rgba(0, 0, 0, 0.4);
+    --btn-secondary-glow: 0 0 17px rgba(30, 30, 30, 0.65), 0 0 37px rgba(50, 50, 50, 0.25), 0 5px 23px rgba(0, 0, 0, 0.35);
     
     /* Chips - prominent glass */
     --chip-bg: rgba(40, 40, 40, 0.8);
