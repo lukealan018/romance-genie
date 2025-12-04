@@ -7,7 +7,7 @@ interface PriceLevelPickerProps {
 
 const priceLevels = [
   { value: '', label: 'Any Price' },
-  { value: 'budget', label: '$ Budget' },
+  { value: 'budget', label: '$ Casual' },
   { value: 'moderate', label: '$$ Moderate' },
   { value: 'upscale', label: '$$$ Upscale' },
   { value: 'fine_dining', label: '$$$$ Fine Dining' },
