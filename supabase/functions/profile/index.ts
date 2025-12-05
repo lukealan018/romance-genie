@@ -71,7 +71,7 @@ serve(async (req) => {
 
     if (req.method === 'POST') {
       const body = await req.json().catch(() => ({}));
-      const { nickname, home_zip, default_radius_mi, cuisines, activities, dietary, price_range, dislikes, party_size, vibe, planning_style, preferred_date, preferred_time, theme_preference } = body || {};
+      const { nickname, home_zip, default_radius_mi, cuisines, activities, dietary, price_range, dislikes, party_size, vibe, planning_style, preferred_date, preferred_time, theme_preference, experience_level } = body || {};
 
       if (!nickname || !home_zip || !default_radius_mi) {
         return new Response(
@@ -125,6 +125,7 @@ serve(async (req) => {
         preferred_date: preferred_date || null,
         preferred_time: preferred_time || null,
         theme_preference: theme_preference || 'dark',
+        experience_level: experience_level || 'any',
       };
 
       const { data, error } = await supabaseClient

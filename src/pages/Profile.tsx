@@ -24,6 +24,14 @@ const RECOMMENDATION_STYLES = [
   { value: "hidden_gems", label: "Hidden Gems", description: "Unique local spots" },
 ];
 
+const EXPERIENCE_LEVELS = [
+  { value: "any", label: "Any", description: "No preference" },
+  { value: "casual", label: "Casual", description: "$" },
+  { value: "nice", label: "Nice", description: "$$" },
+  { value: "upscale", label: "Upscale", description: "$$$" },
+  { value: "luxury", label: "Luxury", description: "$$$$" },
+];
+
 const Profile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -38,6 +46,7 @@ const Profile = () => {
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
   const [noveltyPreference, setNoveltyPreference] = useState("balanced");
+  const [experienceLevel, setExperienceLevel] = useState("any");
   
   // Sheet states
   const [cuisineSheetOpen, setCuisineSheetOpen] = useState(false);
@@ -94,6 +103,7 @@ const Profile = () => {
         setSelectedActivities(profile.activities || []);
         setSelectedDietary(profile.dietary || []);
         setNoveltyPreference(profile.novelty_preference || "balanced");
+        setExperienceLevel(profile.experience_level || "any");
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -138,6 +148,7 @@ const Profile = () => {
           activities: selectedActivities.length > 0 ? selectedActivities : null,
           dietary: selectedDietary.length > 0 ? selectedDietary : null,
           novelty_preference: noveltyPreference,
+          experience_level: experienceLevel,
         },
       });
 
@@ -326,8 +337,26 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Card 4: Dietary Needs */}
-        <div className="card-luxury fade-slide-in" style={{ animationDelay: "0.15s" }}>
+        {/* Card 4: Experience Level */}
+        <div className="card-luxury fade-slide-in" style={{ animationDelay: "0.12s" }}>
+          <h2 className="text-luxury-heading mb-1">Experience Level</h2>
+          <p className="text-luxury-subtitle mb-6">Default price range for Surprise Me</p>
+
+          <div className="flex flex-wrap gap-2">
+            {EXPERIENCE_LEVELS.map((level) => (
+              <button
+                key={level.value}
+                onClick={() => setExperienceLevel(level.value)}
+                className={`chip-luxury ${experienceLevel === level.value ? "selected" : ""}`}
+              >
+                {level.label} {level.description !== "No preference" && <span className="ml-1 opacity-70">{level.description}</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Card 5: Dietary Needs */}
+        <div className="card-luxury fade-slide-in" style={{ animationDelay: "0.17s" }}>
           <h2 className="text-luxury-heading mb-1">Dietary Needs</h2>
           <p className="text-luxury-subtitle mb-6">Optional dietary filters</p>
 
@@ -350,8 +379,8 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Card 5: Theme / Appearance */}
-        <div className="card-luxury fade-slide-in" style={{ animationDelay: "0.2s" }}>
+        {/* Card 6: Theme / Appearance */}
+        <div className="card-luxury fade-slide-in" style={{ animationDelay: "0.22s" }}>
           <h2 className="text-luxury-heading mb-1">Appearance</h2>
           <p className="text-luxury-subtitle mb-6">Choose your visual theme</p>
           <ThemeSelector />

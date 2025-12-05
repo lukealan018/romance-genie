@@ -5,6 +5,15 @@ import { toast } from "@/hooks/use-toast";
 import { usePlanStore } from "@/store/planStore";
 import { isDevModeActive, getDevUserId, getMockProfile, logDevMode } from "@/lib/dev-utils";
 
+// Map profile experience_level to search priceLevel values
+const experienceToPriceLevel: Record<string, string> = {
+  any: '',
+  casual: 'budget',
+  nice: 'moderate',
+  upscale: 'upscale',
+  luxury: 'fine_dining',
+};
+
 interface ProfileData {
   profile_picture_url?: string;
   voice_notes?: string;
@@ -85,7 +94,8 @@ export const useAuthAndProfile = () => {
         setFilters({
           radius: profile.default_radius_mi || 5,
           zipCode: profile.home_zip || '',
-          locationMode: profile.home_zip ? 'zip' : 'gps'
+          locationMode: profile.home_zip ? 'zip' : 'gps',
+          priceLevel: experienceToPriceLevel[profile.experience_level] ?? ''
         });
 
         if (profile.cuisines || profile.activities) {
