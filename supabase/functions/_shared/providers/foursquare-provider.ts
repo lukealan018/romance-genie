@@ -209,7 +209,17 @@ export const foursquarePlacesProvider: PlacesProvider = {
             hasPremiumData // Flag for scoring logic
           };
         })
-        .filter((place: ProviderPlace | null): place is ProviderPlace => place !== null);
+        .filter((place: ProviderPlace | null): place is ProviderPlace => {
+          if (!place) return false;
+          
+          // === STRICT FILTER: Exclude 0-review Foursquare venues (unverified ghost entries) ===
+          if (place.reviewCount === 0) {
+            console.log(`🟦 Foursquare: Filtering out 0-review venue "${place.name}" - unverified ghost entry`);
+            return false;
+          }
+          
+          return true;
+        });
       
       // Filter by target city if specified
       let filtered = places;
