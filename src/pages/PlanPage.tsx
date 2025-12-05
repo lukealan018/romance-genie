@@ -456,6 +456,7 @@ const PlanPage = () => {
           restaurant: plan?.restaurant,
           activity: plan?.activity
         }}
+        searchMode={searchMode}
       />
     </div>
   );

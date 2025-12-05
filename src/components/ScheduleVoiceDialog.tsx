@@ -16,9 +16,10 @@ interface ScheduleVoiceDialogProps {
     restaurant: any;
     activity: any;
   };
+  searchMode?: 'both' | 'restaurant_only' | 'activity_only';
 }
 
-export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: ScheduleVoiceDialogProps) {
+export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMode = 'both' }: ScheduleVoiceDialogProps) {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState("");
@@ -192,86 +193,97 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
       return;
     }
 
-    // Require both restaurant and activity for scheduling
-    if (!planDetails.restaurant || !planDetails.activity) {
-      toast.error("Both restaurant and activity are required to schedule a date");
+    // Mode-aware validation
+    const needsRestaurant = searchMode === 'both' || searchMode === 'restaurant_only';
+    const needsActivity = searchMode === 'both' || searchMode === 'activity_only';
+    
+    if (needsRestaurant && !planDetails.restaurant) {
+      toast.error("Restaurant is required to schedule");
+      return;
+    }
+    if (needsActivity && !planDetails.activity) {
+      toast.error("Activity is required to schedule");
       return;
     }
 
     setIsProcessing(true);
     try {
       // Fetch weather forecast and venue details (if not already cached from availability check)
-      const fetchPromises: Promise<any>[] = [
-        supabase.functions.invoke('fetch-weather-forecast', {
-          body: {
-            lat: planDetails.restaurant.lat,
-            lng: planDetails.restaurant.lng,
-            scheduledDate: finalDate
-          }
-        })
-      ];
-
-      // Only fetch place details if we don't have them cached from availability check
-      if (!restaurantHours) {
+      const fetchPromises: Promise<any>[] = [];
+      
+      // Only fetch weather if we have a venue with coordinates
+      const weatherVenue = planDetails.restaurant || planDetails.activity;
+      if (weatherVenue?.lat && weatherVenue?.lng) {
         fetchPromises.push(
-          supabase.functions.invoke('place-details', {
-            body: { placeId: planDetails.restaurant.id }
+          supabase.functions.invoke('fetch-weather-forecast', {
+            body: {
+              lat: weatherVenue.lat,
+              lng: weatherVenue.lng,
+              scheduledDate: finalDate
+            }
           })
         );
       }
-      if (!activityHours) {
+
+      // Only fetch place details for venues that exist and don't have cached hours
+      if (planDetails.restaurant && !restaurantHours) {
+        fetchPromises.push(
+          supabase.functions.invoke('place-details', {
+            body: { placeId: planDetails.restaurant.id }
+          }).then(res => ({ type: 'restaurant', ...res }))
+        );
+      }
+      if (planDetails.activity && !activityHours) {
         fetchPromises.push(
           supabase.functions.invoke('place-details', {
             body: { placeId: planDetails.activity.id }
-          })
+          }).then(res => ({ type: 'activity', ...res }))
         );
       }
 
       const results = await Promise.all(fetchPromises);
-      const weatherResult = results[0] || { data: null };
       
-      // Extract restaurant and activity results if they were fetched
+      // Extract results by type
+      let weatherData = null;
       let restaurantResult: any = { data: { website: null } };
       let activityResult: any = { data: { website: null } };
       
-      if (!restaurantHours && !activityHours) {
-        // Both were fetched
-        restaurantResult = results[1] || { data: { website: null } };
-        activityResult = results[2] || { data: { website: null } };
-      } else if (!restaurantHours) {
-        // Only restaurant was fetched
-        restaurantResult = results[1] || { data: { website: null } };
-      } else if (!activityHours) {
-        // Only activity was fetched
-        activityResult = results[1] || { data: { website: null } };
+      for (const result of results) {
+        if (result?.type === 'restaurant') {
+          restaurantResult = result;
+        } else if (result?.type === 'activity') {
+          activityResult = result;
+        } else if (result?.data && !result?.data?.error) {
+          // Weather result (first one without type)
+          weatherData = result.data;
+        }
       }
 
-      // Safely extract weather data - ensure it has the expected structure
-      const weatherData = weatherResult?.data && !weatherResult.data.error ? weatherResult.data : null;
-
+      // Build scheduled plan with mode-aware data
       const scheduledPlan = await addScheduledPlan({
         scheduled_date: finalDate,
         scheduled_time: finalTime,
-        restaurant_id: planDetails.restaurant.id,
-        restaurant_name: planDetails.restaurant.name,
-        restaurant_address: planDetails.restaurant.address,
-        restaurant_cuisine: planDetails.restaurant.cuisine,
-        restaurant_lat: planDetails.restaurant.lat,
-        restaurant_lng: planDetails.restaurant.lng,
+        restaurant_id: planDetails.restaurant?.id || 'none',
+        restaurant_name: planDetails.restaurant?.name || 'No Restaurant',
+        restaurant_address: planDetails.restaurant?.address || null,
+        restaurant_cuisine: planDetails.restaurant?.cuisine || null,
+        restaurant_lat: planDetails.restaurant?.lat || null,
+        restaurant_lng: planDetails.restaurant?.lng || null,
         restaurant_website: restaurantResult?.data?.website ?? null,
         restaurant_hours: restaurantHours,
-        activity_id: planDetails.activity.id,
-        activity_name: planDetails.activity.name,
-        activity_address: planDetails.activity.address,
-        activity_category: planDetails.activity.category,
-        activity_lat: planDetails.activity.lat,
-        activity_lng: planDetails.activity.lng,
+        activity_id: planDetails.activity?.id || 'none',
+        activity_name: planDetails.activity?.name || 'No Activity',
+        activity_address: planDetails.activity?.address || null,
+        activity_category: planDetails.activity?.category || null,
+        activity_lat: planDetails.activity?.lat || null,
+        activity_lng: planDetails.activity?.lng || null,
         activity_website: activityResult?.data?.website ?? null,
         activity_hours: activityHours,
         weather_forecast: weatherData,
         confirmation_numbers: confirmationNumbers.restaurant || confirmationNumbers.activity ? confirmationNumbers : undefined,
         availability_status: availabilityData?.status || 'pending',
-        conflict_warnings: availabilityData?.conflicts || []
+        conflict_warnings: availabilityData?.conflicts || [],
+        search_mode: searchMode
       });
 
       if (scheduledPlan) {
@@ -382,23 +394,29 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails }: Schedul
 
               <div className="space-y-4 pt-4 border-t border-border">
                 <p className="text-sm font-medium">Confirmation Numbers (Optional)</p>
-                <Input
-                  placeholder="Restaurant confirmation"
-                  value={confirmationNumbers.restaurant}
-                  onChange={(e) => setConfirmationNumbers(prev => ({ ...prev, restaurant: e.target.value }))}
-                  className="h-12"
-                />
-                <Input
-                  placeholder="Activity confirmation"
-                  value={confirmationNumbers.activity}
-                  onChange={(e) => setConfirmationNumbers(prev => ({ ...prev, activity: e.target.value }))}
-                  className="h-12"
-                />
+                {(searchMode === 'both' || searchMode === 'restaurant_only') && planDetails.restaurant && (
+                  <Input
+                    placeholder="Restaurant confirmation"
+                    value={confirmationNumbers.restaurant}
+                    onChange={(e) => setConfirmationNumbers(prev => ({ ...prev, restaurant: e.target.value }))}
+                    className="h-12"
+                  />
+                )}
+                {(searchMode === 'both' || searchMode === 'activity_only') && planDetails.activity && (
+                  <Input
+                    placeholder="Activity confirmation"
+                    value={confirmationNumbers.activity}
+                    onChange={(e) => setConfirmationNumbers(prev => ({ ...prev, activity: e.target.value }))}
+                    className="h-12"
+                  />
+                )}
               </div>
 
               <Button size="lg" onClick={handleSchedule} disabled={isProcessing} className="w-full py-6 text-lg mt-8">
                 {isProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Clock className="w-4 h-4 mr-2" />}
-                Schedule Plan
+                {searchMode === 'restaurant_only' && "Schedule Dinner"}
+                {searchMode === 'activity_only' && "Schedule Activity"}
+                {(!searchMode || searchMode === 'both') && "Schedule Plan"}
               </Button>
             </div>
           )}

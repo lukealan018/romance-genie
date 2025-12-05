@@ -27,6 +27,7 @@ export interface ScheduledPlan {
   availability_status?: string;
   conflict_warnings?: any;
   search_params?: any;
+  search_mode?: string;
   status?: string;
   created_at?: string;
   updated_at?: string;
