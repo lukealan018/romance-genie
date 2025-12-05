@@ -1029,6 +1029,7 @@ export const usePlaceSearch = (
     toast({
       title: "✨ Surprise!",
       description: `Finding ${selectedCuisine} restaurants and ${activityLabel} nearby...`,
+      duration: 3000, // Auto-dismiss after 3 seconds
     });
     
     setLoading(true);
