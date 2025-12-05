@@ -12,7 +12,7 @@ const primaryCuisines = [
   "Mexican",
   "American",
   "Chinese",
-  "Mediterranean",
+  "Steakhouse",
   "Japanese",
 ];
 
@@ -20,6 +20,7 @@ const moreCuisines = [
   "Thai",
   "Indian",
   "French",
+  "Mediterranean",
   "🌍 Around the World",
 ];
 
