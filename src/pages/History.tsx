@@ -131,7 +131,7 @@ export default function History() {
   const completedPlans = plans.filter(p => p.was_completed);
 
   const renderPlanCard = (plan: SavedPlan) => (
-    <Card key={plan.id} className="group hover:shadow-lg transition-shadow border-2 border-primary/30 hover:border-primary/50">
+    <Card key={plan.id} className="group transition-all duration-300 border-2 border-primary/30 hover:border-primary/50 hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1 flex-1">
