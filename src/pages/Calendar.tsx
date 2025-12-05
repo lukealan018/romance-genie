@@ -11,6 +11,12 @@ import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { getMapUrl, yelpSearchUrl } from "@/lib/external-links";
 import { toast } from "sonner";
 
+// Parse date string without timezone issues
+const parseDateString = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 export default function Calendar() {
   const navigate = useNavigate();
   const { scheduledPlans, isLoading, fetchScheduledPlans, deleteScheduledPlan } = useScheduledPlansStore();
@@ -24,7 +30,7 @@ export default function Calendar() {
   today.setHours(0, 0, 0, 0);
 
   const filteredPlans = scheduledPlans.filter(plan => {
-    const planDate = new Date(plan.scheduled_date);
+    const planDate = parseDateString(plan.scheduled_date);
     planDate.setHours(0, 0, 0, 0);
     return filter === 'upcoming' ? planDate >= today : planDate < today;
   });
@@ -148,7 +154,7 @@ export default function Calendar() {
                           <div className="flex items-center gap-3">
                             <div className="flex items-center gap-2 text-lg font-semibold text-muted-foreground">
                               <CalendarIcon className="w-5 h-5" />
-                              {new Date(plan.scheduled_date).toLocaleDateString('en-US', {
+                              {parseDateString(plan.scheduled_date).toLocaleDateString('en-US', {
                                 weekday: 'long',
                                 month: 'long',
                                 day: 'numeric',

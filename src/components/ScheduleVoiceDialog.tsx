@@ -287,7 +287,18 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
       });
 
       if (scheduledPlan) {
-        toast.success(`✓ Plan scheduled for ${new Date(finalDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} at ${finalTime}`);
+        // Parse date parts to avoid timezone issues
+        const [year, month, day] = finalDate.split('-').map(Number);
+        const dateForDisplay = new Date(year, month - 1, day);
+        const formattedDate = dateForDisplay.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        
+        // Format time for display (convert 24h to 12h if needed)
+        const [hours, minutes] = finalTime.split(':').map(Number);
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        const formattedTime = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+        
+        toast.success(`✓ Plan scheduled for ${formattedDate} at ${formattedTime}`);
         onOpenChange(false);
       }
     } catch (error) {
