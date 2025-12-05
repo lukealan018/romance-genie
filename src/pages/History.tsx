@@ -177,7 +177,7 @@ export default function History() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Restaurant */}
-        <div className="space-y-2 p-4 rounded-lg bg-gradient-to-br from-primary/5 to-transparent border border-primary/20">
+        <div className="space-y-2 p-4 rounded-lg bg-gradient-to-br from-primary/10 to-transparent border border-primary/50">
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-primary" />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
