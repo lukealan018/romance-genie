@@ -191,9 +191,9 @@ export default function History() {
         </div>
 
         {/* Activity */}
-        <div className="space-y-2 p-4 rounded-lg bg-gradient-to-br from-secondary/5 to-transparent border border-secondary/20">
+        <div className="space-y-2 p-4 rounded-lg bg-gradient-to-br from-secondary/10 to-transparent border border-secondary/50">
           <div className="flex items-center gap-2">
-            <Star className="h-4 w-4 text-secondary" />
+            <Star className="h-4 w-4 text-primary" />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Activity
             </span>
