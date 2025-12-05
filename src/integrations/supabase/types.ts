@@ -72,6 +72,7 @@ export type Database = {
           dietary: string[] | null
           dislikes: string[] | null
           energy_level: string | null
+          experience_level: string | null
           home_zip: string | null
           nickname: string | null
           notification_email_enabled: boolean | null
@@ -99,6 +100,7 @@ export type Database = {
           dietary?: string[] | null
           dislikes?: string[] | null
           energy_level?: string | null
+          experience_level?: string | null
           home_zip?: string | null
           nickname?: string | null
           notification_email_enabled?: boolean | null
@@ -126,6 +128,7 @@ export type Database = {
           dietary?: string[] | null
           dislikes?: string[] | null
           energy_level?: string | null
+          experience_level?: string | null
           home_zip?: string | null
           nickname?: string | null
           notification_email_enabled?: boolean | null
