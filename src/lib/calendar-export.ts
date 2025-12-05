@@ -15,18 +15,32 @@ export interface ScheduledPlan {
 }
 
 export function generateICSFile(plan: ScheduledPlan): string {
-  const dateTime = new Date(`${plan.scheduled_date}T${plan.scheduled_time}`);
+  // Parse date without timezone issues
+  const [year, month, day] = plan.scheduled_date.split('-').map(Number);
+  const [hours, minutes] = plan.scheduled_time.split(':').map(Number);
+  const dateTime = new Date(year, month - 1, day, hours, minutes);
   
-  // Format date for ICS (YYYYMMDDTHHMMSS)
-  const formatICSDate = (date: Date) => {
+  // Format date for ICS in local time (YYYYMMDDTHHMMSS without Z suffix = floating local time)
+  const formatICSDateLocal = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const h = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    const s = String(date.getSeconds()).padStart(2, '0');
+    return `${y}${m}${d}T${h}${min}${s}`;
+  };
+  
+  // Format date for DTSTAMP (must be UTC)
+  const formatICSDateUTC = (date: Date) => {
     return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   };
 
-  const startTime = formatICSDate(dateTime);
+  const startTime = formatICSDateLocal(dateTime);
   
   // Add 4 hours for duration (dinner + activity + travel)
   const endDate = new Date(dateTime.getTime() + 4 * 60 * 60 * 1000);
-  const endTime = formatICSDate(endDate);
+  const endTime = formatICSDateLocal(endDate);
 
   // Build description
   let description = `Date Night Plan\\n\\n`;
@@ -52,7 +66,7 @@ export function generateICSFile(plan: ScheduledPlan): string {
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
     `UID:${plan.id}@datenightplanner.app`,
-    `DTSTAMP:${formatICSDate(new Date())}`,
+    `DTSTAMP:${formatICSDateUTC(new Date())}`,
     `DTSTART:${startTime}`,
     `DTEND:${endTime}`,
     `SUMMARY:Date Night: ${plan.restaurant_name} + ${plan.activity_name}`,
