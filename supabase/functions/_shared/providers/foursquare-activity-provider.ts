@@ -262,6 +262,12 @@ export const foursquareActivityProvider: ActivityProvider = {
       .filter((item: ProviderActivity | null): item is ProviderActivity => {
         if (!item) return false;
         
+        // === STRICT FILTER: Exclude 0-review Foursquare venues (unverified ghost entries) ===
+        if (item.totalRatings === 0) {
+          console.log(`🟦 Foursquare: Filtering out 0-review venue "${item.name}" - unverified ghost entry`);
+          return false;
+        }
+        
         // Filter by distance
         const radiusMiles = options.radiusMeters / 1609.34;
         const maxDistance = radiusMiles * 1.5; // Allow 50% buffer
