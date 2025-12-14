@@ -74,7 +74,7 @@ serve(async (req) => {
 
   try {
     // Parse request parameters
-    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean;
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean, venueType: 'any' | 'coffee', searchTime: string | undefined;
 
     if (req.method === 'POST') {
       const body = await req.json();
@@ -87,6 +87,8 @@ serve(async (req) => {
       noveltyMode = body.noveltyMode || 'balanced';
       seed = body.seed; // Optional seed for randomization
       forceFresh = body.forceFresh === true; // Force fresh results
+      venueType = body.venueType || 'any'; // Coffee shop filter
+      searchTime = body.searchTime; // For dinner-time exclusion
     } else {
       const url = new URL(req.url);
       lat = parseFloat(url.searchParams.get('lat') || '');
@@ -98,6 +100,8 @@ serve(async (req) => {
       noveltyMode = (url.searchParams.get('noveltyMode') as NoveltyMode) || 'balanced';
       seed = url.searchParams.get('seed') ? parseInt(url.searchParams.get('seed')!) : undefined;
       forceFresh = url.searchParams.get('forceFresh') === 'true';
+      venueType = (url.searchParams.get('venueType') as 'any' | 'coffee') || 'any';
+      searchTime = url.searchParams.get('searchTime') || undefined;
     }
 
     // Validate required parameters
@@ -122,6 +126,8 @@ serve(async (req) => {
       noveltyMode,
       seed: seed || 'none',
       forceFresh,
+      venueType,
+      searchTime: searchTime || 'none',
       bookingInsightsEnabled: FEATURE_FLAGS.ENABLE_BOOKING_INSIGHTS
     });
 
@@ -137,11 +143,13 @@ serve(async (req) => {
       lat,
       lng,
       radiusMeters,
-      cuisine,
-      priceLevel,
+      cuisine: venueType === 'coffee' ? '' : cuisine, // Ignore cuisine for coffee search
+      priceLevel: venueType === 'coffee' ? undefined : priceLevel, // Ignore price for coffee
       targetCity,
       noveltyMode,
-      limit: 50
+      limit: 50,
+      venueType,
+      searchTime
     });
 
     console.log(`📊 Provider stats:`, providerStats);

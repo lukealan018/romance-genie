@@ -193,6 +193,15 @@ MODE DETECTION (CRITICAL - determines what searches run):
 "restaurant_only" → ONLY mentions restaurant/dining, no activity (e.g., "just find me tacos", "looking for pizza", "casual place to eat", "sandwich shop")
 "activity_only" → ONLY mentions activity, no restaurant (e.g., "whiskey bar", "comedy club tonight", "find a lounge", "just looking for a bar")
 
+COFFEE SHOP DETECTION (CRITICAL):
+If transcript contains: "coffee", "café", "cafe", "espresso", "roasters", "roastery", "coffee shop", "latte", "cappuccino"
+Set: venueType: "coffee", mode: "restaurant_only"
+Coffee examples:
+- "Find me a coffee shop" → { venueType: "coffee", mode: "restaurant_only" }
+- "Good espresso nearby" → { venueType: "coffee", mode: "restaurant_only" }  
+- "Cute café in Venice" → { venueType: "coffee", mode: "restaurant_only", restaurantRequest: { location: "Venice" } }
+- "Coffee roasters" → { venueType: "coffee", mode: "restaurant_only" }
+
 NOVELTY LEVEL:
 "safe" → favorite, usual, reliable, tried and true, classic, popular, well known
 "adventurous" → something different, new, try something, explore, discover
@@ -318,6 +327,7 @@ Return JSON with this structure:
   "activityRequest": { "type": "exact venue type from lists", "location": "city or null", "priceLevel": "budget|moderate|upscale|null" },
   "generalLocation": "city or area name or null",
   "mode": "both|restaurant_only|activity_only",
+  "venueType": "any|coffee",
   "useCurrentLocation": false,
   "energyLevel": "low|medium|high",
   "mood": "string",
@@ -342,7 +352,9 @@ CRITICAL EXAMPLES for MODE DETECTION:
 - "I'm looking for something casual to eat" → mode: "restaurant_only"
 - "whiskey bar" → mode: "activity_only"
 - "comedy club tonight" → mode: "activity_only"
-- "find a lounge" → mode: "activity_only"`;
+- "find a lounge" → mode: "activity_only"
+- "coffee shop near me" → mode: "restaurant_only", venueType: "coffee"
+- "good espresso in downtown" → mode: "restaurant_only", venueType: "coffee"`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

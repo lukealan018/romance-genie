@@ -283,6 +283,9 @@ export const usePlaceSearch = (
       const variationSeed = Math.floor(Math.random() * 1000000);
       console.log('🎲 Using variation seed:', variationSeed);
 
+      // Get venueType and searchTime from store
+      const { venueType, searchTime } = usePlanStore.getState();
+      
       const restaurantsPromise = (currentMode === 'both' || currentMode === 'restaurant_only')
         ? supabase.functions.invoke('places-search', {
             body: { 
@@ -292,7 +295,9 @@ export const usePlaceSearch = (
               cuisine: searchCuisine,
               priceLevel: priceLevel || undefined,
               seed: variationSeed,
-              forceFresh: forceFresh || userTriggered
+              forceFresh: forceFresh || userTriggered,
+              venueType: venueType || 'any',
+              searchTime: searchTime || undefined
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });

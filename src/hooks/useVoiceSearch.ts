@@ -503,6 +503,12 @@ export const useVoiceSearch = ({
     setLastSearched('', '');
     setLastSearchLocation(null, null);
     
+    // Handle venueType from voice (coffee detection)
+    if (preferences.venueType === 'coffee') {
+      setFilters({ venueType: 'coffee' });
+      console.log('☕ Coffee shop mode detected from voice');
+    }
+    
     // Handle date extraction
     if (preferences.searchDate && !preferences.searchDateAmbiguous) {
       // Clear date - set it immediately and proceed

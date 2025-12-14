@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { Loader2, Coffee } from "lucide-react";
 import { CuisinePicker } from "@/components/CuisinePicker";
 import { PriceLevelPicker } from "@/components/PriceLevelPicker";
 import { ActivityPicker } from "@/components/ActivityPicker";
@@ -6,6 +6,7 @@ import { LocationToggle } from "@/components/LocationToggle";
 import { RadiusSelector } from "@/components/RadiusSelector";
 import CustomButton from "@/components/CustomButton";
 import { SearchMode } from "@/components/ModeSelection";
+import { VenueType } from "@/store/planStore";
 
 interface ManualFiltersProps {
   searchMode: SearchMode | null;
@@ -19,6 +20,7 @@ interface ManualFiltersProps {
   lng: number | null;
   loading: boolean;
   gettingLocation: boolean;
+  venueType: VenueType;
   onCuisineChange: (value: string) => void;
   onActivityChange: (value: string) => void;
   onPriceLevelChange: (value: string) => void;
@@ -27,6 +29,7 @@ interface ManualFiltersProps {
   onRadiusChange: (value: number) => void;
   onUseCurrentLocation: () => void;
   onSeePlan: () => void;
+  onVenueTypeChange: (type: VenueType) => void;
 }
 
 export const ManualFilters = ({
@@ -41,6 +44,7 @@ export const ManualFilters = ({
   lng,
   loading,
   gettingLocation,
+  venueType,
   onCuisineChange,
   onActivityChange,
   onPriceLevelChange,
@@ -49,19 +53,42 @@ export const ManualFilters = ({
   onRadiusChange,
   onUseCurrentLocation,
   onSeePlan,
+  onVenueTypeChange,
 }: ManualFiltersProps) => {
   return (
     <div className="space-y-6 mt-6">
       {(searchMode === 'both' || searchMode === 'restaurant_only') && (
         <>
-          <PriceLevelPicker
-            selected={priceLevel}
-            onSelect={onPriceLevelChange}
-          />
-          <CuisinePicker
-            selected={cuisine}
-            onSelect={onCuisineChange}
-          />
+          {/* Coffee Shop Toggle */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => onVenueTypeChange(venueType === 'coffee' ? 'any' : 'coffee')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
+                venueType === 'coffee'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-card border border-border text-muted-foreground hover:border-primary/50'
+              }`}
+            >
+              <Coffee className="w-4 h-4" />
+              <span className="text-sm font-medium">Coffee Shops</span>
+            </button>
+            {venueType === 'coffee' && (
+              <span className="text-xs text-muted-foreground">Showing coffee shops only</span>
+            )}
+          </div>
+          
+          {venueType !== 'coffee' && (
+            <>
+              <PriceLevelPicker
+                selected={priceLevel}
+                onSelect={onPriceLevelChange}
+              />
+              <CuisinePicker
+                selected={cuisine}
+                onSelect={onCuisineChange}
+              />
+            </>
+          )}
         </>
       )}
 
