@@ -944,26 +944,31 @@ export const usePlaceSearch = (
     navigate("/plan");
   };
 
+  // SURPRISE ME: Completely ignores profile preferences - pure random discovery
   const handleSurpriseMe = async () => {
-    if (radius <= 0) {
-      toast({ 
-        title: "Error", 
-        description: "Please set a valid search radius", 
-        variant: "destructive" 
-      });
-      return;
-    }
-    
     // ALWAYS clear results for Surprise Me - fresh experience
     clearAllResults();
     
-    // Try to resolve location if not set
+    // Default radius: 5 miles (NOT from profile)
+    const surpriseRadius = 5;
+    
+    // Try to resolve location if not set (use current GPS location)
     let searchLat = lat;
     let searchLng = lng;
     
     if (!searchLat || !searchLng) {
-      // Try geocoding profile ZIP code first
-      if (zipCode && /^\d{5}$/.test(zipCode.trim())) {
+      // Try GPS first for Surprise Me
+      try {
+        await handleUseCurrentLocation(true);
+        const storeState = usePlanStore.getState();
+        searchLat = storeState.lat;
+        searchLng = storeState.lng;
+      } catch (error) {
+        console.error('GPS error in SurpriseMe:', error);
+      }
+      
+      // If GPS failed, try geocoding profile ZIP code as fallback
+      if ((!searchLat || !searchLng) && zipCode && /^\d{5}$/.test(zipCode.trim())) {
         try {
           const { data: geocodeData } = await supabase.functions.invoke('geocode', {
             body: { zipCode: zipCode.trim() }
@@ -979,19 +984,6 @@ export const usePlaceSearch = (
         }
       }
       
-      // If still no location, try GPS
-      if (!searchLat || !searchLng) {
-        try {
-          await handleUseCurrentLocation(true);
-          // After GPS success, get updated coordinates from store
-          const storeState = usePlanStore.getState();
-          searchLat = storeState.lat;
-          searchLng = storeState.lng;
-        } catch (error) {
-          console.error('GPS error in SurpriseMe:', error);
-        }
-      }
-      
       // Final check - if still no location, show error
       if (!searchLat || !searchLng) {
         toast({ 
@@ -1003,38 +995,19 @@ export const usePlaceSearch = (
       }
     }
     
+    // SURPRISE ME: Random cuisine/activity, NOT from profile preferences
     const cuisineOptions = ["Italian", "Mexican", "Japanese", "Chinese", "Thai", "American", "Indian", "French", "Mediterranean"];
     const activityOptions = ["live_music", "comedy", "movies", "bowling", "arcade", "museum", "escape_room", "mini_golf", "hike", "wine"];
     
-    let selectedCuisine: string;
-    if (userPreferences.cuisines && userPreferences.cuisines.length > 0) {
-      const matchingCuisines = cuisineOptions.filter(c => 
-        userPreferences.cuisines.some(pref => pref.toLowerCase() === c.toLowerCase())
-      );
-      selectedCuisine = matchingCuisines.length > 0 
-        ? matchingCuisines[Math.floor(Math.random() * matchingCuisines.length)]
-        : cuisineOptions[Math.floor(Math.random() * cuisineOptions.length)];
-    } else {
-      selectedCuisine = cuisineOptions[Math.floor(Math.random() * cuisineOptions.length)];
-    }
-    
-    let selectedActivity: string;
-    if (userPreferences.activities && userPreferences.activities.length > 0) {
-      const matchingActivities = activityOptions.filter(a => 
-        userPreferences.activities.includes(a)
-      );
-      selectedActivity = matchingActivities.length > 0
-        ? matchingActivities[Math.floor(Math.random() * matchingActivities.length)]
-        : activityOptions[Math.floor(Math.random() * activityOptions.length)];
-    } else {
-      selectedActivity = activityOptions[Math.floor(Math.random() * activityOptions.length)];
-    }
+    // Pure random selection - NO profile preference influence
+    const selectedCuisine = cuisineOptions[Math.floor(Math.random() * cuisineOptions.length)];
+    const selectedActivity = activityOptions[Math.floor(Math.random() * activityOptions.length)];
     
     const activityLabel = selectedActivity.replace('_', ' ');
     toast({
       title: "✨ Surprise!",
       description: `Finding ${selectedCuisine} restaurants and ${activityLabel} nearby...`,
-      duration: 3000, // Auto-dismiss after 3 seconds
+      duration: 3000,
     });
     
     setLoading(true);
@@ -1053,20 +1026,23 @@ export const usePlaceSearch = (
       }
       
       const contextual = getContextualSuggestions({ weather: weatherData });
+      // SURPRISE ME: Learned preferences for scoring only (not filtering)
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
       
       const currentMode = searchMode || 'both';
       const randomSeed = Math.floor(Math.random() * 1000000);
 
+      // SURPRISE ME: Use fixed 5mi radius, not profile
       const restaurantsPromise = (currentMode === 'both' || currentMode === 'restaurant_only')
         ? supabase.functions.invoke('places-search', {
             body: { 
               lat: searchLat, 
               lng: searchLng, 
-              radiusMiles: radius, 
+              radiusMiles: surpriseRadius,  // Fixed 5mi radius
               cuisine: selectedCuisine,
               seed: randomSeed,
-              forceFresh: true  // Always fresh for Surprise Me
+              forceFresh: true,
+              voiceTriggered: true  // Signal this bypasses profile
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -1076,10 +1052,11 @@ export const usePlaceSearch = (
             body: { 
               lat: searchLat, 
               lng: searchLng, 
-              radiusMiles: radius, 
+              radiusMiles: surpriseRadius,  // Fixed 5mi radius
               keyword: selectedActivity,
               seed: randomSeed,
-              forceFresh: true  // Always fresh for Surprise Me
+              forceFresh: true,
+              voiceTriggered: true  // Signal this bypasses profile
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -1095,27 +1072,24 @@ export const usePlaceSearch = (
       const restaurants = restaurantsResponse.data?.items || [];
       const activities = activitiesResponse.data?.items || [];
       
+      // SURPRISE ME: Score with learned prefs for boost only, NOT profile preferences
       const sortedRestaurants = scorePlaces(
         restaurants, 
         searchLat, 
         searchLng, 
-        radius, 
-        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-          ? userPreferences 
-          : undefined,
+        surpriseRadius,  // Fixed 5mi radius
+        undefined,  // NO profile preferences
         'restaurant',
-        learnedPrefs
+        learnedPrefs  // Learned prefs for scoring boost only
       );
       const sortedActivities = scorePlaces(
         activities, 
         searchLat, 
         searchLng, 
-        radius, 
-        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-          ? userPreferences 
-          : undefined,
+        surpriseRadius,  // Fixed 5mi radius
+        undefined,  // NO profile preferences
         'activity',
-        learnedPrefs
+        learnedPrefs  // Learned prefs for scoring boost only
       );
       
       console.log('🎉 [SurpriseMe] Setting search results:', {
@@ -1128,14 +1102,13 @@ export const usePlaceSearch = (
       setActivities(sortedActivities, activitiesResponse.data?.nextPageToken || null);
       setLastSearched(selectedCuisine, selectedActivity);
       
-      // Update signature for Surprise Me
-      const { priceLevel } = usePlanStore.getState();
+      // Update signature for Surprise Me with fixed radius
       const newSignature = buildSearchSignature({
         mode: currentMode,
         cuisine: selectedCuisine,
         activityCategory: selectedActivity,
-        radius,
-        priceLevel,
+        radius: surpriseRadius,  // Fixed 5mi radius
+        priceLevel: null,  // No price filter for Surprise Me
         searchDate,
         lat: searchLat,
         lng: searchLng,
@@ -1145,15 +1118,15 @@ export const usePlaceSearch = (
       
       console.log('✅ [SurpriseMe] Store updated successfully');
 
+      // SURPRISE ME: Build plan without profile preferences
       const initialPlan = buildPlan({
         lat: searchLat,
         lng: searchLng,
-        radius,
+        radius: surpriseRadius,  // Fixed 5mi radius
         restaurants: sortedRestaurants,
         activities: sortedActivities,
-        preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-          ? userPreferences 
-          : undefined,
+        preferences: undefined,  // NO profile preferences
+        learnedPreferences: learnedPrefs,  // Learned prefs for scoring only
         contextualHints: {
           indoorPreference: contextual.indoorPreference,
           energyLevel: contextual.message.toLowerCase().includes('chill') || contextual.message.toLowerCase().includes('unwind')
@@ -1162,7 +1135,7 @@ export const usePlaceSearch = (
             ? 'high'
             : 'medium',
         },
-        searchMode: searchMode || 'both',
+        searchMode: currentMode,
       });
 
       const selectedRestaurantIndex = initialPlan.restaurant 

@@ -41,9 +41,6 @@ export const useVoiceSearch = ({
   navigate,
 }: UseVoiceSearchProps) => {
   const {
-    radius,
-    cuisine,
-    activityCategory,
     setLocation,
     setFilters,
     setRestaurants,
@@ -63,8 +60,9 @@ export const useVoiceSearch = ({
   const [pendingSearchData, setPendingSearchData] = useState<any>(null);
 
   // Core search logic - extracted for reuse
+  // VOICE SEARCH COMPLETELY OVERRIDES PROFILE - builds params ONLY from voice intent
   const executeSearch = useCallback(async (preferences: any) => {
-    console.log('=== EXECUTING VOICE SEARCH ===');
+    console.log('=== EXECUTING VOICE SEARCH (PROFILE OVERRIDE MODE) ===');
     
     let restaurantLat = null;
     let restaurantLng = null;
@@ -72,7 +70,9 @@ export const useVoiceSearch = ({
     let activityLng = null;
     let restaurantCity: string | undefined = undefined;
     let activityCity: string | undefined = undefined;
-    let searchRadius = radius;
+    
+    // DEFAULT RADIUS: 5 miles for voice search (NOT from profile)
+    let searchRadius = preferences.radiusMiles || 5;
     
     const currentMode = preferences.mode || searchMode || 'both';
     console.log('Detected mode:', currentMode);
@@ -132,7 +132,8 @@ export const useVoiceSearch = ({
         activityCity = coords.city;
         
         const isZipCode = /^\d+$/.test(preferences.activityRequest.location.trim());
-        if (!isZipCode && searchRadius === radius) {
+        // If searching a city (not ZIP) and we haven't tightened radius yet, use 3mi
+        if (!isZipCode && searchRadius === 5) {
           searchRadius = 3;
         }
       }
@@ -231,8 +232,9 @@ export const useVoiceSearch = ({
       }
     }
     
-    // Map venue types to search filters
-    const updates: any = {};
+    // Map venue types to search filters - ONLY from voice intent, NOT from profile
+    let searchCuisine = "";
+    let searchActivity = "";
     
     if (preferences.restaurantRequest?.type) {
       const restaurantType = preferences.restaurantRequest.type.toLowerCase();
@@ -245,32 +247,39 @@ export const useVoiceSearch = ({
         'tacos': 'mexican',
         'pasta': 'italian',
       };
-      updates.cuisine = cuisineMap[restaurantType] || restaurantType;
+      searchCuisine = cuisineMap[restaurantType] || restaurantType;
     } else if (preferences.cuisinePreferences && preferences.cuisinePreferences.length > 0) {
-      updates.cuisine = preferences.cuisinePreferences[0].toLowerCase();
+      searchCuisine = preferences.cuisinePreferences[0].toLowerCase();
     }
+    // If voice didn't specify cuisine, leave it empty (do NOT fill from profile)
     
     if (preferences.activityRequest?.type) {
-      updates.activityCategory = preferences.activityRequest.type;
+      searchActivity = preferences.activityRequest.type;
     } else if (preferences.activityPreferences && preferences.activityPreferences.length > 0) {
-      updates.activityCategory = preferences.activityPreferences[0];
+      searchActivity = preferences.activityPreferences[0];
     }
+    // If voice didn't specify activity, leave it empty (do NOT fill from profile)
     
-    if (Object.keys(updates).length > 0) {
-      setFilters(updates);
+    // Update filters with voice-extracted values only
+    if (searchCuisine || searchActivity) {
+      setFilters({ 
+        cuisine: searchCuisine || undefined, 
+        activityCategory: searchActivity || undefined 
+      });
     }
     
     try {
-      const searchCuisine = updates.cuisine || cuisine || "";
-      const searchActivity = updates.activityCategory || activityCategory;
+      // Price level ONLY from voice intent, not profile
       const restaurantPriceLevel = preferences.restaurantRequest?.priceLevel || null;
       
-      // Get fresh userPreferences from store
-      const userPreferences = usePlanStore.getState().userPreferences;
-      
+      // VOICE SEARCH: Do NOT use profile preferences for filtering
+      // Learned preferences are ONLY used for scoring/ranking, never as hard filters
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
       const voiceMode = preferences.mode || 'both';
       setSearchMode(voiceMode);
+      
+      // VenueType from voice (e.g., coffee detection)
+      const venueType = preferences.venueType || 'any';
       
       let userInteractionPlaceIds: string[] = [];
       if (userId && preferences.intent === 'surprise') {
@@ -289,6 +298,7 @@ export const useVoiceSearch = ({
       }
       
       // Search restaurants only if mode allows
+      // VOICE SEARCH: Pass only voice-extracted params, no profile defaults
       const restaurantsPromise = (voiceMode === 'both' || voiceMode === 'restaurant_only')
         ? supabase.functions.invoke('places-search', {
             body: { 
@@ -297,7 +307,9 @@ export const useVoiceSearch = ({
               radiusMiles: searchRadius, 
               cuisine: searchCuisine === "🌍 Around the World" ? "" : searchCuisine,
               priceLevel: restaurantPriceLevel,
-              targetCity: restaurantCity
+              targetCity: restaurantCity,
+              venueType: venueType,
+              voiceTriggered: true  // Signal this is a voice search
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -309,8 +321,9 @@ export const useVoiceSearch = ({
               lat: activityLat, 
               lng: activityLng, 
               radiusMiles: searchRadius, 
-              keyword: searchActivity || 'fun activity',
-              targetCity: activityCity
+              keyword: searchActivity || undefined,  // Leave undefined if not specified (not 'fun activity')
+              targetCity: activityCity,
+              voiceTriggered: true  // Signal this is a voice search
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -380,16 +393,16 @@ export const useVoiceSearch = ({
         occasion: preferences.occasion,
       });
       
+      // VOICE SEARCH: Do NOT pass profile preferences to scoring
+      // Learned preferences are used for scoring boost only, not hard filtering
       const sortedRestaurants = scorePlaces(
         restaurants, 
         restaurantLat,
         restaurantLng, 
-        radius, 
-        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-          ? userPreferences 
-          : undefined,
+        searchRadius,  // Use voice-determined radius, not profile
+        undefined,  // NO profile preferences - voice overrides everything
         'restaurant',
-        learnedPrefs,
+        learnedPrefs,  // Learned prefs for scoring boost only
         preferences.intent,
         preferences.noveltyLevel,
         userInteractionPlaceIds
@@ -398,12 +411,10 @@ export const useVoiceSearch = ({
         finalActivities, 
         activityLat,
         activityLng, 
-        searchRadius, 
-        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-          ? userPreferences 
-          : undefined,
+        searchRadius,
+        undefined,  // NO profile preferences - voice overrides everything
         'activity',
-        learnedPrefs,
+        learnedPrefs,  // Learned prefs for scoring boost only
         preferences.intent,
         preferences.noveltyLevel,
         userInteractionPlaceIds
@@ -423,16 +434,15 @@ export const useVoiceSearch = ({
       
       console.log('✅ [VoiceSearch] Store updated successfully');
 
+      // VOICE SEARCH: Build plan without profile preferences
       const initialPlan = buildPlan({
         lat: planLat,
         lng: planLng,
-        radius,
+        radius: searchRadius,  // Use voice-determined radius
         restaurants: sortedRestaurants,
         activities: sortedActivities,
-        preferences: userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-          ? userPreferences 
-          : undefined,
-        learnedPreferences: learnedPrefs,
+        preferences: undefined,  // NO profile preferences - voice overrides
+        learnedPreferences: learnedPrefs,  // Learned prefs for scoring only
         intent: preferences.intent,
         noveltyLevel: preferences.noveltyLevel,
         userInteractionPlaceIds,
@@ -487,7 +497,7 @@ export const useVoiceSearch = ({
       });
     }
   }, [
-    radius, cuisine, activityCategory, searchMode, userId,
+    userId,
     setLocation, setFilters, setRestaurants, setActivities,
     setRestaurantIdx, setActivityIdx, setLastSearched, setLastSearchLocation,
     setSearchMode, handleUseCurrentLocation, trackInteraction, setPlan,
@@ -495,18 +505,33 @@ export const useVoiceSearch = ({
   ]);
 
   const handlePreferencesExtracted = useCallback(async (preferences: any) => {
-    console.log('=== VOICE PREFERENCES EXTRACTION START ===');
+    console.log('=== VOICE PREFERENCES EXTRACTION START (PROFILE OVERRIDE MODE) ===');
     console.log('Raw preferences:', preferences);
     
-    // Clear previous results to force fresh search
+    // VOICE SEARCH: Clear ALL previous results and signatures to force completely fresh search
+    usePlanStore.getState().clearAllResults();
     clearResults();
     setLastSearched('', '');
     setLastSearchLocation(null, null);
     
-    // Handle venueType from voice (coffee detection)
+    // Reset filters to prevent profile data from leaking
+    // Only set venueType from voice if detected
     if (preferences.venueType === 'coffee') {
-      setFilters({ venueType: 'coffee' });
+      setFilters({ 
+        venueType: 'coffee',
+        cuisine: undefined,  // Clear profile cuisine
+        activityCategory: undefined,  // Clear profile activity
+        priceLevel: null  // Clear profile price level
+      });
       console.log('☕ Coffee shop mode detected from voice');
+    } else {
+      // Clear profile-based filters
+      setFilters({ 
+        venueType: 'any',
+        cuisine: undefined,
+        activityCategory: undefined,
+        priceLevel: null
+      });
     }
     
     // Handle date extraction
