@@ -32,8 +32,8 @@ const Index = () => {
   const {
     lat, lng, radius, cuisine, activityCategory, priceLevel, locationMode, zipCode,
     restaurants: restaurantResults, activities: activityResults,
-    searchMode, searchDate, searchTime,
-    setLocation, setFilters, resetPlan, setSearchDate, clearSearchDateTime,
+    searchMode, searchDate, searchTime, venueType,
+    setLocation, setFilters, resetPlan, setSearchDate, clearSearchDateTime, setVenueType,
   } = usePlanStore();
 
   // Custom hooks
@@ -184,9 +184,11 @@ const Index = () => {
                   lng={lng}
                   loading={search.loading}
                   gettingLocation={search.gettingLocation}
+                  venueType={venueType}
                   onCuisineChange={(value) => setFilters({ cuisine: value })}
                   onActivityChange={(value) => setFilters({ activityCategory: value })}
                   onPriceLevelChange={(value) => setFilters({ priceLevel: value })}
+                  onVenueTypeChange={(type) => setVenueType(type)}
                   onLocationModeChange={(mode) => {
                     setLocation(null, null);
                     setFilters({ locationMode: mode });

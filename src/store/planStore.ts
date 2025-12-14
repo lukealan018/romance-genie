@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 export type SearchMode = "both" | "restaurant_only" | "activity_only";
+export type VenueType = "any" | "coffee";
 
 interface Place {
   id: string;
@@ -82,13 +83,17 @@ interface PlanState {
   // Search mode
   searchMode: SearchMode | null;
   
+  // Venue type (for coffee shop filtering)
+  venueType: VenueType;
+  
   // Track last search params for cache invalidation
   lastSearchMode: SearchMode | null;
   lastSearchDate: Date | null;
   
   // Actions
   setLocation: (lat: number | null, lng: number | null) => void;
-  setFilters: (filters: { radius?: number; cuisine?: string; activityCategory?: string; priceLevel?: string; locationMode?: "gps" | "zip"; zipCode?: string }) => void;
+  setFilters: (filters: { radius?: number; cuisine?: string; activityCategory?: string; priceLevel?: string; locationMode?: "gps" | "zip"; zipCode?: string; venueType?: VenueType }) => void;
+  setVenueType: (type: VenueType) => void;
   setSearchDate: (date: Date | null, time?: string | null) => void;
   clearSearchDateTime: () => void;
   setUserPreferences: (preferences: { cuisines: string[]; activities: string[] }) => void;
@@ -192,6 +197,8 @@ export const usePlanStore = create<PlanState>((set, get) => ({
   
   searchMode: null,
   
+  venueType: "any",
+  
   lastSearchMode: null,
   lastSearchDate: null,
   
@@ -256,6 +263,8 @@ export const usePlanStore = create<PlanState>((set, get) => ({
     searchDate: null,
     searchTime: null,
   }),
+  
+  setVenueType: (type) => set({ venueType: type }),
   
   setUserPreferences: (preferences) => set({ userPreferences: preferences }),
   
