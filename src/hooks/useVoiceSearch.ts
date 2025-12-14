@@ -310,11 +310,17 @@ export const useVoiceSearch = ({
       // VOICE SEARCH: Do NOT use profile preferences for filtering
       // Learned preferences are ONLY used for scoring/ranking, never as hard filters
       const learnedPrefs = userId ? await getLearnedPreferences(userId) : undefined;
-      const voiceMode = preferences.mode || 'both';
-      setSearchMode(voiceMode);
       
       // VenueType from voice (e.g., coffee detection)
       const venueType = preferences.venueType || 'any';
+      
+      // CRITICAL: Coffee search forces restaurant_only mode (no activities search)
+      let voiceMode = preferences.mode || 'both';
+      if (venueType === 'coffee') {
+        console.log('☕ Coffee detected - forcing restaurant_only mode');
+        voiceMode = 'restaurant_only';
+      }
+      setSearchMode(voiceMode);
       
       let userInteractionPlaceIds: string[] = [];
       if (userId && preferences.intent === 'surprise') {
@@ -332,6 +338,10 @@ export const useVoiceSearch = ({
         }
       }
       
+      // Generate fresh random seed for every voice search to ensure variety
+      const randomSeed = Math.floor(Math.random() * 1000000);
+      console.log('🎲 Voice search random seed:', randomSeed);
+      
       // Search restaurants only if mode allows
       // VOICE SEARCH: Pass only voice-extracted params, no profile defaults
       const restaurantsPromise = (voiceMode === 'both' || voiceMode === 'restaurant_only')
@@ -344,7 +354,9 @@ export const useVoiceSearch = ({
               priceLevel: restaurantPriceLevel,
               targetCity: restaurantCity,
               venueType: venueType,
-              voiceTriggered: true  // Signal this is a voice search
+              seed: randomSeed,         // Fresh seed for variety
+              forceFresh: true,         // Always force fresh results
+              voiceTriggered: true      // Signal this is a voice search
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -358,7 +370,9 @@ export const useVoiceSearch = ({
               radiusMiles: searchRadius, 
               keyword: searchActivity || undefined,  // Leave undefined if not specified (not 'fun activity')
               targetCity: activityCity,
-              voiceTriggered: true  // Signal this is a voice search
+              seed: randomSeed,         // Fresh seed for variety
+              forceFresh: true,         // Always force fresh results
+              voiceTriggered: true      // Signal this is a voice search
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
