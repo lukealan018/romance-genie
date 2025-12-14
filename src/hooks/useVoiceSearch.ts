@@ -179,6 +179,7 @@ export const useVoiceSearch = ({
     
     // Smarter fallback logic for missing coordinates
     if (!restaurantLat || !restaurantLng || !activityLat || !activityLng) {
+      // First: copy coords between venue types if one has them
       if (restaurantLat && restaurantLng && (!activityLat || !activityLng) && currentMode === 'both') {
         activityLat = restaurantLat;
         activityLng = restaurantLng;
@@ -187,47 +188,81 @@ export const useVoiceSearch = ({
         restaurantLng = activityLng;
       }
       
-      if (preferences.useCurrentLocation && (!restaurantLat || !restaurantLng || !activityLat || !activityLng)) {
-        console.log('🎯 Immediacy detected - getting GPS location');
-        try {
-          await handleUseCurrentLocation(true);
-          const currentLat = usePlanStore.getState().lat;
-          const currentLng = usePlanStore.getState().lng;
+      // VOICE SEARCH: If no location specified, ALWAYS try GPS first (not profile location)
+      if (!restaurantLat || !restaurantLng || !activityLat || !activityLng) {
+        console.log('🎯 No location specified in voice - trying GPS first');
+        
+        // Try to get GPS location
+        const gpsPromise = new Promise<{ lat: number; lng: number } | null>((resolve) => {
+          if (!navigator.geolocation) {
+            console.log('❌ Geolocation not available');
+            resolve(null);
+            return;
+          }
           
-          if (!currentLat || !currentLng) throw new Error('Could not get current location');
-          
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              console.log('✅ GPS location obtained:', position.coords);
+              resolve({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              });
+            },
+            (error) => {
+              console.log('❌ GPS failed:', error.message);
+              resolve(null);
+            },
+            { 
+              enableHighAccuracy: true, 
+              timeout: 10000,  // 10 second timeout
+              maximumAge: 60000  // Accept cached position up to 1 minute old
+            }
+          );
+        });
+        
+        const gpsCoords = await gpsPromise;
+        
+        if (gpsCoords) {
+          // GPS succeeded - use current location
           if (!restaurantLat || !restaurantLng) {
-            restaurantLat = currentLat;
-            restaurantLng = currentLng;
+            restaurantLat = gpsCoords.lat;
+            restaurantLng = gpsCoords.lng;
           }
           if (!activityLat || !activityLng) {
-            activityLat = currentLat;
-            activityLng = currentLng;
+            activityLat = gpsCoords.lat;
+            activityLng = gpsCoords.lng;
           }
-        } catch (error) {
-          console.error('Failed to get location:', error);
+          setLocation(gpsCoords.lat, gpsCoords.lng);
           toast({
-            title: "Location required",
-            description: "Please enable location services or set a home ZIP code",
-            variant: "destructive"
+            title: "Using current location",
+            description: "Searching near you",
           });
-          return;
-        }
-      } else if (!restaurantLat || !restaurantLng || !activityLat || !activityLng) {
-        const storeState = usePlanStore.getState();
-        if (storeState.lat && storeState.lng) {
-          if (!restaurantLat || !restaurantLng) {
-            restaurantLat = storeState.lat;
-            restaurantLng = storeState.lng;
+        } else {
+          // GPS failed - fall back to profile/store location
+          console.log('📍 GPS unavailable, falling back to stored location');
+          const storeState = usePlanStore.getState();
+          if (storeState.lat && storeState.lng) {
+            if (!restaurantLat || !restaurantLng) {
+              restaurantLat = storeState.lat;
+              restaurantLng = storeState.lng;
+            }
+            if (!activityLat || !activityLng) {
+              activityLat = storeState.lat;
+              activityLng = storeState.lng;
+            }
+            toast({
+              title: "Using home location",
+              description: "GPS unavailable, searching in your default area",
+            });
+          } else {
+            // No GPS and no stored location
+            toast({
+              title: "Location required",
+              description: "Please enable location services or set a home ZIP code",
+              variant: "destructive"
+            });
+            return;
           }
-          if (!activityLat || !activityLng) {
-            activityLat = storeState.lat;
-            activityLng = storeState.lng;
-          }
-          toast({
-            title: "Using home location",
-            description: "Searching in your default area",
-          });
         }
       }
     }
