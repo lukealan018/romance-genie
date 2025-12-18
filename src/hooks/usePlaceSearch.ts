@@ -998,9 +998,21 @@ export const usePlaceSearch = (
     // Get current venueType from store - if user was searching for coffee, keep that intent
     const { venueType: currentVenueType } = usePlanStore.getState();
     
-    // SURPRISE ME: Random cuisine/activity, NOT from profile preferences
-    const cuisineOptions = ["Italian", "Mexican", "Japanese", "Chinese", "Thai", "American", "Indian", "French", "Mediterranean"];
-    const activityOptions = ["live_music", "comedy", "movies", "bowling", "arcade", "museum", "escape_room", "mini_golf", "hike", "wine"];
+    // SURPRISE ME: Unique, out-of-the-box experiences - NOT mainstream!
+    const cuisineOptions = [
+      // Unique dining experiences instead of generic cuisines
+      "omakase", "tasting menu", "supper club", "chef's table", 
+      "farm to table", "wine bar", "tapas", "izakaya",
+      "Ethiopian", "Peruvian", "Korean BBQ", "Vietnamese pho"
+    ];
+    const activityOptions = [
+      // Unique, hidden gem activities - NOT mainstream!
+      "speakeasy", "rooftop bar", "jazz lounge", "tiki bar", "whiskey bar",
+      "axe throwing", "paint and sip", "pottery class", "cooking class", 
+      "wine tasting", "escape room", "comedy club", "karaoke",
+      "art gallery", "theater", "hookah lounge", "pool hall",
+      "food hall", "arcade bar", "board game cafe", "trivia night"
+    ];
     
     // If venueType is coffee, keep it as coffee search (don't randomize to restaurant)
     const isCoffeeMode = currentVenueType === 'coffee';
@@ -1010,10 +1022,10 @@ export const usePlaceSearch = (
     const selectedActivity = activityOptions[Math.floor(Math.random() * activityOptions.length)];
     
     const activityLabel = selectedActivity.replace('_', ' ');
-    const cuisineLabel = isCoffeeMode ? 'coffee shops' : `${selectedCuisine} restaurants`;
+    const cuisineLabel = isCoffeeMode ? 'coffee shops' : `${selectedCuisine} spots`;
     toast({
       title: "✨ Surprise!",
-      description: `Finding ${cuisineLabel} and ${activityLabel} nearby...`,
+      description: `Finding hidden gem ${cuisineLabel} and ${activityLabel} nearby...`,
       duration: 3000,
     });
     
@@ -1040,6 +1052,7 @@ export const usePlaceSearch = (
       const randomSeed = Math.floor(Math.random() * 1000000);
 
       // SURPRISE ME: Use fixed 5mi radius, not profile
+      // FORCE hidden_gems mode for truly unique venues!
       const restaurantsPromise = (currentMode === 'both' || currentMode === 'restaurant_only')
         ? supabase.functions.invoke('places-search', {
             body: { 
@@ -1048,9 +1061,11 @@ export const usePlaceSearch = (
               radiusMiles: surpriseRadius,  // Fixed 5mi radius
               cuisine: isCoffeeMode ? '' : selectedCuisine,  // No cuisine for coffee search
               venueType: isCoffeeMode ? 'coffee' : 'any',    // Pass coffee mode
+              noveltyMode: 'hidden_gems',  // FORCE hidden gems mode!
               seed: randomSeed,
               forceFresh: true,
-              voiceTriggered: true  // Signal this bypasses profile
+              voiceTriggered: true,  // Signal this bypasses profile
+              surpriseMe: true       // Signal to skip random shuffle, keep top gems
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -1062,9 +1077,11 @@ export const usePlaceSearch = (
               lng: searchLng, 
               radiusMiles: surpriseRadius,  // Fixed 5mi radius
               keyword: selectedActivity,
+              noveltyMode: 'hidden_gems',  // FORCE hidden gems mode!
               seed: randomSeed,
               forceFresh: true,
-              voiceTriggered: true  // Signal this bypasses profile
+              voiceTriggered: true,  // Signal this bypasses profile
+              surpriseMe: true       // Signal to skip random shuffle, keep top gems
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });

@@ -30,7 +30,8 @@ serve(async (req) => {
       targetCity, 
       noveltyMode = 'balanced' as NoveltyMode, 
       seed,
-      forceFresh = false 
+      forceFresh = false,
+      surpriseMe = false  // Skip shuffle, keep top hidden gems
     } = body;
 
     if (!lat || !lng || !radiusMiles || !keyword) {
@@ -50,6 +51,7 @@ serve(async (req) => {
     console.log('Novelty Mode:', noveltyMode);
     console.log('Seed:', seed || 'none');
     console.log('Force Fresh:', forceFresh);
+    console.log('Surprise Me:', surpriseMe);
     console.log('======================================');
 
     // If forceFresh, generate a new seed to ensure different results
@@ -101,8 +103,9 @@ serve(async (req) => {
         return (a.distance || 0) - (b.distance || 0);
       });
     
-    // If seed is provided (or forceFresh generated one), shuffle the results deterministically
-    if (effectiveSeed !== undefined) {
+    // SURPRISE ME MODE: Don't shuffle - keep top hidden gems in score order!
+    // Only shuffle for regular searches (not Surprise Me)
+    if (effectiveSeed !== undefined && !surpriseMe) {
       console.log(`🎲 Shuffling activity results with seed: ${effectiveSeed}`);
       const seededRandom = (s: number) => {
         const x = Math.sin(s) * 10000;
@@ -113,6 +116,10 @@ serve(async (req) => {
         const j = Math.floor(seededRandom(effectiveSeed + i) * (i + 1));
         [items[i], items[j]] = [items[j], items[i]];
       }
+    } else if (surpriseMe) {
+      console.log(`✨ Surprise Me mode: keeping top ${Math.min(15, items.length)} hidden gems in score order`);
+      // Take only top 15 hidden gems, no shuffle
+      items.splice(15);
     }
     
     // Remove internal fields before returning

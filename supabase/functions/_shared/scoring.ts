@@ -87,31 +87,36 @@ export function calculateUniquenessScore(
   // === FACTOR 1: Review Count (Sweet Spot Detection) ===
   const reviewCount = place.user_ratings_total || 0;
   
+  // For hidden_gems mode, use tighter sweet spot (20-200 reviews)
+  const isHiddenGemsMode = noveltyMode === 'hidden_gems';
+  
   if (reviewCount < 20) {
     // Too new/unknown - risky
     score *= 0.5;
   } else if (reviewCount >= 20 && reviewCount < 50) {
-    // New but has some validation
-    score *= 0.8;
-  } else if (reviewCount >= 50 && reviewCount <= 300) {
+    // New but has some validation - good for hidden gems!
+    score *= isHiddenGemsMode ? 1.5 : 0.8;
+  } else if (reviewCount >= 50 && reviewCount <= (isHiddenGemsMode ? 200 : 300)) {
     // SWEET SPOT - Hidden gem territory!
-    score *= 1.8;
-  } else if (reviewCount > 300 && reviewCount <= 800) {
-    // Popular local favorite
-    score *= 1.3;
-  } else if (reviewCount > 800 && reviewCount <= 2000) {
-    // Well-known spot
-    score *= 1.0;
+    score *= isHiddenGemsMode ? 2.0 : 1.8;
+  } else if (reviewCount > (isHiddenGemsMode ? 200 : 300) && reviewCount <= (isHiddenGemsMode ? 500 : 800)) {
+    // Popular local favorite - less appealing for hidden gems
+    score *= isHiddenGemsMode ? 1.0 : 1.3;
+  } else if (reviewCount > (isHiddenGemsMode ? 500 : 800) && reviewCount <= 2000) {
+    // Well-known spot - penalize in hidden gems mode
+    score *= isHiddenGemsMode ? 0.5 : 1.0;
   } else {
-    // Super mainstream (2000+)
-    score *= 0.6;
+    // Super mainstream (2000+) - heavy penalty in hidden gems mode
+    score *= isHiddenGemsMode ? 0.2 : 0.6;
   }
   
   // === FACTOR 2: Chain Detection ===
   // Use Foursquare chains field if available (FREE), otherwise keyword matching
   if (isChainRestaurant(place.name, place.chains)) {
     const chainPenalty = getChainPenalty(place.name);
-    score *= chainPenalty;
+    // In hidden gems mode, apply HEAVIER chain penalty (almost exclusion)
+    const effectivePenalty = isHiddenGemsMode ? chainPenalty * 0.1 : chainPenalty;
+    score *= effectivePenalty;
   }
   
   // === FACTOR 3: Rating Quality ===
@@ -129,19 +134,41 @@ export function calculateUniquenessScore(
   }
   
   // === FACTOR 4: Type/Category Uniqueness ===
-  // Boost unique categories
+  // EXPANDED list of unique, date-night-worthy categories
   const uniqueTypes = [
-    'speakeasy', 'wine_bar', 'jazz_club', 'art_gallery',
-    'rooftop_bar', 'food_truck', 'pop_up', 'wine_tasting',
-    'brewery', 'winery', 'distillery'
+    // Unique bars/lounges
+    'speakeasy', 'wine_bar', 'jazz_club', 'rooftop_bar', 'tiki_bar',
+    'whiskey_bar', 'cocktail_bar', 'lounge', 'hookah_lounge',
+    // Unique dining experiences
+    'supper_club', 'omakase', 'tasting_menu', 'private_dining',
+    'chef_owned', 'farm_to_table', 'pop_up', 'food_truck',
+    // Entertainment/experiences
+    'art_gallery', 'theater', 'comedy_club', 'live_music',
+    'karaoke', 'arcade', 'escape_room', 'axe_throwing',
+    'paint_and_sip', 'pottery', 'cooking_class',
+    // Craft beverages
+    'brewery', 'winery', 'distillery', 'wine_tasting',
+    'craft_beer', 'sake_bar', 'mezcal_bar'
   ];
   
+  // Check if name/types contain unique keywords
+  const nameLower = place.name.toLowerCase();
   const hasUniqueType = place.types?.some(type => 
     uniqueTypes.includes(type.toLowerCase())
   );
+  const hasUniqueNameKeyword = uniqueTypes.some(kw => 
+    nameLower.includes(kw.replace('_', ' ')) || nameLower.includes(kw.replace('_', ''))
+  );
   
-  if (hasUniqueType) {
-    score *= 1.3;
+  if (hasUniqueType || hasUniqueNameKeyword) {
+    score *= isHiddenGemsMode ? 1.8 : 1.3;
+  }
+  
+  // === FACTOR 5: Name-based uniqueness signals ===
+  // Boost venues with unique/interesting name patterns
+  const uniqueNamePatterns = /speakeasy|underground|secret|hidden|rooftop|basement|cellar|loft|supper|tasting|omakase|izakaya|tapas|mezcal|sake|craft|artisan|boutique|intimate|cozy|tucked|neighborhood|local/i;
+  if (uniqueNamePatterns.test(nameLower)) {
+    score *= isHiddenGemsMode ? 1.5 : 1.2;
   }
   
   // === MODE ADJUSTMENTS ===
