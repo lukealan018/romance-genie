@@ -478,6 +478,7 @@ export const usePlaceSearch = (
       toast({ 
         title: "Success", 
         description: `Found ${restaurants.length} restaurants and ${activities.length} activities for your date night!`,
+        duration: 4000,
       });
       
       // Trigger first search completion

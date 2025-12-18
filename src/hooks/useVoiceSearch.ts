@@ -528,6 +528,7 @@ export const useVoiceSearch = ({
       toast({ 
         title: "Got it!", 
         description: `Found ${restaurants.length} restaurants and ${finalActivities.length} activities based on your request!`,
+        duration: 4000,
       });
       
       // Trigger first search completion
