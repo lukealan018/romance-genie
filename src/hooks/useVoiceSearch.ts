@@ -52,6 +52,11 @@ export const useVoiceSearch = ({
     setSearchMode,
     setSearchDate,
     clearResults,
+    addToExcludePlaceIds,
+    addToExcludeActivityIds,
+    clearExclusions,
+    getExcludePlaceIds,
+    getExcludeActivityIds,
   } = usePlanStore();
 
   // State for date ambiguity handling
@@ -342,6 +347,11 @@ export const useVoiceSearch = ({
       const randomSeed = Math.floor(Math.random() * 1000000);
       console.log('🎲 Voice search random seed:', randomSeed);
       
+      // Get current exclusions to pass to backend
+      const excludePlaceIds = getExcludePlaceIds();
+      const excludeActivityIds = getExcludeActivityIds();
+      console.log('🚫 Excluding previously shown places:', excludePlaceIds.length, 'restaurants,', excludeActivityIds.length, 'activities');
+      
       // Search restaurants only if mode allows
       // VOICE SEARCH: Pass only voice-extracted params, no profile defaults
       const restaurantsPromise = (voiceMode === 'both' || voiceMode === 'restaurant_only')
@@ -356,7 +366,8 @@ export const useVoiceSearch = ({
               venueType: venueType,
               seed: randomSeed,         // Fresh seed for variety
               forceFresh: true,         // Always force fresh results
-              voiceTriggered: true      // Signal this is a voice search
+              voiceTriggered: true,     // Signal this is a voice search
+              excludePlaceIds           // Exclude previously shown places
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -372,7 +383,8 @@ export const useVoiceSearch = ({
               targetCity: activityCity,
               seed: randomSeed,         // Fresh seed for variety
               forceFresh: true,         // Always force fresh results
-              voiceTriggered: true      // Signal this is a voice search
+              voiceTriggered: true,     // Signal this is a voice search
+              excludePlaceIds: excludeActivityIds  // Exclude previously shown activities
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -481,6 +493,16 @@ export const useVoiceSearch = ({
       setLastSearched(searchCuisine, searchActivity);
       setLocation(planLat, planLng);
       
+      // Track these results for exclusion in next search
+      const newRestaurantIds = sortedRestaurants.map(r => r.id);
+      const newActivityIds = sortedActivities.map(a => a.id);
+      addToExcludePlaceIds(newRestaurantIds);
+      addToExcludeActivityIds(newActivityIds);
+      console.log('📝 Added to exclusions:', newRestaurantIds.length, 'restaurants,', newActivityIds.length, 'activities');
+      
+      // Track the location for smart exclusion clearing
+      usePlanStore.setState({ lastExclusionLocation: { lat: planLat, lng: planLng } });
+      
       console.log('✅ [VoiceSearch] Store updated successfully');
 
       // VOICE SEARCH: Build plan without profile preferences
@@ -551,12 +573,26 @@ export const useVoiceSearch = ({
     setLocation, setFilters, setRestaurants, setActivities,
     setRestaurantIdx, setActivityIdx, setLastSearched, setLastSearchLocation,
     setSearchMode, handleUseCurrentLocation, trackInteraction, setPlan,
-    onSearchSuccess, navigate
+    onSearchSuccess, navigate, addToExcludePlaceIds, addToExcludeActivityIds,
+    getExcludePlaceIds, getExcludeActivityIds
   ]);
 
   const handlePreferencesExtracted = useCallback(async (preferences: any) => {
     console.log('=== VOICE PREFERENCES EXTRACTION START (PROFILE OVERRIDE MODE) ===');
     console.log('Raw preferences:', preferences);
+    
+    // Smart exclusion clearing: Clear when location changes significantly
+    // Check if we have a new location that's far from the last search
+    const storeState = usePlanStore.getState();
+    const hasNewLocation = preferences.generalLocation || 
+                          preferences.restaurantRequest?.location || 
+                          preferences.activityRequest?.location;
+    
+    if (hasNewLocation && storeState.lastExclusionLocation) {
+      // If user specified a new location, clear exclusions to show fresh results for new area
+      console.log('🗺️ New location detected, clearing exclusions for fresh results');
+      clearExclusions();
+    }
     
     // VOICE SEARCH: Clear ALL previous results and signatures to force completely fresh search
     usePlanStore.getState().clearAllResults();
@@ -623,7 +659,7 @@ export const useVoiceSearch = ({
       lastSearchMode: voiceMode,
       lastSearchDate: preferences.searchDate ? parseISO(preferences.searchDate) : null
     });
-  }, [executeSearch, setSearchDate, clearResults, setLastSearched, setLastSearchLocation, searchMode]);
+  }, [executeSearch, setSearchDate, clearResults, setLastSearched, setLastSearchLocation, searchMode, clearExclusions]);
 
   // Handler for when user selects a date from the ambiguity dialog
   const handleDateChoice = useCallback(async (date: string, time: string) => {

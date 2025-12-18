@@ -74,6 +74,11 @@ interface PlanState {
   lastSearchedCuisine: string | null;
   lastSearchedActivity: string | null;
   
+  // Exclude previously shown places for fresh results
+  excludePlaceIds: string[];
+  excludeActivityIds: string[];
+  lastExclusionLocation: { lat: number; lng: number } | null;
+  
   // User preferences
   userPreferences: {
     cuisines: string[];
@@ -124,6 +129,13 @@ interface PlanState {
   // Signature management
   setSearchSignature: (signature: string) => void;
   clearAllResults: () => void;
+  
+  // Exclusion management for fresh results
+  addToExcludePlaceIds: (ids: string[]) => void;
+  addToExcludeActivityIds: (ids: string[]) => void;
+  clearExclusions: () => void;
+  getExcludePlaceIds: () => string[];
+  getExcludeActivityIds: () => string[];
   
   // Legacy compatibility - deprecated, use mode-aware versions
   restaurants: Place[];
@@ -189,6 +201,11 @@ export const usePlanStore = create<PlanState>((set, get) => ({
   
   lastSearchedCuisine: null,
   lastSearchedActivity: null,
+  
+  // Exclusion tracking for fresh results
+  excludePlaceIds: [],
+  excludeActivityIds: [],
+  lastExclusionLocation: null,
   
   userPreferences: {
     cuisines: [],
@@ -427,6 +444,24 @@ export const usePlanStore = create<PlanState>((set, get) => ({
     resultsActivityOnly: getEmptyActivityOnlyBucket(),
     lastSearchSignature: null,
   }),
+  
+  // Exclusion management for fresh results
+  addToExcludePlaceIds: (ids) => set((state) => ({
+    excludePlaceIds: [...new Set([...state.excludePlaceIds, ...ids])]
+  })),
+  
+  addToExcludeActivityIds: (ids) => set((state) => ({
+    excludeActivityIds: [...new Set([...state.excludeActivityIds, ...ids])]
+  })),
+  
+  clearExclusions: () => set({
+    excludePlaceIds: [],
+    excludeActivityIds: [],
+    lastExclusionLocation: null,
+  }),
+  
+  getExcludePlaceIds: () => get().excludePlaceIds,
+  getExcludeActivityIds: () => get().excludeActivityIds,
   
   // Legacy setters (write to current mode bucket)
   setRestaurants: (restaurants, token) => set((state) => {

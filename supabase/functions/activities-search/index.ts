@@ -31,7 +31,8 @@ serve(async (req) => {
       noveltyMode = 'balanced' as NoveltyMode, 
       seed,
       forceFresh = false,
-      surpriseMe = false  // Skip shuffle, keep top hidden gems
+      surpriseMe = false,  // Skip shuffle, keep top hidden gems
+      excludePlaceIds = []  // IDs to exclude from results
     } = body;
 
     if (!lat || !lng || !radiusMiles || !keyword) {
@@ -52,6 +53,7 @@ serve(async (req) => {
     console.log('Seed:', seed || 'none');
     console.log('Force Fresh:', forceFresh);
     console.log('Surprise Me:', surpriseMe);
+    console.log('Exclude IDs:', excludePlaceIds.length);
     console.log('======================================');
 
     // If forceFresh, generate a new seed to ensure different results
@@ -74,8 +76,20 @@ serve(async (req) => {
     
     const { items: activities, providerStats } = await getActivitySuggestions(searchOptions);
     
-    // Apply novelty scoring and sorting
+    // Create Set for O(1) exclusion lookups
+    const excludeSet = new Set(excludePlaceIds);
+    let excludedCount = 0;
+    
+    // Apply novelty scoring, sorting, and exclusion filtering
     const items = activities
+      .filter((item: any) => {
+        // Exclude previously shown activities
+        if (excludeSet.has(item.id)) {
+          excludedCount++;
+          return false;
+        }
+        return true;
+      })
       .map((item: any) => {
         // Calculate uniqueness score for each item
         const placeData = {
@@ -129,7 +143,7 @@ serve(async (req) => {
     });
 
     console.log(`📊 Provider stats:`, providerStats);
-    console.log(`✅ Returning ${cleanedItems.length} activities (forceFresh: ${forceFresh})`);
+    console.log(`✅ Returning ${cleanedItems.length} activities (forceFresh: ${forceFresh}, excluded: ${excludedCount})`);
 
     return new Response(
       JSON.stringify({

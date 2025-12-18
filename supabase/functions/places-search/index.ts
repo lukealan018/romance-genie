@@ -74,7 +74,7 @@ serve(async (req) => {
 
   try {
     // Parse request parameters
-    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean, venueType: 'any' | 'coffee', searchTime: string | undefined, surpriseMe: boolean;
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean, venueType: 'any' | 'coffee', searchTime: string | undefined, surpriseMe: boolean, excludePlaceIds: string[];
 
     if (req.method === 'POST') {
       const body = await req.json();
@@ -90,6 +90,7 @@ serve(async (req) => {
       venueType = body.venueType || 'any'; // Coffee shop filter
       searchTime = body.searchTime; // For dinner-time exclusion
       surpriseMe = body.surpriseMe === true; // Skip shuffle, keep top hidden gems
+      excludePlaceIds = body.excludePlaceIds || []; // IDs to exclude from results
     } else {
       const url = new URL(req.url);
       lat = parseFloat(url.searchParams.get('lat') || '');
@@ -104,6 +105,7 @@ serve(async (req) => {
       venueType = (url.searchParams.get('venueType') as 'any' | 'coffee') || 'any';
       searchTime = url.searchParams.get('searchTime') || undefined;
       surpriseMe = url.searchParams.get('surpriseMe') === 'true';
+      excludePlaceIds = []; // Not supported via GET params
     }
 
     // Validate required parameters
@@ -131,6 +133,7 @@ serve(async (req) => {
       venueType,
       searchTime: searchTime || 'none',
       surpriseMe,
+      excludePlaceIds: excludePlaceIds.length,
       bookingInsightsEnabled: FEATURE_FLAGS.ENABLE_BOOKING_INSIGHTS
     });
 
@@ -159,8 +162,19 @@ serve(async (req) => {
 
     // Apply existing scoring and filtering logic
     const radiusMilesNum = radiusMiles;
+    
+    // Create Set for O(1) exclusion lookups
+    const excludeSet = new Set(excludePlaceIds);
+    let excludedCount = 0;
+    
     const items: PlaceSearchResultItem[] = providerResults
       .filter((item: any) => {
+        // Exclude previously shown places
+        if (excludeSet.has(item.id)) {
+          excludedCount++;
+          return false;
+        }
+        
         // Distance filter with buffer
         const maxDistance = radiusMilesNum * 1.5;
         if (item.distance && item.distance > maxDistance) {
@@ -268,7 +282,7 @@ serve(async (req) => {
       console.log(`📅 Booking insights: ${recommendedCount}/${items.length} recommend reservations`);
     }
 
-    console.log(`✅ Returning ${items.length} scored restaurants (forceFresh: ${forceFresh})`);
+    console.log(`✅ Returning ${items.length} scored restaurants (forceFresh: ${forceFresh}, excluded: ${excludedCount})`);
 
     return new Response(
       JSON.stringify({
