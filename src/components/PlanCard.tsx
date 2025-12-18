@@ -1,4 +1,4 @@
-import { RefreshCw, ArrowRight, MapPin, Star, Phone, Loader2, ExternalLink, Heart } from "lucide-react";
+import { RefreshCw, ArrowRight, MapPin, Star, Phone, Loader2, ExternalLink, Heart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { getReservationLinks, getActivityLinks, getMapUrl } from "@/lib/external-links";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { trackActivity } from '@/lib/activity-tracker';
+import { SharePlanButton } from './SharePlanButton';
 
 // Estimate travel time based on distance
 const estimateTravelTime = (miles: number) => {
