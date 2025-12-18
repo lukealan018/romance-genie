@@ -995,18 +995,25 @@ export const usePlaceSearch = (
       }
     }
     
+    // Get current venueType from store - if user was searching for coffee, keep that intent
+    const { venueType: currentVenueType } = usePlanStore.getState();
+    
     // SURPRISE ME: Random cuisine/activity, NOT from profile preferences
     const cuisineOptions = ["Italian", "Mexican", "Japanese", "Chinese", "Thai", "American", "Indian", "French", "Mediterranean"];
     const activityOptions = ["live_music", "comedy", "movies", "bowling", "arcade", "museum", "escape_room", "mini_golf", "hike", "wine"];
     
-    // Pure random selection - NO profile preference influence
-    const selectedCuisine = cuisineOptions[Math.floor(Math.random() * cuisineOptions.length)];
+    // If venueType is coffee, keep it as coffee search (don't randomize to restaurant)
+    const isCoffeeMode = currentVenueType === 'coffee';
+    
+    // Pure random selection - NO profile preference influence (unless coffee mode)
+    const selectedCuisine = isCoffeeMode ? 'coffee' : cuisineOptions[Math.floor(Math.random() * cuisineOptions.length)];
     const selectedActivity = activityOptions[Math.floor(Math.random() * activityOptions.length)];
     
     const activityLabel = selectedActivity.replace('_', ' ');
+    const cuisineLabel = isCoffeeMode ? 'coffee shops' : `${selectedCuisine} restaurants`;
     toast({
       title: "✨ Surprise!",
-      description: `Finding ${selectedCuisine} restaurants and ${activityLabel} nearby...`,
+      description: `Finding ${cuisineLabel} and ${activityLabel} nearby...`,
       duration: 3000,
     });
     
@@ -1039,7 +1046,8 @@ export const usePlaceSearch = (
               lat: searchLat, 
               lng: searchLng, 
               radiusMiles: surpriseRadius,  // Fixed 5mi radius
-              cuisine: selectedCuisine,
+              cuisine: isCoffeeMode ? '' : selectedCuisine,  // No cuisine for coffee search
+              venueType: isCoffeeMode ? 'coffee' : 'any',    // Pass coffee mode
               seed: randomSeed,
               forceFresh: true,
               voiceTriggered: true  // Signal this bypasses profile

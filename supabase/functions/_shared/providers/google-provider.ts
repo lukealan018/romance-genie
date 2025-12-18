@@ -18,9 +18,11 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// Coffee shop filtering patterns
-const COFFEE_KEEP_PATTERNS = /coffee|café|cafe|espresso|roasters|roastery/i;
-const COFFEE_EXCLUDE_PATTERNS = /boba|bubble|milk tea|tapioca|tea shop|tea house|teahouse|starbucks/i;
+// Coffee shop filtering patterns - STRICT: Must be primarily a coffee shop
+const COFFEE_KEEP_PATTERNS = /coffee|café|cafe|espresso|roasters|roastery|java|brew/i;
+const COFFEE_EXCLUDE_PATTERNS = /boba|bubble|milk tea|tapioca|tea shop|tea house|teahouse|starbucks|dunkin/i;
+// Exclude food-focused venues that happen to serve coffee
+const COFFEE_EXCLUDE_FOOD_FOCUS = /sandwich|deli|bakery|bagel|pizza|burger|grill|bistro|kitchen|restaurant|diner|eatery/i;
 
 // Check if it's dinner time (14:00 or later)
 function isDinnerTime(searchTime?: string): boolean {
@@ -164,19 +166,25 @@ export const googlePlacesProvider: PlacesProvider = {
         const name = place.name || '';
         
         if (isCoffeeSearch) {
-          // === COFFEE SHOP FILTERING ===
-          // KEEP: Must have cafe type OR match coffee patterns
-          const hasCafeType = types.includes('cafe');
+          // === STRICT COFFEE SHOP FILTERING ===
+          // KEEP: Must match coffee patterns (not just cafe type)
           const matchesCoffeePattern = COFFEE_KEEP_PATTERNS.test(name);
           
-          // EXCLUDE: Boba/tea shops and Starbucks
+          // EXCLUDE: Boba/tea shops and chains
           if (COFFEE_EXCLUDE_PATTERNS.test(name)) {
-            console.log(`☕ Google: Filtering out "${name}" - boba/tea/starbucks excluded`);
+            console.log(`☕ Google: Filtering out "${name}" - boba/tea/chain excluded`);
             return false;
           }
           
-          if (!hasCafeType && !matchesCoffeePattern) {
-            console.log(`☕ Google: Filtering out "${name}" - not a coffee shop`);
+          // EXCLUDE: Food-focused venues that happen to serve coffee
+          if (COFFEE_EXCLUDE_FOOD_FOCUS.test(name)) {
+            console.log(`☕ Google: Filtering out "${name}" - food-focused venue`);
+            return false;
+          }
+          
+          // MUST match coffee pattern (not just be a cafe)
+          if (!matchesCoffeePattern) {
+            console.log(`☕ Google: Filtering out "${name}" - name doesn't indicate coffee shop`);
             return false;
           }
           
