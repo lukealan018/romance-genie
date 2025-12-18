@@ -22,7 +22,20 @@ const cuisineToCategoryId: Record<string, string> = {
   'indian': '13199',
   'fine dining': '13145',
   'restaurant': '13065', // Generic fallback
+  // COFFEE SHOP CATEGORIES
+  'coffee': '13034,13035', // Coffee Shop + Café
 };
+
+// Coffee-specific Foursquare category IDs
+const COFFEE_CATEGORY_IDS = [
+  '13034', // Coffee Shop
+  '13035', // Café
+  '13036', // Tea Room (some overlap)
+];
+
+// Coffee shop name patterns for Foursquare filtering
+const FOURSQUARE_COFFEE_PATTERNS = /coffee|café|cafe|espresso|roasters|roastery|java|brew|roast|grind|bean|drip|latte|coffeehouse/i;
+const FOURSQUARE_COFFEE_EXCLUSIONS = /boba|bubble|milk tea|tapioca|tea shop|tea house|starbucks|dunkin|peet's|caribou|tim horton|mccafe/i;
 
 // Helper: Get Foursquare category ID for cuisine
 function getCuisineCategory(cuisine?: string): string {
@@ -74,28 +87,36 @@ export const foursquarePlacesProvider: PlacesProvider = {
       return [];
     }
     
+    const isCoffeeSearch = options.venueType === 'coffee';
+    
     try {
-      console.log(`🟦 Foursquare provider: Searching near ${options.lat},${options.lng} radius ${options.radiusMeters}m`);
+      console.log(`🟦 Foursquare provider: Searching ${isCoffeeSearch ? 'coffee shops' : 'restaurants'} near ${options.lat},${options.lng} radius ${options.radiusMeters}m`);
       
       // Build Foursquare Places API search URL (new endpoint)
       const fsUrl = new URL('https://places-api.foursquare.com/places/search');
       fsUrl.searchParams.set('ll', `${options.lat},${options.lng}`);
       fsUrl.searchParams.set('radius', options.radiusMeters.toString());
       
-      // Add category ID for cuisine type
-      const categoryId = getCuisineCategory(options.cuisine);
+      // Add category ID for cuisine type (or coffee categories)
+      let categoryId: string;
+      if (isCoffeeSearch) {
+        categoryId = COFFEE_CATEGORY_IDS.join(',');
+        fsUrl.searchParams.set('query', 'coffee');
+        console.log(`☕ Foursquare: Coffee search with categories ${categoryId}`);
+      } else {
+        categoryId = getCuisineCategory(options.cuisine);
+        // Add cuisine-specific query if provided for additional precision
+        if (options.cuisine && options.cuisine !== 'restaurant') {
+          fsUrl.searchParams.set('query', options.cuisine);
+        }
+      }
       fsUrl.searchParams.set('categories', categoryId);
       fsUrl.searchParams.set('limit', '50');
       
-      // Add cuisine-specific query if provided for additional precision
-      if (options.cuisine && options.cuisine !== 'restaurant') {
-        fsUrl.searchParams.set('query', options.cuisine);
-      }
+      console.log(`🟦 Foursquare: Searching "${isCoffeeSearch ? 'coffee' : options.cuisine || 'restaurant'}" with category ${categoryId}`);
       
-      console.log(`🟦 Foursquare: Searching "${options.cuisine || 'restaurant'}" with category ${categoryId}`);
-      
-      // Map price level to Foursquare's 1-4 scale
-      if (options.priceLevel) {
+      // Map price level to Foursquare's 1-4 scale (skip for coffee)
+      if (options.priceLevel && !isCoffeeSearch) {
         const priceMap: Record<string, string> = {
           'budget': '1',
           'moderate': '2',
@@ -160,6 +181,25 @@ export const foursquarePlacesProvider: PlacesProvider = {
           if (isRetailByName) {
             console.log(`🟦 Foursquare: Filtering out retail store by name "${place.name}"`);
             return null;
+          }
+          
+          // === COFFEE SHOP FILTERING FOR FOURSQUARE ===
+          if (isCoffeeSearch) {
+            // EXCLUDE: Coffee chains and non-coffee venues
+            if (FOURSQUARE_COFFEE_EXCLUSIONS.test(nameLower)) {
+              console.log(`☕ Foursquare: Filtering out coffee chain/excluded "${place.name}"`);
+              return null;
+            }
+            
+            // MUST match coffee pattern in name (stricter filtering)
+            if (!FOURSQUARE_COFFEE_PATTERNS.test(nameLower)) {
+            // Check if it has explicit coffee category
+              const hasCoffeeCategory = categoryIds.some((id: string) => COFFEE_CATEGORY_IDS.includes(id));
+              if (!hasCoffeeCategory) {
+                console.log(`☕ Foursquare: Filtering out "${place.name}" - not a coffee shop`);
+                return null;
+              }
+            }
           }
           
           // Normalize rating from Foursquare's 10-point scale to 5-point

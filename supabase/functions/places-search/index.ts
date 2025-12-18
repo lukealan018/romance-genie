@@ -74,7 +74,7 @@ serve(async (req) => {
 
   try {
     // Parse request parameters
-    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean, venueType: 'any' | 'coffee', searchTime: string | undefined;
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean, venueType: 'any' | 'coffee', searchTime: string | undefined, surpriseMe: boolean;
 
     if (req.method === 'POST') {
       const body = await req.json();
@@ -89,6 +89,7 @@ serve(async (req) => {
       forceFresh = body.forceFresh === true; // Force fresh results
       venueType = body.venueType || 'any'; // Coffee shop filter
       searchTime = body.searchTime; // For dinner-time exclusion
+      surpriseMe = body.surpriseMe === true; // Skip shuffle, keep top hidden gems
     } else {
       const url = new URL(req.url);
       lat = parseFloat(url.searchParams.get('lat') || '');
@@ -102,6 +103,7 @@ serve(async (req) => {
       forceFresh = url.searchParams.get('forceFresh') === 'true';
       venueType = (url.searchParams.get('venueType') as 'any' | 'coffee') || 'any';
       searchTime = url.searchParams.get('searchTime') || undefined;
+      surpriseMe = url.searchParams.get('surpriseMe') === 'true';
     }
 
     // Validate required parameters
@@ -128,6 +130,7 @@ serve(async (req) => {
       forceFresh,
       venueType,
       searchTime: searchTime || 'none',
+      surpriseMe,
       bookingInsightsEnabled: FEATURE_FLAGS.ENABLE_BOOKING_INSIGHTS
     });
 
@@ -238,8 +241,9 @@ serve(async (req) => {
         return b.rating - a.rating;
       });
 
-    // If seed is provided (or forceFresh generated one), shuffle the results deterministically
-    if (effectiveSeed !== undefined) {
+    // SURPRISE ME MODE: Don't shuffle - keep top hidden gems in score order!
+    // Only shuffle for regular searches (not Surprise Me)
+    if (effectiveSeed !== undefined && !surpriseMe) {
       console.log(`🎲 Shuffling results with seed: ${effectiveSeed}`);
       // Seeded random shuffle using the seed
       const seededRandom = (s: number) => {
@@ -252,6 +256,10 @@ serve(async (req) => {
         const j = Math.floor(seededRandom(effectiveSeed + i) * (i + 1));
         [items[i], items[j]] = [items[j], items[i]];
       }
+    } else if (surpriseMe) {
+      console.log(`✨ Surprise Me mode: keeping top ${Math.min(15, items.length)} hidden gems in score order`);
+      // Take only top 15 hidden gems, no shuffle
+      items.splice(15);
     }
 
     // Log booking insights stats when feature is enabled

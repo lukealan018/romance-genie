@@ -19,10 +19,12 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 }
 
 // Coffee shop filtering patterns - STRICT: Must be primarily a coffee shop
-const COFFEE_KEEP_PATTERNS = /coffee|café|cafe|espresso|roasters|roastery|java|brew/i;
-const COFFEE_EXCLUDE_PATTERNS = /boba|bubble|milk tea|tapioca|tea shop|tea house|teahouse|starbucks|dunkin/i;
+// EXPANDED patterns to catch indie coffee shops
+const COFFEE_KEEP_PATTERNS = /coffee|café|cafe|espresso|roasters|roastery|java|brew|roast|grind|bean|drip|pour.?over|latte|coffeehouse|coffee.?house|coffee.?spot|cold.?brew|cortado|cappuccino/i;
+// EXPANDED exclusions for chains and non-coffee venues
+const COFFEE_EXCLUDE_PATTERNS = /boba|bubble|milk tea|tapioca|tea shop|tea house|teahouse|starbucks|dunkin|peet's|peets|the coffee bean|coffee bean & tea|caribou|tim horton|tims|mccafe|mcdonalds|7-eleven/i;
 // Exclude food-focused venues that happen to serve coffee
-const COFFEE_EXCLUDE_FOOD_FOCUS = /sandwich|deli|bakery|bagel|pizza|burger|grill|bistro|kitchen|restaurant|diner|eatery/i;
+const COFFEE_EXCLUDE_FOOD_FOCUS = /sandwich|deli|bakery|bagel|pizza|burger|grill|bistro|kitchen|restaurant|diner|eatery|donut|doughnut|panera|au bon pain|corner bakery|la boulange|einstein/i;
 
 // Check if it's dinner time (14:00 or later)
 function isDinnerTime(searchTime?: string): boolean {
