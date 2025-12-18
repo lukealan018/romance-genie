@@ -29,6 +29,7 @@ export const RatingModal = ({ planId, onClose }: RatingModalProps) => {
     setIsSubmitting(true);
 
     try {
+      // Update the scheduled plan with rating
       const { error } = await supabase
         .from('scheduled_plans')
         .update({
@@ -39,9 +40,44 @@ export const RatingModal = ({ planId, onClose }: RatingModalProps) => {
 
       if (error) throw error;
 
+      // Also record in user_interactions for the learning algorithm
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session?.user?.id) {
+        // Fetch the plan details to record the interaction
+        const { data: plan } = await supabase
+          .from('scheduled_plans')
+          .select('restaurant_id, restaurant_name, restaurant_cuisine, activity_id, activity_name, activity_category')
+          .eq('id', planId)
+          .single();
+
+        if (plan) {
+          // Record restaurant rating
+          await supabase.from('user_interactions').insert({
+            user_id: sessionData.session.user.id,
+            place_id: plan.restaurant_id,
+            place_name: plan.restaurant_name,
+            place_type: 'restaurant',
+            interaction_type: 'rate',
+            cuisine: plan.restaurant_cuisine,
+            rating: rating,
+          });
+
+          // Record activity rating
+          await supabase.from('user_interactions').insert({
+            user_id: sessionData.session.user.id,
+            place_id: plan.activity_id,
+            place_name: plan.activity_name,
+            place_type: 'activity',
+            interaction_type: 'rate',
+            category: plan.activity_category,
+            rating: rating,
+          });
+        }
+      }
+
       toast({
         title: 'Thanks for the feedback! 🎉',
-        description: 'Your rating has been saved.'
+        description: 'Your rating helps improve recommendations.'
       });
 
       onClose();

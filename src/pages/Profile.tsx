@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
 import { ThemeSelector } from "@/components/ThemeSwitcher";
+import { TasteProfile } from "@/components/TasteProfile";
 
 // Primary options shown directly on page
 const PRIMARY_CUISINES = ["italian", "mexican", "sushi", "steakhouse", "thai", "american"];
@@ -384,6 +385,11 @@ const Profile = () => {
           <h2 className="text-luxury-heading mb-1">Appearance</h2>
           <p className="text-luxury-subtitle mb-6">Choose your visual theme</p>
           <ThemeSelector />
+        </div>
+
+        {/* Card 7: Your Taste Profile */}
+        <div className="fade-slide-in" style={{ animationDelay: "0.27s" }}>
+          <TasteProfile />
         </div>
       </main>
 

@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 interface TrackActivityParams {
-  action_type: 'swap_restaurant' | 'swap_activity' | 'save_combo' | 'view_details' | 'call' | 'reserve';
+  action_type: 'swap_restaurant' | 'swap_activity' | 'save_combo' | 'view_details' | 'call' | 'reserve' | 'booking_click' | 'schedule' | 'share';
   restaurant_id?: string;
   restaurant_name?: string;
   restaurant_cuisine?: string;
