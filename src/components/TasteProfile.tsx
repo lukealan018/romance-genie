@@ -1,6 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Utensils, Sparkles, TrendingUp, DollarSign, Heart } from 'lucide-react';
+import { Loader2, Utensils, Sparkles, TrendingUp, DollarSign, Heart, RotateCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface TasteData {
   favoriteCuisines: { name: string; count: number }[];
@@ -14,6 +26,42 @@ interface TasteData {
 export const TasteProfile = () => {
   const [data, setData] = useState<TasteData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState(false);
+
+  const handleResetTasteProfile = async () => {
+    try {
+      setResetting(true);
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user?.id) return;
+
+      const userId = session.session.user.id;
+
+      // Delete all user interactions
+      const { error } = await supabase
+        .from('user_interactions')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      // Reset local state
+      setData(null);
+      
+      toast({
+        title: "Taste profile reset",
+        description: "Your learning data has been cleared. The AI will start fresh!",
+      });
+    } catch (error) {
+      console.error('Error resetting taste profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reset taste profile",
+        variant: "destructive",
+      });
+    } finally {
+      setResetting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchTasteData = async () => {
@@ -224,9 +272,44 @@ export const TasteProfile = () => {
         </div>
       )}
 
-      <p className="text-xs text-muted-foreground text-center pt-2">
-        The AI learns from your choices to improve recommendations
-      </p>
+      <div className="flex flex-col items-center gap-2 pt-4 border-t border-border mt-4">
+        <p className="text-xs text-muted-foreground text-center">
+          The AI learns from your choices to improve recommendations
+        </p>
+        
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button 
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              disabled={resetting}
+            >
+              {resetting ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <RotateCcw className="w-3 h-3" />
+              )}
+              Reset taste profile
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="bg-card border-border">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset your taste profile?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will clear all your learned preferences. The AI will start fresh and no longer remember your past choices. This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="btn-luxury-secondary">Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleResetTasteProfile}
+                className="btn-luxury-primary"
+              >
+                Reset Profile
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 };

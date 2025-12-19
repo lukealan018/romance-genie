@@ -5,6 +5,51 @@ export interface LearnedPreferences {
   favoriteActivities: { category: string; score: number }[];
   avgRatingThreshold: number;
   pricePreference: string;
+  qualityFloor: number;
+}
+
+// Context-aware skip decay configuration
+const SKIP_DECAY_CONFIG = {
+  recentHours: 24,      // Skip in last 24h: temporary cooldown
+  recentPenalty: -0.5,
+  weekDays: 7,          // Skip 2-3x in a week: soft deprioritize
+  weeklyPenalty: -0.3,
+  frequentSkipCount: 5, // Skip 5+ times: max penalty (never eliminate)
+  maxPenalty: -0.5,
+  selectionBonus: 3,    // Selection adds +3 (unchanged)
+};
+
+interface SkipContext {
+  skipCount: number;
+  recentSkips: number;  // Last 24h
+  weeklySkips: number;  // Last 7 days
+  hasLaterSelection: boolean;
+}
+
+// Calculate context-aware skip penalty
+function calculateSkipPenalty(context: SkipContext): number {
+  // If they later selected this cuisine/category, cancel out penalty
+  if (context.hasLaterSelection) {
+    return 0;
+  }
+  
+  // Recent skip (last 24h) - temporary cooldown
+  if (context.recentSkips > 0) {
+    return SKIP_DECAY_CONFIG.recentPenalty;
+  }
+  
+  // Weekly skips (2-3x in a week) - soft deprioritize
+  if (context.weeklySkips >= 2 && context.weeklySkips < 5) {
+    return SKIP_DECAY_CONFIG.weeklyPenalty;
+  }
+  
+  // Frequent skips (5+) - max penalty but never eliminate
+  if (context.skipCount >= SKIP_DECAY_CONFIG.frequentSkipCount) {
+    return SKIP_DECAY_CONFIG.maxPenalty;
+  }
+  
+  // Single old skip - minimal/no penalty
+  return -0.1;
 }
 
 export async function getLearnedPreferences(
@@ -12,6 +57,8 @@ export async function getLearnedPreferences(
 ): Promise<LearnedPreferences> {
   // Get interactions from last 90 days
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   
   const { data: interactions } = await supabase
     .from('user_interactions')
@@ -25,60 +72,85 @@ export async function getLearnedPreferences(
       favoriteActivities: [],
       avgRatingThreshold: 4.0,
       pricePreference: '$$',
+      qualityFloor: 3.5,
     };
   }
 
-  // Analyze what they actually selected vs skipped
-  const selectedRestaurants = interactions.filter(
-    i => i.place_type === 'restaurant' && i.interaction_type === 'selected'
-  );
-  const skippedRestaurants = interactions.filter(
-    i => i.place_type === 'restaurant' && i.interaction_type === 'skipped'
-  );
-  const selectedActivities = interactions.filter(
-    i => i.place_type === 'activity' && i.interaction_type === 'selected'
-  );
-  const skippedActivities = interactions.filter(
-    i => i.place_type === 'activity' && i.interaction_type === 'skipped'
-  );
+  // Group interactions by cuisine/category with timing info
+  const cuisineContexts = new Map<string, SkipContext & { selections: number }>();
+  const activityContexts = new Map<string, SkipContext & { selections: number }>();
 
-  // Calculate cuisine scores (selections add +3, skips subtract -1)
-  const cuisineScores = new Map<string, number>();
-  selectedRestaurants.forEach(r => {
-    if (r.cuisine) {
-      cuisineScores.set(r.cuisine, (cuisineScores.get(r.cuisine) || 0) + 3);
+  // First pass: count all skips and selections with timing
+  interactions.forEach(i => {
+    const createdAt = new Date(i.created_at || '');
+    const isRecent = createdAt >= new Date(twentyFourHoursAgo);
+    const isThisWeek = createdAt >= new Date(sevenDaysAgo);
+
+    if (i.place_type === 'restaurant' && i.cuisine) {
+      const context = cuisineContexts.get(i.cuisine) || {
+        skipCount: 0, recentSkips: 0, weeklySkips: 0, hasLaterSelection: false, selections: 0
+      };
+      
+      if (i.interaction_type === 'skipped') {
+        context.skipCount++;
+        if (isRecent) context.recentSkips++;
+        if (isThisWeek) context.weeklySkips++;
+      } else if (i.interaction_type === 'selected') {
+        context.selections++;
+        context.hasLaterSelection = true;
+      }
+      
+      cuisineContexts.set(i.cuisine, context);
+    }
+
+    if (i.place_type === 'activity' && i.category) {
+      const context = activityContexts.get(i.category) || {
+        skipCount: 0, recentSkips: 0, weeklySkips: 0, hasLaterSelection: false, selections: 0
+      };
+      
+      if (i.interaction_type === 'skipped') {
+        context.skipCount++;
+        if (isRecent) context.recentSkips++;
+        if (isThisWeek) context.weeklySkips++;
+      } else if (i.interaction_type === 'selected') {
+        context.selections++;
+        context.hasLaterSelection = true;
+      }
+      
+      activityContexts.set(i.category, context);
     }
   });
-  skippedRestaurants.forEach(r => {
-    if (r.cuisine) {
-      cuisineScores.set(r.cuisine, (cuisineScores.get(r.cuisine) || 0) - 1);
-    }
-  });
 
-  const favoriteCuisines = Array.from(cuisineScores.entries())
-    .map(([cuisine, count]) => ({ cuisine, score: count }))
+  // Calculate context-aware scores for cuisines
+  const favoriteCuisines = Array.from(cuisineContexts.entries())
+    .map(([cuisine, context]) => {
+      const selectionScore = context.selections * SKIP_DECAY_CONFIG.selectionBonus;
+      const skipPenalty = calculateSkipPenalty(context);
+      const score = selectionScore + (context.skipCount * skipPenalty);
+      return { cuisine, score };
+    })
     .filter(c => c.score > 0) // Only positive scores
     .sort((a, b) => b.score - a.score);
 
-  // Calculate activity scores (selections add +3, skips subtract -1)
-  const activityScores = new Map<string, number>();
-  selectedActivities.forEach(a => {
-    if (a.category) {
-      activityScores.set(a.category, (activityScores.get(a.category) || 0) + 3);
-    }
-  });
-  skippedActivities.forEach(a => {
-    if (a.category) {
-      activityScores.set(a.category, (activityScores.get(a.category) || 0) - 1);
-    }
-  });
-
-  const favoriteActivities = Array.from(activityScores.entries())
-    .map(([category, count]) => ({ category, score: count }))
+  // Calculate context-aware scores for activities
+  const favoriteActivities = Array.from(activityContexts.entries())
+    .map(([category, context]) => {
+      const selectionScore = context.selections * SKIP_DECAY_CONFIG.selectionBonus;
+      const skipPenalty = calculateSkipPenalty(context);
+      const score = selectionScore + (context.skipCount * skipPenalty);
+      return { category, score };
+    })
     .filter(c => c.score > 0) // Only positive scores
     .sort((a, b) => b.score - a.score);
 
   // Calculate average rating of selected places
+  const selectedRestaurants = interactions.filter(
+    i => i.place_type === 'restaurant' && i.interaction_type === 'selected'
+  );
+  const selectedActivities = interactions.filter(
+    i => i.place_type === 'activity' && i.interaction_type === 'selected'
+  );
+  
   const allSelectedRatings = [...selectedRestaurants, ...selectedActivities]
     .map(p => p.rating)
     .filter(r => r !== null && r !== undefined) as number[];
@@ -87,12 +159,22 @@ export async function getLearnedPreferences(
     ? allSelectedRatings.reduce((sum, r) => sum + r, 0) / allSelectedRatings.length
     : 4.0;
 
+  // Quality floor: user's average - 0.5 (minimum acceptable)
+  const qualityFloor = Math.max(3.0, avgRating - 0.5);
+
   return {
     favoriteCuisines,
     favoriteActivities,
     avgRatingThreshold: avgRating,
     pricePreference: '$$',
+    qualityFloor,
   };
+}
+
+// Get quality floor for "Surprise Me" mode filtering
+export function getQualityFloor(learnedPrefs: LearnedPreferences | undefined): number {
+  if (!learnedPrefs) return 3.5; // Default floor
+  return learnedPrefs.qualityFloor;
 }
 
 export interface WeatherData {
