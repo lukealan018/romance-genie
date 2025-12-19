@@ -38,6 +38,7 @@ interface LearnedPreferences {
   favoriteActivities: { category: string; score: number }[];
   avgRatingThreshold: number;
   pricePreference: string;
+  qualityFloor?: number;
 }
 
 interface BuildPlanParams {
@@ -236,33 +237,53 @@ function scorePlaces(
       }
     }
     
-    // Adjust scoring weights based on intent
+    // Apply quality floor penalty for Surprise Me mode
+    let qualityPenalty = 0;
+    if (intent === 'surprise' && learnedPreferences?.qualityFloor) {
+      if (place.rating < learnedPreferences.qualityFloor) {
+        // Heavy penalty for places below quality floor in Surprise mode
+        qualityPenalty = -0.3;
+      }
+    }
+    
+    // Adjust scoring weights based on intent (TIERED LEARNING)
     let score = 0;
     if (intent === 'surprise') {
-      // Surprise mode: prioritize novelty and rating over personal fit
+      // Surprise mode: HIGH randomness, LIGHT learning
+      // - Quality floor applied (penalty above)
+      // - Novelty prioritized
+      // - Minimal learned preference influence (15%)
+      // - NO skip penalties (handled in learning.ts with context-aware decay)
       score = 
         0.35 * noveltyBoost +
         0.25 * ratingNorm +
-        0.15 * personalFit +
+        0.15 * learnedBoost +      // Light learning - just quality standards
         0.10 * contextualBoost +
-        0.10 * learnedBoost +
-        0.05 * proximityNorm;
+        0.10 * personalFit +        // Reduced - don't over-personalize
+        0.05 * proximityNorm +
+        qualityPenalty;             // Apply quality floor
     } else if (intent === 'specific') {
-      // Specific mode: prioritize personal fit and proximity
+      // Manual Pick mode: LOW randomness, HEAVY learning
+      // - Full personalization
+      // - Sort by learned favorites
+      // - Strong learned preference influence (35%)
       score = 
-        0.40 * personalFit +
-        0.25 * ratingNorm +
-        0.15 * proximityNorm +
-        0.10 * contextualBoost +
-        0.10 * learnedBoost;
-    } else {
-      // Flexible mode: balanced scoring (default)
-      score = 
-        0.25 * personalFit +
+        0.35 * learnedBoost +       // Heavy learning - sort by favorites
+        0.25 * personalFit +        // Profile preferences
         0.20 * ratingNorm +
-        0.20 * learnedBoost +
+        0.10 * proximityNorm +
+        0.10 * contextualBoost;
+    } else {
+      // Flexible mode (Voice): MEDIUM randomness, MEDIUM learning
+      // - User's request + light personalization boost
+      // - Quality floor consideration
+      // - Moderate learned preference influence (25%)
+      score = 
+        0.25 * personalFit +        // What they asked for
+        0.25 * learnedBoost +       // Medium learning boost
+        0.20 * ratingNorm +
         0.15 * contextualBoost +
-        0.15 * proximityNorm +
+        0.10 * proximityNorm +
         0.05 * noveltyBoost;
     }
     
