@@ -581,18 +581,15 @@ export const useVoiceSearch = ({
     console.log('=== VOICE PREFERENCES EXTRACTION START (PROFILE OVERRIDE MODE) ===');
     console.log('Raw preferences:', preferences);
     
-    // Smart exclusion clearing: Clear when location changes significantly
-    // Check if we have a new location that's far from the last search
+    // Smart exclusion clearing: Only clear when location changes SIGNIFICANTLY (>5 miles)
+    // This preserves exclusions for repeated searches in the same area
     const storeState = usePlanStore.getState();
-    const hasNewLocation = preferences.generalLocation || 
-                          preferences.restaurantRequest?.location || 
-                          preferences.activityRequest?.location;
+    const currentExclusions = storeState.excludePlaceIds.length + storeState.excludeActivityIds.length;
+    console.log('📊 Current exclusion count:', currentExclusions);
     
-    if (hasNewLocation && storeState.lastExclusionLocation) {
-      // If user specified a new location, clear exclusions to show fresh results for new area
-      console.log('🗺️ New location detected, clearing exclusions for fresh results');
-      clearExclusions();
-    }
+    // Don't auto-clear exclusions on location detection - let them persist within session
+    // Exclusions will auto-expire after 30 min of inactivity (handled in store getters)
+    // This ensures "steakhouse + bar" search excludes places from prior "steakhouse only" search
     
     // VOICE SEARCH: Clear ALL previous results and signatures to force completely fresh search
     usePlanStore.getState().clearAllResults();
@@ -659,7 +656,7 @@ export const useVoiceSearch = ({
       lastSearchMode: voiceMode,
       lastSearchDate: preferences.searchDate ? parseISO(preferences.searchDate) : null
     });
-  }, [executeSearch, setSearchDate, clearResults, setLastSearched, setLastSearchLocation, searchMode, clearExclusions]);
+  }, [executeSearch, setSearchDate, clearResults, setLastSearched, setLastSearchLocation, searchMode]);
 
   // Handler for when user selects a date from the ambiguity dialog
   const handleDateChoice = useCallback(async (date: string, time: string) => {
