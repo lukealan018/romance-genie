@@ -78,6 +78,7 @@ interface PlanState {
   excludePlaceIds: string[];
   excludeActivityIds: string[];
   lastExclusionLocation: { lat: number; lng: number } | null;
+  lastExclusionTimestamp: number | null;
   
   // User preferences
   userPreferences: {
@@ -206,6 +207,7 @@ export const usePlanStore = create<PlanState>((set, get) => ({
   excludePlaceIds: [],
   excludeActivityIds: [],
   lastExclusionLocation: null,
+  lastExclusionTimestamp: null,
   
   userPreferences: {
     cuisines: [],
@@ -447,21 +449,44 @@ export const usePlanStore = create<PlanState>((set, get) => ({
   
   // Exclusion management for fresh results
   addToExcludePlaceIds: (ids) => set((state) => ({
-    excludePlaceIds: [...new Set([...state.excludePlaceIds, ...ids])]
+    excludePlaceIds: [...new Set([...state.excludePlaceIds, ...ids])],
+    lastExclusionTimestamp: Date.now()
   })),
   
   addToExcludeActivityIds: (ids) => set((state) => ({
-    excludeActivityIds: [...new Set([...state.excludeActivityIds, ...ids])]
+    excludeActivityIds: [...new Set([...state.excludeActivityIds, ...ids])],
+    lastExclusionTimestamp: Date.now()
   })),
   
   clearExclusions: () => set({
     excludePlaceIds: [],
     excludeActivityIds: [],
     lastExclusionLocation: null,
+    lastExclusionTimestamp: null,
   }),
   
-  getExcludePlaceIds: () => get().excludePlaceIds,
-  getExcludeActivityIds: () => get().excludeActivityIds,
+  getExcludePlaceIds: () => {
+    const state = get();
+    // Auto-expire exclusions after 30 minutes of inactivity
+    const EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
+    if (state.lastExclusionTimestamp && (Date.now() - state.lastExclusionTimestamp > EXPIRY_MS)) {
+      console.log('⏰ Exclusions expired after 30 min inactivity, clearing');
+      get().clearExclusions();
+      return [];
+    }
+    return state.excludePlaceIds;
+  },
+  getExcludeActivityIds: () => {
+    const state = get();
+    // Auto-expire exclusions after 30 minutes of inactivity
+    const EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
+    if (state.lastExclusionTimestamp && (Date.now() - state.lastExclusionTimestamp > EXPIRY_MS)) {
+      console.log('⏰ Exclusions expired after 30 min inactivity, clearing');
+      get().clearExclusions();
+      return [];
+    }
+    return state.excludeActivityIds;
+  },
   
   // Legacy setters (write to current mode bucket)
   setRestaurants: (restaurants, token) => set((state) => {
