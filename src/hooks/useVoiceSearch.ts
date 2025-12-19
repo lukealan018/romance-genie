@@ -493,12 +493,14 @@ export const useVoiceSearch = ({
       setLastSearched(searchCuisine, searchActivity);
       setLocation(planLat, planLng);
       
-      // Track these results for exclusion in next search
-      const newRestaurantIds = sortedRestaurants.map(r => r.id);
-      const newActivityIds = sortedActivities.map(a => a.id);
-      addToExcludePlaceIds(newRestaurantIds);
-      addToExcludeActivityIds(newActivityIds);
-      console.log('📝 Added to exclusions:', newRestaurantIds.length, 'restaurants,', newActivityIds.length, 'activities');
+      // Track ONLY the displayed result for exclusion (not the entire result set)
+      // This ensures variety without exhausting all options in the area
+      // The displayed result is the first one (index 0) after sorting
+      const displayedRestaurantId = sortedRestaurants.length > 0 ? [sortedRestaurants[0].id] : [];
+      const displayedActivityId = sortedActivities.length > 0 ? [sortedActivities[0].id] : [];
+      addToExcludePlaceIds(displayedRestaurantId);
+      addToExcludeActivityIds(displayedActivityId);
+      console.log('📝 Added to exclusions: displayed restaurant:', displayedRestaurantId[0] || 'none', ', displayed activity:', displayedActivityId[0] || 'none');
       
       // Track the location for smart exclusion clearing
       usePlanStore.setState({ lastExclusionLocation: { lat: planLat, lng: planLng } });
