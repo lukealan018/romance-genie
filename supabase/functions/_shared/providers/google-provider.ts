@@ -3,6 +3,8 @@ import {
   EXCLUDED_ALWAYS_TYPES,
   EXCLUDED_RESTAURANT_TYPES,
   hasExcludedType,
+  isPizzaPlace,
+  isAuthenticItalian,
 } from '../place-filters.ts';
 
 const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
@@ -34,15 +36,30 @@ function isDinnerTime(searchTime?: string): boolean {
 }
 
 // Restaurant filtering using centralized exclusion lists
-function shouldExcludeRestaurant(placeTypes: string[], placeName: string = ''): boolean {
+function shouldExcludeRestaurant(placeTypes: string[], placeName: string = '', cuisine?: string): boolean {
   const name = placeName.toLowerCase();
+  
+  // PASS 0: Italian cuisine filter - exclude pizza places unless searching for pizza
+  if (cuisine === 'italian') {
+    // If it's a pizza place and NOT a full Italian restaurant, exclude it
+    if (isPizzaPlace(name) && !isAuthenticItalian(name)) {
+      console.log(`🍕 Filtering out "${placeName}" - pizza place from Italian search`);
+      return true;
+    }
+    // Prioritize authentic Italian restaurants
+    if (isAuthenticItalian(name)) {
+      return false; // Keep authentic Italian regardless of other filters
+    }
+  }
   
   // PASS 1: Allowlist legitimate restaurants
   const restaurantKeywords = [
     'restaurant', 'bistro', 'cafe', 'steakhouse', 'trattoria', 
     'brasserie', 'eatery', 'dining', 'grill', 'kitchen', 
-    'pizzeria', 'tavern', 'pub', 'diner', 'bar & grill'
+    'tavern', 'pub', 'diner', 'bar & grill', 'ristorante', 'osteria'
   ];
+  
+  // Note: removed 'pizzeria' from allowlist - it should be filtered for Italian searches
   
   if (restaurantKeywords.some(keyword => name.includes(keyword))) {
     return false;
@@ -100,14 +117,18 @@ export const googlePlacesProvider: PlacesProvider = {
     console.log(`🌍 Google provider: Searching ${isCoffeeSearch ? 'coffee shops' : 'restaurants'}`);
     
     // Map price level to Google's scale (1-4)
+    // RELAXED: Include more results, we filter by quality after
     const priceLevelMap: Record<string, { min: number; max: number }> = {
       'budget': { min: 1, max: 2 },
       'moderate': { min: 2, max: 3 },
-      'upscale': { min: 3, max: 4 },
-      'fine_dining': { min: 4, max: 4 }
+      'upscale': { min: 2, max: 4 },      // Include moderate+ (many upscale places show as 2)
+      'fine_dining': { min: 3, max: 4 }   // Include 3+ for fine dining
     };
     
-    const priceRange = options.priceLevel ? priceLevelMap[options.priceLevel] : null;
+    // Only apply price filter if explicitly budget, otherwise get all and sort by quality
+    const priceRange = (options.priceLevel === 'budget') 
+      ? priceLevelMap['budget'] 
+      : null;  // Don't restrict upscale/fine_dining at API level - filter after
     
     // Build keyword based on venue type
     let enhancedKeyword: string;
@@ -122,13 +143,21 @@ export const googlePlacesProvider: PlacesProvider = {
       enhancedKeyword = options.cuisine === 'restaurant' || !options.cuisine 
         ? 'restaurant' 
         : `${options.cuisine} restaurant`;
+      
+      // IMPORTANT: Italian != Pizza - add "authentic" and exclude pizza keywords
+      if (options.cuisine === 'italian') {
+        enhancedKeyword = 'italian restaurant trattoria osteria ristorante -pizza -pizzeria';
+      }
         
       if (options.priceLevel === 'fine_dining') {
-        enhancedKeyword = `luxury ${enhancedKeyword} fine dining michelin`;
+        enhancedKeyword = `luxury ${enhancedKeyword} fine dining michelin tasting menu`;
       } else if (options.priceLevel === 'upscale') {
-        enhancedKeyword = `upscale ${enhancedKeyword} fine dining`;
+        enhancedKeyword = `upscale ${enhancedKeyword} fine dining elegant`;
       } else if (options.priceLevel === 'budget') {
         enhancedKeyword = `affordable ${enhancedKeyword}`;
+      } else if (!options.priceLevel) {
+        // DEFAULT: Date night concierge bias toward quality
+        enhancedKeyword = `${enhancedKeyword} best rated`;
       }
       searchType = 'restaurant';
     }
@@ -194,7 +223,8 @@ export const googlePlacesProvider: PlacesProvider = {
         } else {
           // === REGULAR RESTAURANT FILTERING ===
           // Exclude non-restaurants using centralized filtering
-          if (shouldExcludeRestaurant(types, name)) {
+          // Pass cuisine to enable Italian vs Pizza filtering
+          if (shouldExcludeRestaurant(types, name, options.cuisine)) {
             console.log(`🚫 Google: Filtering out "${name}" - excluded type/name`);
             return false;
           }
