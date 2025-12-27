@@ -247,12 +247,23 @@ serve(async (req) => {
         
         return result;
       })
+      // DATE NIGHT QUALITY BIAS: Prioritize quality for a concierge experience
       .sort((a, b) => {
-        // Sort by uniqueness score (highest first), with rating as tiebreaker
-        if (Math.abs(a.uniquenessScore - b.uniquenessScore) > 0.1) {
-          return b.uniquenessScore - a.uniquenessScore;
+        // Primary: Rating (higher is better) - quality comes first
+        const ratingDiff = b.rating - a.rating;
+        if (Math.abs(ratingDiff) > 0.3) {
+          return ratingDiff;
         }
-        return b.rating - a.rating;
+        
+        // Secondary: Price level (higher = more upscale = better for date night)
+        const aPriceScore = a.priceLevel.length || 2; // Default to $$ if unknown
+        const bPriceScore = b.priceLevel.length || 2;
+        if (aPriceScore !== bPriceScore) {
+          return bPriceScore - aPriceScore; // Higher price first
+        }
+        
+        // Tertiary: Uniqueness score (for hidden gems)
+        return b.uniquenessScore - a.uniquenessScore;
       });
 
     // SURPRISE ME MODE: Don't shuffle - keep top hidden gems in score order!

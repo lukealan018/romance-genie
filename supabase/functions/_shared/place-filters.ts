@@ -96,6 +96,31 @@ export const RESTAURANT_KEYWORDS: string[] = [
   'del taco', 'taco bell', 'chipotle', 'panda express', 'wingstop',
 ];
 
+// ===== ITALIAN vs PIZZA FILTERING =====
+// When searching for "Italian", exclude pizza places unless user explicitly says "pizza"
+export const PIZZA_KEYWORDS: string[] = [
+  'pizza', 'pizzeria', "domino's", 'papa john', 'little caesars', 
+  'round table', 'pizza hut', 'sbarro', 'pieology', 'blaze pizza', 
+  'mod pizza', 'slice', 'pie', 'napoletana'
+];
+
+// True Italian restaurant indicators (non-pizza)
+export const AUTHENTIC_ITALIAN_KEYWORDS: string[] = [
+  'trattoria', 'ristorante', 'osteria', 'enoteca', 'italian restaurant',
+  'italian bistro', 'italian kitchen', 'tuscan', 'northern italian',
+  'southern italian', 'pasta', 'risotto', 'osso buco', 'carbonara'
+];
+
+export function isPizzaPlace(name: string): boolean {
+  const nameLower = name.toLowerCase();
+  return PIZZA_KEYWORDS.some(kw => nameLower.includes(kw));
+}
+
+export function isAuthenticItalian(name: string): boolean {
+  const nameLower = name.toLowerCase();
+  return AUTHENTIC_ITALIAN_KEYWORDS.some(kw => nameLower.includes(kw));
+}
+
 // ===== QUALITY FLOOR CONSTANTS =====
 
 export const MIN_RATING_RESTAURANT = 3.5;
