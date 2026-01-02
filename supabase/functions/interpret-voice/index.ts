@@ -161,12 +161,14 @@ Lounges: lounge, lounge bar, jazz lounge, hookah lounge, cocktail lounge
 Nightlife: nightclub, dance club, live music venue, karaoke bar, comedy club
 
 ACTIVITIES (maintain exact type):
-Entertainment: comedy club, comedy show, karaoke, movie theater, theater, comedy theater, live music, concert
-Gaming: arcade, escape room, virtual reality, laser tag
+Entertainment: comedy club, comedy show, karaoke, movie theater, theater, comedy theater, live music, concert, improv show, magic show
+Gaming: arcade, escape room, virtual reality, laser tag, barcade, board game cafe
 Sports: bowling, pool hall, billiards, golf, mini golf, driving range, axe throwing, go karts, trampoline park, rock climbing, ice skating, roller skating, rage room
-Arts: art gallery, museum, aquarium, zoo, botanical garden, observatory, planetarium
-Classes: painting class, art class, cooking class, wine tasting, pottery class, dance class, paint and sip
-Outdoor: park, beach, hiking, picnic
+Arts: art gallery, museum, aquarium, zoo, botanical garden, observatory, planetarium, sculpture garden
+Classes: painting class, art class, cooking class, wine tasting, pottery class, dance class, paint and sip, mixology class, candle making
+Outdoor (Date-Worthy): rooftop bar, rooftop lounge, outdoor cinema, drive-in movie, sunset spot, scenic overlook, botanical garden, beach bonfire, outdoor concert, food truck park, farmers market, night market, pier, waterfront, wine tasting outdoors
+Outdoor (Generic - use as last resort): park, beach, hiking, picnic
+Unique Experiences: couples spa, escape room, speakeasy, secret bar, tasting menu, chef's table, immersive experience
 Venues: casino, spa, sports game, stadium
 
 PRICE DESCRIPTORS:

@@ -8,6 +8,13 @@ import {
 } from "../_shared/scoring.ts";
 import { getActivitySuggestions } from "../_shared/activities-service.ts";
 import type { ActivitySearchOptions } from "../_shared/activities-types.ts";
+import {
+  isGenericPark,
+  calculateDateScore,
+  areResultsWeak,
+  getFallbackKeywords,
+  OUTDOOR_FALLBACKS,
+} from "../_shared/concierge-suggestions.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,6 +70,13 @@ serve(async (req) => {
       console.log('🔄 Force fresh: generated random seed:', effectiveSeed);
     }
 
+    // Detect if this is an outdoor/fun activity search
+    const keywordLower = keyword.toLowerCase();
+    const isOutdoorSearch = keywordLower.includes('outdoor') || 
+                           keywordLower.includes('fun') || 
+                           keywordLower.includes('outside') ||
+                           keywordLower.includes('activity');
+
     // Use multi-provider service
     const searchOptions: ActivitySearchOptions = {
       lat,
@@ -74,7 +88,67 @@ serve(async (req) => {
       limit: 50
     };
     
-    const { items: activities, providerStats } = await getActivitySuggestions(searchOptions);
+    let { items: activities, providerStats } = await getActivitySuggestions(searchOptions);
+    
+    // === CONCIERGE INTELLIGENCE: Filter out generic parks for outdoor searches ===
+    if (isOutdoorSearch) {
+      const beforeFilter = activities.length;
+      activities = activities.filter((item: any) => {
+        const isGeneric = isGenericPark(item.name, item.types || []);
+        if (isGeneric) {
+          console.log(`🚫 Concierge filter: Excluding generic park "${item.name}"`);
+        }
+        return !isGeneric;
+      });
+      console.log(`🎯 Concierge: Filtered ${beforeFilter - activities.length} generic parks from outdoor search`);
+    }
+    
+    // === CONCIERGE INTELLIGENCE: Check if results are weak and need fallback ===
+    const resultsAreWeak = areResultsWeak(activities, keyword);
+    
+    if (resultsAreWeak) {
+      console.log(`⚠️ Concierge: Weak results detected for "${keyword}" - attempting fallback search`);
+      
+      // Get fallback keywords
+      const fallbackKeywords = getFallbackKeywords(keyword, true);
+      
+      if (fallbackKeywords.length > 0) {
+        // Try alternative searches
+        const fallbackPromises = fallbackKeywords.slice(0, 3).map(async (fbKeyword) => {
+          const fbOptions: ActivitySearchOptions = {
+            lat,
+            lng,
+            radiusMeters,
+            keyword: fbKeyword,
+            targetCity,
+            noveltyMode,
+            limit: 10
+          };
+          
+          try {
+            const { items } = await getActivitySuggestions(fbOptions);
+            return items;
+          } catch (e) {
+            console.warn(`Fallback search for "${fbKeyword}" failed:`, e);
+            return [];
+          }
+        });
+        
+        const fallbackResults = await Promise.allSettled(fallbackPromises);
+        const additionalItems = fallbackResults
+          .filter((r): r is PromiseFulfilledResult<any[]> => r.status === 'fulfilled')
+          .flatMap(r => r.value);
+        
+        console.log(`📈 Concierge: Found ${additionalItems.length} additional items from fallback searches`);
+        
+        // Merge fallback results (avoiding duplicates)
+        const existingIds = new Set(activities.map((a: any) => a.id));
+        const uniqueFallbacks = additionalItems.filter((item: any) => !existingIds.has(item.id));
+        
+        activities = [...activities, ...uniqueFallbacks];
+        console.log(`📊 Concierge: Total activities after fallback: ${activities.length}`);
+      }
+    }
     
     // Create Set for O(1) exclusion lookups
     const excludeSet = new Set(excludePlaceIds);
@@ -101,19 +175,36 @@ serve(async (req) => {
           geometry: item.geometry
         };
         
+        // Calculate date-worthiness score
+        const dateScore = calculateDateScore(item.name, item.rating, item.totalRatings);
+        
         return {
           ...item,
           uniquenessScore: calculateUniquenessScore(placeData, noveltyMode),
+          dateScore, // Add date-worthiness score
           isHiddenGem: isHiddenGem(placeData),
           isNewDiscovery: isNewDiscovery(placeData),
           isLocalFavorite: isLocalFavorite(placeData)
         };
       })
       .sort((a: any, b: any) => {
-        // Sort by uniqueness score (highest first), with distance as tiebreaker
+        // === DATE NIGHT CONCIERGE SORTING ===
+        // 1. First priority: Rating (higher is better)
+        if (Math.abs((a.rating || 0) - (b.rating || 0)) > 0.2) {
+          return (b.rating || 0) - (a.rating || 0);
+        }
+        
+        // 2. Second priority: Date-worthiness score
+        if (Math.abs((a.dateScore || 0) - (b.dateScore || 0)) > 5) {
+          return (b.dateScore || 0) - (a.dateScore || 0);
+        }
+        
+        // 3. Third priority: Uniqueness score
         if (Math.abs(a.uniquenessScore - b.uniquenessScore) > 0.1) {
           return b.uniquenessScore - a.uniquenessScore;
         }
+        
+        // 4. Final tiebreaker: Distance
         return (a.distance || 0) - (b.distance || 0);
       });
     
@@ -138,7 +229,7 @@ serve(async (req) => {
     
     // Remove internal fields before returning
     const cleanedItems = items.map((item: any) => {
-      const { addressComponents, distance, types, geometry, uniquenessScore, ...cleanItem } = item;
+      const { addressComponents, distance, types, geometry, uniquenessScore, dateScore, ...cleanItem } = item;
       return cleanItem;
     });
 
