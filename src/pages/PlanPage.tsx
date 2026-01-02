@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, RefreshCw, Loader2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, Loader2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CustomButton from "@/components/CustomButton";
 import { PlanCard } from "@/components/PlanCard";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SharePlanButton } from "@/components/SharePlanButton";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { buildPlanFromIndices, scorePlaces } from "@/lib/planner";
@@ -357,6 +358,18 @@ const PlanPage = () => {
           <span className="text-lg font-semibold">Tonight's Plan</span>
         </div>
         <div className="flex items-center gap-4">
+          {plan?.restaurant && plan?.activity && (
+            <SharePlanButton
+              restaurant={{
+                name: plan.restaurant.name,
+                address: plan.restaurant.address || '',
+              }}
+              activity={{
+                name: plan.activity.name,
+                address: plan.activity.address || '',
+              }}
+            />
+          )}
           <ThemeToggle />
           <Button variant="secondary" size="sm" onClick={() => navigate('/profile')}>Profile</Button>
         </div>
