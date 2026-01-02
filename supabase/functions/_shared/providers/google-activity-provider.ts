@@ -11,13 +11,13 @@ import {
 
 const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
 
-// Venue type mappings - ENHANCED for better search results
+// Venue type mappings - ENHANCED for better search results with DATE NIGHT CONCIERGE INTELLIGENCE
 const activityMappings: Record<string, { googleType: string; keywords: string[] }> = {
+  // === BARS & LOUNGES (Core) ===
   'whiskey bar': { googleType: 'bar', keywords: ['whiskey bar', 'whisky bar', 'bourbon bar', 'scotch bar'] },
   'cocktail bar': { googleType: 'bar', keywords: ['cocktail bar', 'mixology', 'craft cocktails', 'cocktail lounge'] },
   'wine bar': { googleType: 'bar', keywords: ['wine bar', 'wine lounge', 'wine tasting room', 'vino bar', 'enoteca'] },
-  // SPEAKEASY: Use multiple search terms for hidden/prohibition-era bars
-  'speakeasy': { googleType: 'bar', keywords: ['speakeasy', 'hidden bar', 'secret bar', 'prohibition bar', 'cocktail lounge hidden', 'password bar'] },
+  'speakeasy': { googleType: 'bar', keywords: ['speakeasy', 'hidden bar', 'secret bar', 'prohibition bar', 'cocktail lounge hidden', 'password bar', 'underground bar'] },
   'lounge bar': { googleType: 'bar', keywords: ['lounge bar', 'cocktail lounge', 'upscale lounge', 'lounge'] },
   'lounge': { googleType: 'bar', keywords: ['lounge', 'cocktail lounge', 'upscale lounge', 'bar lounge'] },
   'sports bar': { googleType: 'bar', keywords: ['sports bar', 'sports pub', 'sports grill'] },
@@ -28,25 +28,62 @@ const activityMappings: Record<string, { googleType: string; keywords: string[] 
   'jazz lounge': { googleType: 'bar', keywords: ['jazz lounge', 'jazz bar', 'live jazz', 'jazz club'] },
   'hookah lounge': { googleType: 'bar', keywords: ['hookah lounge', 'shisha bar', 'hookah bar'] },
   'cocktail lounge': { googleType: 'bar', keywords: ['cocktail lounge', 'upscale lounge', 'craft cocktails'] },
-  'comedy club': { googleType: 'night_club', keywords: ['comedy club', 'comedy show', 'stand up', 'comedy theater'] },
-  'karaoke': { googleType: 'night_club', keywords: ['karaoke', 'karaoke bar', 'karaoke lounge'] },
-  'karaoke bar': { googleType: 'night_club', keywords: ['karaoke bar', 'karaoke', 'private karaoke'] },
+  
+  // === NIGHTLIFE & ENTERTAINMENT ===
+  'comedy club': { googleType: 'night_club', keywords: ['comedy club', 'comedy show', 'stand up', 'comedy theater', 'improv comedy'] },
+  'karaoke': { googleType: 'night_club', keywords: ['karaoke', 'karaoke bar', 'karaoke lounge', 'private karaoke'] },
+  'karaoke bar': { googleType: 'night_club', keywords: ['karaoke bar', 'karaoke', 'private karaoke', 'karaoke room'] },
   'nightclub': { googleType: 'night_club', keywords: ['nightclub', 'club', 'dance club', 'night club'] },
-  'live music': { googleType: 'night_club', keywords: ['live music', 'music venue', 'concert', 'live band'] },
-  'bowling': { googleType: 'bowling_alley', keywords: ['bowling', 'bowling alley', 'bowling lanes'] },
-  'mini golf': { googleType: 'amusement_center', keywords: ['mini golf', 'putt putt', 'miniature golf'] },
+  'live music': { googleType: 'night_club', keywords: ['live music', 'music venue', 'concert', 'live band', 'live entertainment'] },
+  
+  // === GAMING & RECREATION ===
+  'bowling': { googleType: 'bowling_alley', keywords: ['bowling', 'bowling alley', 'bowling lanes', 'bowling lounge'] },
+  'mini golf': { googleType: 'amusement_center', keywords: ['mini golf', 'putt putt', 'miniature golf', 'glow golf'] },
   'golf': { googleType: 'park', keywords: ['golf', 'golf course', 'driving range', 'top golf', 'topgolf'] },
   'pool hall': { googleType: 'bar', keywords: ['pool hall', 'billiards', 'pool table', 'billiard hall'] },
   'axe throwing': { googleType: 'amusement_center', keywords: ['axe throwing', 'hatchet throwing', 'axe bar'] },
-  'escape room': { googleType: 'amusement_center', keywords: ['escape room', 'escape game', 'puzzle room'] },
-  'arcade': { googleType: 'amusement_center', keywords: ['arcade', 'game room', 'barcade', 'video arcade'] },
-  'movie theater': { googleType: 'movie_theater', keywords: ['movie theater', 'cinema', 'movie house'] },
+  'escape room': { googleType: 'amusement_center', keywords: ['escape room', 'escape game', 'puzzle room', 'immersive experience'] },
+  'arcade': { googleType: 'amusement_center', keywords: ['arcade', 'game room', 'barcade', 'video arcade', 'retro arcade'] },
+  'movie theater': { googleType: 'movie_theater', keywords: ['movie theater', 'cinema', 'movie house', 'luxury cinema'] },
+  
+  // === ARTS & CULTURE ===
   'wine tasting': { googleType: 'bar', keywords: ['wine tasting', 'winery', 'vineyard', 'tasting room'] },
   'painting class': { googleType: 'art_gallery', keywords: ['painting class', 'paint night', 'sip and paint', 'paint party'] },
-  'paint and sip': { googleType: 'art_gallery', keywords: ['paint and sip', 'wine and paint', 'sip and paint'] },
-  'art gallery': { googleType: 'art_gallery', keywords: ['art gallery', 'gallery', 'art exhibit'] },
-  'museum': { googleType: 'museum', keywords: ['museum', 'exhibit', 'exhibition'] },
-  'theater': { googleType: 'performing_arts_theater', keywords: ['theater', 'play', 'musical', 'theatre'] },
+  'paint and sip': { googleType: 'art_gallery', keywords: ['paint and sip', 'wine and paint', 'sip and paint', 'canvas and cocktails'] },
+  'art gallery': { googleType: 'art_gallery', keywords: ['art gallery', 'gallery', 'art exhibit', 'contemporary art'] },
+  'museum': { googleType: 'museum', keywords: ['museum', 'exhibit', 'exhibition', 'art museum'] },
+  'theater': { googleType: 'performing_arts_theater', keywords: ['theater', 'play', 'musical', 'theatre', 'live theater'] },
+  
+  // === OUTDOOR & DATE-WORTHY EXPERIENCES (NEW - Concierge Intelligence) ===
+  'outdoor activity': { googleType: 'tourist_attraction', keywords: ['outdoor entertainment', 'outdoor venue', 'scenic view', 'outdoor experience', 'outdoor activity'] },
+  'outdoor date': { googleType: 'tourist_attraction', keywords: ['sunset spot', 'scenic overlook', 'outdoor venue', 'romantic outdoor', 'date spot'] },
+  'outdoor': { googleType: 'tourist_attraction', keywords: ['outdoor entertainment', 'scenic overlook', 'rooftop', 'outdoor venue', 'patio', 'garden venue'] },
+  'fun outdoor': { googleType: 'tourist_attraction', keywords: ['outdoor entertainment', 'rooftop bar', 'outdoor venue', 'scenic view', 'beach activity'] },
+  'sunset': { googleType: 'point_of_interest', keywords: ['sunset view', 'scenic overlook', 'rooftop', 'beach sunset', 'sunset spot'] },
+  'sunset spot': { googleType: 'point_of_interest', keywords: ['sunset view', 'scenic overlook', 'rooftop bar', 'beach sunset'] },
+  'scenic overlook': { googleType: 'point_of_interest', keywords: ['scenic overlook', 'viewpoint', 'scenic view', 'panoramic view'] },
+  'rooftop': { googleType: 'bar', keywords: ['rooftop bar', 'rooftop lounge', 'rooftop restaurant', 'sky bar', 'rooftop venue'] },
+  'outdoor movie': { googleType: 'movie_theater', keywords: ['outdoor cinema', 'drive-in', 'rooftop cinema', 'outdoor movie', 'movie in the park'] },
+  'outdoor cinema': { googleType: 'movie_theater', keywords: ['outdoor cinema', 'drive-in theater', 'rooftop cinema', 'outdoor movie'] },
+  'drive-in': { googleType: 'movie_theater', keywords: ['drive-in theater', 'drive-in movie', 'drive-in cinema'] },
+  'beach bonfire': { googleType: 'beach', keywords: ['beach fire pit', 'beach bonfire', 'bonfire beach', 'fire pit'] },
+  'bonfire': { googleType: 'beach', keywords: ['beach bonfire', 'fire pit venue', 'outdoor bonfire'] },
+  'botanical garden': { googleType: 'tourist_attraction', keywords: ['botanical garden', 'garden venue', 'arboretum', 'botanical'] },
+  'garden': { googleType: 'tourist_attraction', keywords: ['botanical garden', 'garden venue', 'sculpture garden', 'rose garden'] },
+  'outdoor concert': { googleType: 'tourist_attraction', keywords: ['outdoor concert', 'amphitheater', 'outdoor music venue', 'concert in the park'] },
+  'food truck park': { googleType: 'restaurant', keywords: ['food truck park', 'food truck', 'food truck lot', 'street food'] },
+  'farmers market': { googleType: 'tourist_attraction', keywords: ['farmers market', 'artisan market', 'outdoor market', 'local market'] },
+  'night market': { googleType: 'tourist_attraction', keywords: ['night market', 'evening market', 'food market', 'asian night market'] },
+  'pier': { googleType: 'tourist_attraction', keywords: ['pier', 'boardwalk', 'waterfront', 'seaside'] },
+  'waterfront': { googleType: 'tourist_attraction', keywords: ['waterfront', 'marina', 'harbor', 'lakefront', 'beachfront'] },
+  
+  // === UNIQUE DATE EXPERIENCES ===
+  'cooking class': { googleType: 'restaurant', keywords: ['cooking class', 'culinary class', 'cooking experience', 'chef class'] },
+  'pottery class': { googleType: 'art_gallery', keywords: ['pottery class', 'ceramics class', 'pottery studio', 'clay studio'] },
+  'dance class': { googleType: 'gym', keywords: ['dance class', 'salsa class', 'dance studio', 'couples dance'] },
+  'spa': { googleType: 'spa', keywords: ['spa', 'couples spa', 'day spa', 'massage', 'wellness'] },
+  'couples spa': { googleType: 'spa', keywords: ['couples spa', 'couples massage', 'romantic spa', 'day spa'] },
+  
   // Generic bar fallback with good keywords
   'bar': { googleType: 'bar', keywords: ['bar', 'cocktail bar', 'lounge bar', 'pub'] },
 };
