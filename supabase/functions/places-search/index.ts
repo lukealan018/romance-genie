@@ -16,6 +16,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Input validation helpers
+function validateString(input: unknown, maxLength: number): string {
+  if (input === undefined || input === null) return '';
+  if (typeof input !== 'string') return '';
+  const trimmed = input.trim();
+  return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
+}
+
+function validateNumber(input: unknown, defaultVal?: number): number {
+  if (input === undefined || input === null) return defaultVal ?? NaN;
+  const num = typeof input === 'number' ? input : parseFloat(String(input));
+  if (isNaN(num) || !isFinite(num)) return defaultVal ?? NaN;
+  return num;
+}
+
+function validateNoveltyMode(input: unknown): NoveltyMode {
+  const valid: NoveltyMode[] = ['balanced', 'hidden_gems', 'popular'];
+  return valid.includes(input as NoveltyMode) ? (input as NoveltyMode) : 'balanced';
+}
+
 // Response item type with optional booking insights
 interface PlaceSearchResultItem {
   id: string;
@@ -78,34 +98,36 @@ serve(async (req) => {
 
     if (req.method === 'POST') {
       const body = await req.json();
-      lat = body.lat;
-      lng = body.lng;
-      radiusMiles = body.radiusMiles;
-      cuisine = body.cuisine;
-      priceLevel = body.priceLevel;
-      targetCity = body.targetCity;
-      noveltyMode = body.noveltyMode || 'balanced';
-      seed = body.seed; // Optional seed for randomization
-      forceFresh = body.forceFresh === true; // Force fresh results
-      venueType = body.venueType || 'any'; // Coffee shop filter
-      searchTime = body.searchTime; // For dinner-time exclusion
-      surpriseMe = body.surpriseMe === true; // Skip shuffle, keep top hidden gems
-      excludePlaceIds = body.excludePlaceIds || []; // IDs to exclude from results
+      lat = validateNumber(body.lat);
+      lng = validateNumber(body.lng);
+      radiusMiles = validateNumber(body.radiusMiles);
+      cuisine = validateString(body.cuisine, 100); // Limit cuisine to 100 chars
+      priceLevel = validateString(body.priceLevel, 10) || undefined;
+      targetCity = validateString(body.targetCity, 100) || undefined;
+      noveltyMode = validateNoveltyMode(body.noveltyMode);
+      seed = body.seed !== undefined ? validateNumber(body.seed) : undefined;
+      forceFresh = body.forceFresh === true;
+      venueType = body.venueType === 'coffee' ? 'coffee' : 'any';
+      searchTime = validateString(body.searchTime, 20) || undefined;
+      surpriseMe = body.surpriseMe === true;
+      excludePlaceIds = Array.isArray(body.excludePlaceIds) 
+        ? body.excludePlaceIds.filter((id: unknown) => typeof id === 'string').slice(0, 100)
+        : [];
     } else {
       const url = new URL(req.url);
-      lat = parseFloat(url.searchParams.get('lat') || '');
-      lng = parseFloat(url.searchParams.get('lng') || '');
-      radiusMiles = parseFloat(url.searchParams.get('radiusMiles') || '');
-      cuisine = url.searchParams.get('cuisine') || '';
-      priceLevel = url.searchParams.get('priceLevel') || undefined;
-      targetCity = url.searchParams.get('targetCity') || undefined;
-      noveltyMode = (url.searchParams.get('noveltyMode') as NoveltyMode) || 'balanced';
-      seed = url.searchParams.get('seed') ? parseInt(url.searchParams.get('seed')!) : undefined;
+      lat = validateNumber(url.searchParams.get('lat'));
+      lng = validateNumber(url.searchParams.get('lng'));
+      radiusMiles = validateNumber(url.searchParams.get('radiusMiles'));
+      cuisine = validateString(url.searchParams.get('cuisine'), 100);
+      priceLevel = validateString(url.searchParams.get('priceLevel'), 10) || undefined;
+      targetCity = validateString(url.searchParams.get('targetCity'), 100) || undefined;
+      noveltyMode = validateNoveltyMode(url.searchParams.get('noveltyMode'));
+      seed = url.searchParams.get('seed') ? validateNumber(url.searchParams.get('seed')) : undefined;
       forceFresh = url.searchParams.get('forceFresh') === 'true';
-      venueType = (url.searchParams.get('venueType') as 'any' | 'coffee') || 'any';
-      searchTime = url.searchParams.get('searchTime') || undefined;
+      venueType = url.searchParams.get('venueType') === 'coffee' ? 'coffee' : 'any';
+      searchTime = validateString(url.searchParams.get('searchTime'), 20) || undefined;
       surpriseMe = url.searchParams.get('surpriseMe') === 'true';
-      excludePlaceIds = []; // Not supported via GET params
+      excludePlaceIds = [];
     }
 
     // Validate required parameters

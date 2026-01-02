@@ -1,5 +1,26 @@
 import { corsHeaders } from '../_shared/cors.ts';
 
+// Input validation helpers
+function validateString(input: unknown, maxLength: number): string | null {
+  if (input === undefined || input === null) return null;
+  if (typeof input !== 'string') return null;
+  const trimmed = input.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length > maxLength) return trimmed.slice(0, maxLength);
+  return trimmed;
+}
+
+function validateNumber(input: unknown): number | undefined {
+  if (input === undefined || input === null) return undefined;
+  const num = typeof input === 'number' ? input : parseFloat(String(input));
+  if (isNaN(num) || !isFinite(num)) return undefined;
+  return num;
+}
+
+function isValidZipCode(input: string): boolean {
+  return /^\d{5}(-\d{4})?$/.test(input);
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -8,7 +29,12 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { address, zipCode, lat, lng } = body || {};
+    
+    // Validate and sanitize inputs
+    const address = validateString(body?.address, 500);
+    const zipCode = validateString(body?.zipCode, 20);
+    const lat = validateNumber(body?.lat);
+    const lng = validateNumber(body?.lng);
     
     // Support reverse geocoding (lat/lng → city name)
     if (lat !== undefined && lng !== undefined) {
@@ -84,6 +110,15 @@ Deno.serve(async (req) => {
     }
 
     const locationStr = String(locationInput).trim();
+    
+    // If this looks like a ZIP code, validate format
+    const isZipCodeInput = /^\d/.test(locationStr);
+    if (isZipCodeInput && !isValidZipCode(locationStr.split(',')[0].trim())) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid ZIP code format. Please use 5-digit or 9-digit format.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     // If multiple locations mentioned (e.g., "Santa Monica, Brentwood"), use the first one
     const firstLocation = locationStr.split(',')[0].trim();

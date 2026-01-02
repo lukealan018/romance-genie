@@ -21,6 +21,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Input validation helpers
+function validateString(input: unknown, maxLength: number): string {
+  if (input === undefined || input === null) return '';
+  if (typeof input !== 'string') return '';
+  const trimmed = input.trim();
+  return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
+}
+
+function validateNumber(input: unknown, defaultVal?: number): number {
+  if (input === undefined || input === null) return defaultVal ?? NaN;
+  const num = typeof input === 'number' ? input : parseFloat(String(input));
+  if (isNaN(num) || !isFinite(num)) return defaultVal ?? NaN;
+  return num;
+}
+
+function validateNoveltyMode(input: unknown): NoveltyMode {
+  const valid: NoveltyMode[] = ['balanced', 'hidden_gems', 'popular'];
+  return valid.includes(input as NoveltyMode) ? (input as NoveltyMode) : 'balanced';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -28,21 +48,22 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { 
-      lat, 
-      lng, 
-      radiusMiles, 
-      keyword, 
-      pagetoken, 
-      targetCity, 
-      noveltyMode = 'balanced' as NoveltyMode, 
-      seed,
-      forceFresh = false,
-      surpriseMe = false,  // Skip shuffle, keep top hidden gems
-      excludePlaceIds = []  // IDs to exclude from results
-    } = body;
+    
+    // Validate and sanitize all inputs
+    const lat = validateNumber(body.lat);
+    const lng = validateNumber(body.lng);
+    const radiusMiles = validateNumber(body.radiusMiles);
+    const keyword = validateString(body.keyword, 200); // Limit keyword to 200 chars
+    const targetCity = validateString(body.targetCity, 100) || undefined;
+    const noveltyMode = validateNoveltyMode(body.noveltyMode);
+    const seed = body.seed !== undefined ? validateNumber(body.seed) : undefined;
+    const forceFresh = body.forceFresh === true;
+    const surpriseMe = body.surpriseMe === true;
+    const excludePlaceIds = Array.isArray(body.excludePlaceIds) 
+      ? body.excludePlaceIds.filter((id: unknown) => typeof id === 'string').slice(0, 100)
+      : [];
 
-    if (!lat || !lng || !radiusMiles || !keyword) {
+    if (isNaN(lat) || isNaN(lng) || isNaN(radiusMiles) || !keyword) {
       return new Response(
         JSON.stringify({ error: 'Missing required parameters: lat, lng, radiusMiles, keyword' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

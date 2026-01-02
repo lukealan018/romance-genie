@@ -6,6 +6,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Input validation helpers
+function validateString(input: unknown, maxLength: number): string | undefined {
+  if (input === undefined || input === null) return undefined;
+  if (typeof input !== 'string') return undefined;
+  const trimmed = input.trim();
+  if (trimmed.length === 0) return undefined;
+  return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
+}
+
+function validateUUID(input: unknown): string | undefined {
+  if (typeof input !== 'string') return undefined;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(input) ? input : undefined;
+}
+
+function validateInteger(input: unknown, min: number, max: number): number | undefined {
+  if (input === undefined || input === null) return undefined;
+  const num = typeof input === 'number' ? input : parseInt(String(input), 10);
+  if (isNaN(num) || !Number.isInteger(num)) return undefined;
+  return num >= min && num <= max ? num : undefined;
+}
+
 interface CreateShareRequest {
   scheduledPlanId: string;
   shareContext?: string;
@@ -47,13 +69,17 @@ serve(async (req: Request) => {
       );
     }
 
-    // Parse request body
-    const body: CreateShareRequest = await req.json();
-    const { scheduledPlanId, shareContext = "default", inviteeCount, message } = body;
+    // Parse and validate request body
+    const body = await req.json();
+    const scheduledPlanId = validateUUID(body.scheduledPlanId);
+    const validContexts = ['default', 'date', 'friends', 'group'];
+    const shareContext = validContexts.includes(body.shareContext) ? body.shareContext : 'default';
+    const inviteeCount = validateInteger(body.inviteeCount, 1, 100); // Limit to 1-100
+    const message = validateString(body.message, 500); // Limit to 500 chars
 
     if (!scheduledPlanId) {
       return new Response(
-        JSON.stringify({ error: "scheduledPlanId is required" }),
+        JSON.stringify({ error: "Valid scheduledPlanId (UUID) is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
