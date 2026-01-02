@@ -124,12 +124,38 @@ export default function SharePlanPage() {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
-  const getContextEmoji = (context: string) => {
+  const getContextTitle = (context: string, senderName: string) => {
     switch (context) {
-      case 'date': return '💕';
-      case 'friends': return '🎉';
-      case 'group': return '👥';
-      default: return '✨';
+      case 'date': return `${senderName} planned something special for you 💫`;
+      case 'friends': return `${senderName} planned something fun 👀`;
+      case 'group': return `${senderName} made a plan for the group 🎉`;
+      default: return `${senderName} planned something for you ✨`;
+    }
+  };
+
+  const getPrimaryButtonText = (context: string) => {
+    switch (context) {
+      case 'date': return "❤️ I'm in";
+      case 'friends': return "👍 I'm down";
+      case 'group': return "🙌 Count me in";
+      default: return "✅ I'm in";
+    }
+  };
+
+  const getTertiaryButtonText = (context: string) => {
+    switch (context) {
+      case 'date': return "✨ Let's tweak it";
+      case 'friends': return "🔄 Let's tweak it";
+      case 'group': return "💬 Adjust plan";
+      default: return "🔄 Let's tweak it";
+    }
+  };
+
+  const getTweakChipLabel = (type: TweakType) => {
+    switch (type) {
+      case 'time': return 'Different time';
+      case 'vibe': return 'Different vibe';
+      case 'day': return 'Different day';
     }
   };
 
@@ -190,15 +216,16 @@ export default function SharePlanPage() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring' }}
-            className="text-5xl mb-4"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-primary text-sm font-medium mb-4"
           >
-            {getContextEmoji(planData.shareContext)}
+            <Sparkles className="w-4 h-4" />
+            Romance Genie
           </motion.div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">
-            {planData.senderName} invited you!
+          <h1 className="text-2xl font-bold text-foreground mb-3">
+            {getContextTitle(planData.shareContext, planData.senderName)}
           </h1>
           {planData.message && (
-            <p className="text-muted-foreground italic">"{planData.message}"</p>
+            <p className="text-muted-foreground italic text-lg">"{planData.message}"</p>
           )}
         </div>
 
@@ -337,43 +364,35 @@ export default function SharePlanPage() {
               </div>
 
               {/* Response Buttons */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-3">
+                {/* Primary Button */}
                 <Button
                   onClick={() => handleResponse('in')}
                   disabled={responding}
-                  className={cn(
-                    "h-auto py-4 flex-col gap-2 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30",
-                    "transition-all duration-200"
-                  )}
-                  variant="ghost"
+                  className="w-full h-14 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
                 >
-                  <Heart className="w-6 h-6" />
-                  <span className="text-sm font-medium">I'm In!</span>
+                  {getPrimaryButtonText(planData.shareContext)}
                 </Button>
-                <Button
-                  onClick={() => handleResponse('maybe')}
-                  disabled={responding}
-                  className={cn(
-                    "h-auto py-4 flex-col gap-2 bg-muted/50 hover:bg-muted text-muted-foreground border border-border/30",
-                    "transition-all duration-200"
-                  )}
-                  variant="ghost"
-                >
-                  <HelpCircle className="w-6 h-6" />
-                  <span className="text-sm font-medium">Maybe</span>
-                </Button>
-                <Button
-                  onClick={() => handleResponse('tweak')}
-                  disabled={responding}
-                  className={cn(
-                    "h-auto py-4 flex-col gap-2 bg-muted/50 hover:bg-muted text-muted-foreground border border-border/30",
-                    "transition-all duration-200"
-                  )}
-                  variant="ghost"
-                >
-                  <Edit3 className="w-6 h-6" />
-                  <span className="text-sm font-medium">Tweak</span>
-                </Button>
+
+                {/* Secondary & Tertiary Buttons */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    onClick={() => handleResponse('maybe')}
+                    disabled={responding}
+                    variant="outline"
+                    className="h-12 bg-muted/50 hover:bg-muted text-muted-foreground border-border/50"
+                  >
+                    🤔 Maybe
+                  </Button>
+                  <Button
+                    onClick={() => handleResponse('tweak')}
+                    disabled={responding}
+                    variant="outline"
+                    className="h-12 bg-muted/50 hover:bg-muted text-muted-foreground border-border/50"
+                  >
+                    {getTertiaryButtonText(planData.shareContext)}
+                  </Button>
+                </div>
               </div>
 
               {/* Response counts */}
@@ -410,20 +429,20 @@ export default function SharePlanPage() {
               >
                 <h3 className="text-xl font-bold text-foreground mb-4">Suggest a Change</h3>
                 
-                {/* Tweak Type Pills */}
-                <div className="flex gap-2 mb-4">
+                {/* Tweak Type Chips */}
+                <div className="flex flex-wrap gap-2 mb-4">
                   {(['time', 'day', 'vibe'] as TweakType[]).map((type) => (
                     <button
                       key={type}
                       onClick={() => setTweakType(type)}
                       className={cn(
-                        "px-4 py-2 rounded-full text-sm font-medium transition-all",
+                        "px-4 py-2.5 rounded-full text-sm font-medium transition-all",
                         tweakType === type
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                          : "bg-muted/80 text-muted-foreground hover:bg-muted border border-border/50"
                       )}
                     >
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                      {getTweakChipLabel(type)}
                     </button>
                   ))}
                 </div>
