@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import PlanPage from "./pages/PlanPage";
 import History from "./pages/History";
 import Calendar from "./pages/Calendar";
+import SharePlanPage from "./pages/SharePlanPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
                 <Route path="/plan" element={<PlanPage />} />
                 <Route path="/history" element={<History />} />
                 <Route path="/calendar" element={<Calendar />} />
+                <Route path="/share/:shareId" element={<SharePlanPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

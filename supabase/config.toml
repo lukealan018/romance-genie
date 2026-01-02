@@ -38,3 +38,12 @@ verify_jwt = false
 
 [functions.provider-status]
 verify_jwt = false
+
+[functions.create-share-link]
+verify_jwt = true
+
+[functions.get-share-plan]
+verify_jwt = false
+
+[functions.respond-to-share]
+verify_jwt = false
