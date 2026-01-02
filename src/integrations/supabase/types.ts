@@ -295,6 +295,88 @@ export type Database = {
         }
         Relationships: []
       }
+      share_responses: {
+        Row: {
+          created_at: string | null
+          id: string
+          responder_name: string | null
+          response: string
+          share_id: string
+          tweak_note: string | null
+          tweak_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          responder_name?: string | null
+          response: string
+          share_id: string
+          tweak_note?: string | null
+          tweak_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          responder_name?: string | null
+          response?: string
+          share_id?: string
+          tweak_note?: string | null
+          tweak_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_responses_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "shared_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_plans: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          expires_at: string | null
+          id: string
+          invitee_count: number | null
+          message: string | null
+          scheduled_plan_id: string
+          sender_name: string | null
+          share_context: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          invitee_count?: number | null
+          message?: string | null
+          scheduled_plan_id: string
+          sender_name?: string | null
+          share_context?: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          invitee_count?: number | null
+          message?: string | null
+          scheduled_plan_id?: string
+          sender_name?: string | null
+          share_context?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_plans_scheduled_plan_id_fkey"
+            columns: ["scheduled_plan_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_activity: {
         Row: {
           action_type: string
@@ -381,7 +463,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_share_creator: { Args: { _share_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
