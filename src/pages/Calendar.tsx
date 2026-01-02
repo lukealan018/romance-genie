@@ -4,10 +4,11 @@ import { useScheduledPlansStore } from "@/store/scheduledPlansStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar as CalendarIcon, MapPin, Clock, Cloud, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon, MapPin, Clock, Cloud, Trash2, Share2 } from "lucide-react";
 import { ExportCalendarButton } from "@/components/ExportCalendarButton";
 import { ConflictWarningCard } from "@/components/ConflictWarningCard";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
+import { SharePlanDialog } from "@/components/SharePlanDialog";
 import { getMapUrl, yelpSearchUrl } from "@/lib/external-links";
 import { toast } from "sonner";
 
@@ -21,6 +22,7 @@ export default function Calendar() {
   const navigate = useNavigate();
   const { scheduledPlans, isLoading, fetchScheduledPlans, deleteScheduledPlan } = useScheduledPlansStore();
   const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
+  const [shareDialogPlan, setShareDialogPlan] = useState<typeof scheduledPlans[0] | null>(null);
 
   useEffect(() => {
     fetchScheduledPlans();
@@ -169,6 +171,14 @@ export default function Calendar() {
                           </div>
                         </div>
                         <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setShareDialogPlan(plan)}
+                            title="Share plan"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </Button>
                           <ExportCalendarButton plan={plan} />
                           <Button
                             variant="ghost"
@@ -263,6 +273,25 @@ export default function Calendar() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Share Dialog */}
+      {shareDialogPlan && (
+        <SharePlanDialog
+          open={!!shareDialogPlan}
+          onOpenChange={(open) => !open && setShareDialogPlan(null)}
+          scheduledPlanId={shareDialogPlan.id}
+          restaurant={{
+            name: shareDialogPlan.restaurant_name,
+            address: shareDialogPlan.restaurant_address ?? undefined,
+          }}
+          activity={{
+            name: shareDialogPlan.activity_name,
+            address: shareDialogPlan.activity_address ?? undefined,
+          }}
+          scheduledDate={shareDialogPlan.scheduled_date}
+          scheduledTime={shareDialogPlan.scheduled_time}
+        />
+      )}
     </div>
   );
 }
