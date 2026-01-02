@@ -6,6 +6,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Input validation helpers
+function validateString(input: unknown, maxLength: number): string | undefined {
+  if (input === undefined || input === null) return undefined;
+  if (typeof input !== 'string') return undefined;
+  const trimmed = input.trim();
+  if (trimmed.length === 0) return undefined;
+  return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
+}
+
+function validateUUID(input: unknown): string | undefined {
+  if (typeof input !== 'string') return undefined;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(input) ? input : undefined;
+}
+
 interface RespondRequest {
   shareId: string;
   response: "in" | "maybe" | "tweak";
@@ -21,19 +36,18 @@ serve(async (req: Request) => {
   }
 
   try {
-    const body: RespondRequest = await req.json();
-    const { shareId, response, tweakType, tweakNote, responderName } = body;
+    const body = await req.json();
+    
+    // Validate and sanitize all inputs
+    const shareId = validateUUID(body.shareId);
+    const response = ['in', 'maybe', 'tweak'].includes(body.response) ? body.response : undefined;
+    const tweakType = ['time', 'vibe', 'day'].includes(body.tweakType) ? body.tweakType : undefined;
+    const tweakNote = validateString(body.tweakNote, 500); // Limit to 500 chars
+    const responderName = validateString(body.responderName, 100); // Limit to 100 chars
 
     if (!shareId || !response) {
       return new Response(
         JSON.stringify({ error: "shareId and response are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!["in", "maybe", "tweak"].includes(response)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid response type" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
