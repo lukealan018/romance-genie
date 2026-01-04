@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { Share2, Copy, Check, MessageCircle, Heart, Users, Sparkles } from 'lucide-react';
+import { 
+  Share2, Copy, Check, MessageCircle, 
+  Heart, HeartHandshake, Flame,
+  Users, UsersRound, UserPlus,
+  PartyPopper, Sparkles, Music,
+  type LucideIcon
+} from 'lucide-react';
 import { Button } from './ui/button';
 import {
   Dialog,
@@ -18,7 +24,6 @@ import { Textarea } from './ui/textarea';
 import { toast } from './ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-
 interface SharePlanButtonProps {
   scheduledPlanId?: string;
   restaurant: {
@@ -35,6 +40,51 @@ interface SharePlanButtonProps {
 
 type ShareContext = 'date' | 'friends' | 'group' | 'default';
 
+interface IconOption {
+  icon: LucideIcon;
+  label: string;
+}
+
+interface ContextOption {
+  value: ShareContext;
+  label: string;
+  emoji: string;
+  icons: IconOption[];
+}
+
+const contextOptions: ContextOption[] = [
+  { 
+    value: 'date', 
+    label: 'Date Night', 
+    emoji: '💕',
+    icons: [
+      { icon: HeartHandshake, label: 'Connection' },
+      { icon: Heart, label: 'Love' },
+      { icon: Flame, label: 'Sparks' },
+    ]
+  },
+  { 
+    value: 'friends', 
+    label: 'Friends Night', 
+    emoji: '🎉',
+    icons: [
+      { icon: PartyPopper, label: 'Party' },
+      { icon: Sparkles, label: 'Fun' },
+      { icon: Music, label: 'Vibes' },
+    ]
+  },
+  { 
+    value: 'group', 
+    label: 'Group Outing', 
+    emoji: '👥',
+    icons: [
+      { icon: UsersRound, label: 'Team' },
+      { icon: Users, label: 'Group' },
+      { icon: UserPlus, label: 'Invite' },
+    ]
+  },
+];
+
 export const SharePlanButton = ({
   scheduledPlanId,
   restaurant,
@@ -45,9 +95,19 @@ export const SharePlanButton = ({
   const [copied, setCopied] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [selectedContext, setSelectedContext] = useState<ShareContext>('date');
+  const [selectedIconIndex, setSelectedIconIndex] = useState(0);
   const [message, setMessage] = useState('');
   const [isCreatingLink, setIsCreatingLink] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+
+  // Get the current icon based on context and selection
+  const getCurrentIcon = () => {
+    const context = contextOptions.find(c => c.value === selectedContext);
+    if (!context) return HeartHandshake;
+    return context.icons[selectedIconIndex]?.icon || context.icons[0].icon;
+  };
+
+  const CurrentIcon = getCurrentIcon();
 
   const generateShareText = () => {
     let text = `🌹 Date Night Plan via Romance Genie\n\n`;
@@ -154,14 +214,10 @@ export const SharePlanButton = ({
     }
   };
 
-  const contextOptions = [
-    { value: 'date' as ShareContext, label: 'Date Night', icon: Heart, emoji: '💕' },
-    { value: 'friends' as ShareContext, label: 'Friends Night', icon: Sparkles, emoji: '🎉' },
-    { value: 'group' as ShareContext, label: 'Group Outing', icon: Users, emoji: '👥' },
-  ];
-
   // If we have a scheduled plan ID, show the enhanced share flow
   if (scheduledPlanId) {
+    const currentContext = contextOptions.find(c => c.value === selectedContext);
+    
     return (
       <>
         <Button 
@@ -170,11 +226,16 @@ export const SharePlanButton = ({
           className="gap-2"
           onClick={() => setShowShareDialog(true)}
         >
-          <Share2 className="w-4 h-4" />
+          <CurrentIcon className="w-4 h-4" />
           Send Invite
         </Button>
 
-        <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <Dialog open={showShareDialog} onOpenChange={(open) => {
+          setShowShareDialog(open);
+          if (!open) {
+            setSelectedIconIndex(0);
+          }
+        }}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Share This Plan</DialogTitle>
@@ -194,7 +255,10 @@ export const SharePlanButton = ({
                     {contextOptions.map((option) => (
                       <button
                         key={option.value}
-                        onClick={() => setSelectedContext(option.value)}
+                        onClick={() => {
+                          setSelectedContext(option.value);
+                          setSelectedIconIndex(0);
+                        }}
                         className={cn(
                           "p-3 rounded-xl border transition-all flex flex-col items-center gap-1",
                           selectedContext === option.value
@@ -208,6 +272,35 @@ export const SharePlanButton = ({
                     ))}
                   </div>
                 </div>
+
+                {/* Icon Picker */}
+                {currentContext && (
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-2 block">
+                      Choose your invite style
+                    </label>
+                    <div className="flex gap-2 justify-center">
+                      {currentContext.icons.map((iconOption, index) => {
+                        const IconComponent = iconOption.icon;
+                        return (
+                          <button
+                            key={iconOption.label}
+                            onClick={() => setSelectedIconIndex(index)}
+                            className={cn(
+                              "p-3 rounded-xl border transition-all flex flex-col items-center gap-1.5 min-w-[72px]",
+                              selectedIconIndex === index
+                                ? "border-primary bg-primary/10 text-primary shadow-[0_0_12px_hsl(var(--primary)/0.3)]"
+                                : "border-border bg-card hover:bg-muted text-muted-foreground"
+                            )}
+                          >
+                            <IconComponent className="w-5 h-5" />
+                            <span className="text-xs font-medium">{iconOption.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Optional Message */}
                 <div>
@@ -303,7 +396,7 @@ export const SharePlanButton = ({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
-          <Share2 className="w-4 h-4" />
+          <HeartHandshake className="w-4 h-4" />
           Send Invite
         </Button>
       </DropdownMenuTrigger>
