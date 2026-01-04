@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useScheduledPlansStore } from "@/store/scheduledPlansStore";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { SharePlanDialog } from "@/components/SharePlanDialog";
 import { ViewResponsesDrawer } from "@/components/ViewResponsesDrawer";
 import { getMapUrl, yelpSearchUrl } from "@/lib/external-links";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 // Parse date string without timezone issues
 const parseDateString = (dateStr: string): Date => {
@@ -25,10 +27,59 @@ export default function Calendar() {
   const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
   const [shareDialogPlan, setShareDialogPlan] = useState<typeof scheduledPlans[0] | null>(null);
   const [responsesDrawerPlan, setResponsesDrawerPlan] = useState<typeof scheduledPlans[0] | null>(null);
+  const [responseCounts, setResponseCounts] = useState<Record<string, { in: number; maybe: number; cant: number }>>({});
 
   useEffect(() => {
     fetchScheduledPlans();
   }, [fetchScheduledPlans]);
+
+  // Fetch response counts for all plans
+  useEffect(() => {
+    const fetchResponseCounts = async () => {
+      if (scheduledPlans.length === 0) return;
+
+      const planIds = scheduledPlans.map(p => p.id);
+      
+      // Get all shared_plans for these scheduled_plans
+      const { data: sharedPlans } = await supabase
+        .from('shared_plans')
+        .select('id, scheduled_plan_id')
+        .in('scheduled_plan_id', planIds);
+
+      if (!sharedPlans || sharedPlans.length === 0) return;
+
+      const shareIds = sharedPlans.map(sp => sp.id);
+
+      // Get all responses for these shares
+      const { data: responses } = await supabase
+        .from('share_responses')
+        .select('share_id, response')
+        .in('share_id', shareIds);
+
+      if (!responses) return;
+
+      // Map share_id back to scheduled_plan_id and count responses
+      const shareToScheduled = new Map(sharedPlans.map(sp => [sp.id, sp.scheduled_plan_id]));
+      const counts: Record<string, { in: number; maybe: number; cant: number }> = {};
+
+      responses.forEach(r => {
+        const scheduledId = shareToScheduled.get(r.share_id);
+        if (!scheduledId) return;
+        
+        if (!counts[scheduledId]) {
+          counts[scheduledId] = { in: 0, maybe: 0, cant: 0 };
+        }
+        
+        if (r.response === 'in') counts[scheduledId].in++;
+        else if (r.response === 'maybe') counts[scheduledId].maybe++;
+        else if (r.response === 'cant') counts[scheduledId].cant++;
+      });
+
+      setResponseCounts(counts);
+    };
+
+    fetchResponseCounts();
+  }, [scheduledPlans]);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -166,6 +217,25 @@ export default function Calendar() {
                               })}
                             </div>
                             <AvailabilityBadge status={plan.availability_status as any} />
+                            {responseCounts[plan.id] && (
+                              <div className="flex gap-1">
+                                {responseCounts[plan.id].in > 0 && (
+                                  <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/30">
+                                    {responseCounts[plan.id].in} in
+                                  </Badge>
+                                )}
+                                {responseCounts[plan.id].maybe > 0 && (
+                                  <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-400 border-yellow-500/30">
+                                    {responseCounts[plan.id].maybe} maybe
+                                  </Badge>
+                                )}
+                                {responseCounts[plan.id].cant > 0 && (
+                                  <Badge variant="outline" className="text-xs bg-red-500/10 text-red-400 border-red-500/30">
+                                    {responseCounts[plan.id].cant} out
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 text-lg font-medium">
                             <Clock className="w-5 h-5" />
