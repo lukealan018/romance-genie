@@ -4,11 +4,12 @@ import { useScheduledPlansStore } from "@/store/scheduledPlansStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar as CalendarIcon, MapPin, Clock, Cloud, Trash2, Share2 } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon, MapPin, Clock, Cloud, Trash2, Share2, MessageSquare } from "lucide-react";
 import { ExportCalendarButton } from "@/components/ExportCalendarButton";
 import { ConflictWarningCard } from "@/components/ConflictWarningCard";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { SharePlanDialog } from "@/components/SharePlanDialog";
+import { ViewResponsesDrawer } from "@/components/ViewResponsesDrawer";
 import { getMapUrl, yelpSearchUrl } from "@/lib/external-links";
 import { toast } from "sonner";
 
@@ -23,6 +24,7 @@ export default function Calendar() {
   const { scheduledPlans, isLoading, fetchScheduledPlans, deleteScheduledPlan } = useScheduledPlansStore();
   const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
   const [shareDialogPlan, setShareDialogPlan] = useState<typeof scheduledPlans[0] | null>(null);
+  const [responsesDrawerPlan, setResponsesDrawerPlan] = useState<typeof scheduledPlans[0] | null>(null);
 
   useEffect(() => {
     fetchScheduledPlans();
@@ -174,6 +176,14 @@ export default function Calendar() {
                           <Button
                             variant="outline"
                             size="icon"
+                            onClick={() => setResponsesDrawerPlan(plan)}
+                            title="View responses"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
                             onClick={() => setShareDialogPlan(plan)}
                             title="Share plan"
                           >
@@ -290,6 +300,16 @@ export default function Calendar() {
           }}
           scheduledDate={shareDialogPlan.scheduled_date}
           scheduledTime={shareDialogPlan.scheduled_time}
+        />
+      )}
+
+      {/* View Responses Drawer */}
+      {responsesDrawerPlan && (
+        <ViewResponsesDrawer
+          open={!!responsesDrawerPlan}
+          onOpenChange={(open) => !open && setResponsesDrawerPlan(null)}
+          scheduledPlanId={responsesDrawerPlan.id}
+          planName={`${responsesDrawerPlan.restaurant_name} + ${responsesDrawerPlan.activity_name}`}
         />
       )}
     </div>
