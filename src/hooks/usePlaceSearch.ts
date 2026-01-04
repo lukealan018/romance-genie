@@ -942,7 +942,7 @@ export const usePlaceSearch = (
       lastSearchDate: searchDate 
     });
     
-    navigate("/plan");
+    navigate("/plan", { replace: true });
   };
 
   // SURPRISE ME: Completely ignores profile preferences - pure random discovery
@@ -1185,7 +1185,7 @@ export const usePlaceSearch = (
       onSearchSuccess?.();
 
       setTimeout(() => {
-        navigate("/plan");
+        navigate("/plan", { replace: true });
       }, 100);
     } catch (error) {
       console.error('Error in surprise me:', error);
