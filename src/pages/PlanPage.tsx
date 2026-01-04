@@ -351,12 +351,9 @@ const PlanPage = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px'}}>
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <span className="text-lg font-semibold">Tonight's Plan</span>
-        </div>
+        <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => navigate('/')}>
+          <ArrowLeft className="w-6 h-6" />
+        </Button>
         <div className="flex items-center gap-4">
           {plan?.restaurant && plan?.activity && (
             <SharePlanButton
