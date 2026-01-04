@@ -4,7 +4,7 @@ import { ArrowLeft, RefreshCw, Loader2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CustomButton from "@/components/CustomButton";
 import { PlanCard } from "@/components/PlanCard";
-import { ThemeToggle } from "@/components/ThemeToggle";
+
 import { SharePlanButton } from "@/components/SharePlanButton";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -370,7 +370,6 @@ const PlanPage = () => {
               }}
             />
           )}
-          <ThemeToggle />
           <Button variant="secondary" size="sm" onClick={() => navigate('/profile')}>Profile</Button>
         </div>
       </header>
