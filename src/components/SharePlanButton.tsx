@@ -171,7 +171,7 @@ export const SharePlanButton = ({
           onClick={() => setShowShareDialog(true)}
         >
           <Share2 className="w-4 h-4" />
-          Share
+          Send Invite
         </Button>
 
         <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
@@ -304,7 +304,7 @@ export const SharePlanButton = ({
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Share2 className="w-4 h-4" />
-          Share
+          Send Invite
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
