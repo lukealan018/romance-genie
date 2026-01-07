@@ -166,12 +166,13 @@ export const SharePlanButton = ({
   };
 
   const handleSMS = (url?: string) => {
-    const text = encodeURIComponent(url ? `Check out our date night plan! ${url}` : generateShareText());
+    // Short message with link for beautiful invite page
+    const text = encodeURIComponent(url ? `You're invited! 💕 ${url}` : generateShareText());
     window.open(`sms:?body=${text}`, '_blank');
   };
 
   const handleWhatsApp = (url?: string) => {
-    const text = encodeURIComponent(url ? `Check out our date night plan! ${url}` : generateShareText());
+    const text = encodeURIComponent(url ? `You're invited! 💕 ${url}` : generateShareText());
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
@@ -187,26 +188,41 @@ export const SharePlanButton = ({
 
     setIsCreatingLink(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-share-link', {
+      // Create invite with plan JSON for beautiful landing page
+      const { data, error } = await supabase.functions.invoke('create-invite', {
         body: {
-          scheduledPlanId,
-          shareContext: selectedContext,
-          message: message || undefined,
+          planJson: {
+            restaurant: {
+              id: scheduledPlanId,
+              name: restaurant.name,
+              address: restaurant.address,
+            },
+            activity: {
+              id: scheduledPlanId,
+              name: activity.name,
+              address: activity.address,
+            },
+            scheduledDate,
+            scheduledTime,
+          },
+          hostName: 'Someone special',
+          intent: message || undefined,
+          inviteeCount: 1,
         },
       });
 
       if (error) throw error;
       
-      setShareUrl(data.shareUrl);
+      setShareUrl(data.inviteUrl);
       toast({
-        title: 'Share link created!',
-        description: 'Now share it with your date 💕',
+        title: 'Invite link created!',
+        description: 'Share it via SMS for a beautiful invite 💕',
       });
     } catch (err) {
-      console.error('Error creating share link:', err);
+      console.error('Error creating invite link:', err);
       toast({
         title: 'Error',
-        description: 'Failed to create share link',
+        description: 'Failed to create invite link',
         variant: 'destructive',
       });
     } finally {

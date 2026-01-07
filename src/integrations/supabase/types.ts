@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      invite_responses: {
+        Row: {
+          created_at: string | null
+          id: string
+          invite_id: string
+          responder_name: string | null
+          response: string
+          suggestion_json: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invite_id: string
+          responder_name?: string | null
+          response: string
+          suggestion_json?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invite_id?: string
+          responder_name?: string | null
+          response?: string
+          suggestion_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invite_responses_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invites: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          expires_at: string | null
+          host_name: string | null
+          id: string
+          intent: string | null
+          invitee_count: number | null
+          plan_json: Json
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          expires_at?: string | null
+          host_name?: string | null
+          id?: string
+          intent?: string | null
+          invitee_count?: number | null
+          plan_json: Json
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          expires_at?: string | null
+          host_name?: string | null
+          id?: string
+          intent?: string | null
+          invitee_count?: number | null
+          plan_json?: Json
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -463,6 +531,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_invite_creator: { Args: { _invite_id: string }; Returns: boolean }
       is_share_creator: { Args: { _share_id: string }; Returns: boolean }
     }
     Enums: {
