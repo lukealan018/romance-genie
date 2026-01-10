@@ -36,6 +36,28 @@ function validateNoveltyMode(input: unknown): NoveltyMode {
   return valid.includes(input as NoveltyMode) ? (input as NoveltyMode) : 'balanced';
 }
 
+// Generate a signature hash for request deduplication/debugging
+function generateRequestSignature(params: Record<string, unknown>): string {
+  const sorted = Object.keys(params).sort().map(k => `${k}:${params[k]}`).join('|');
+  let hash = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    const char = sorted.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+// Debug metadata interface
+interface DebugMetadata {
+  signature: string;
+  seedUsed: number | null;
+  excludedCountsByReason: Record<string, number>;
+  qualityFilteredCount: number;
+  totalFromProviders: number;
+  finalCount: number;
+}
+
 // Response item type with optional booking insights
 interface PlaceSearchResultItem {
   id: string;
@@ -94,10 +116,11 @@ serve(async (req) => {
 
   try {
     // Parse request parameters
-    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean, venueType: 'any' | 'coffee', searchTime: string | undefined, surpriseMe: boolean, excludePlaceIds: string[];
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean, venueType: 'any' | 'coffee', searchTime: string | undefined, surpriseMe: boolean, excludePlaceIds: string[], debug: boolean;
 
     if (req.method === 'POST') {
       const body = await req.json();
+      debug = body.debug === true;
       lat = validateNumber(body.lat);
       lng = validateNumber(body.lng);
       radiusMiles = validateNumber(body.radiusMiles);
@@ -115,6 +138,7 @@ serve(async (req) => {
         : [];
     } else {
       const url = new URL(req.url);
+      debug = url.searchParams.get('debug') === 'true';
       lat = validateNumber(url.searchParams.get('lat'));
       lng = validateNumber(url.searchParams.get('lng'));
       radiusMiles = validateNumber(url.searchParams.get('radiusMiles'));
@@ -187,19 +211,28 @@ serve(async (req) => {
     
     // Create Set for O(1) exclusion lookups
     const excludeSet = new Set(excludePlaceIds);
-    let excludedCount = 0;
+    
+    // Track exclusion reasons for debug
+    const excludedCountsByReason: Record<string, number> = {
+      previouslyShown: 0,
+      distanceExceeded: 0,
+      outsideTargetCity: 0,
+    };
+    
+    const totalFromProviders = providerResults.length;
     
     const items: PlaceSearchResultItem[] = providerResults
       .filter((item: any) => {
         // Exclude previously shown places
         if (excludeSet.has(item.id)) {
-          excludedCount++;
+          excludedCountsByReason.previouslyShown++;
           return false;
         }
         
         // Distance filter with buffer
         const maxDistance = radiusMilesNum * 1.5;
         if (item.distance && item.distance > maxDistance) {
+          excludedCountsByReason.distanceExceeded++;
           return false;
         }
         
@@ -207,6 +240,7 @@ serve(async (req) => {
         if (targetCity && item.addressComponents) {
           const inTargetCity = isInTargetCity(item.addressComponents, targetCity);
           if (!inTargetCity && item.distance && item.distance > 5) {
+            excludedCountsByReason.outsideTargetCity++;
             return false;
           }
         }
@@ -315,14 +349,29 @@ serve(async (req) => {
       console.log(`📅 Booking insights: ${recommendedCount}/${items.length} recommend reservations`);
     }
 
-    console.log(`✅ Returning ${items.length} scored restaurants (forceFresh: ${forceFresh}, excluded: ${excludedCount})`);
+    const totalExcluded = Object.values(excludedCountsByReason).reduce((a, b) => a + b, 0);
+    console.log(`✅ Returning ${items.length} scored restaurants (forceFresh: ${forceFresh}, excluded: ${totalExcluded})`);
+
+    // Generate request signature for debugging
+    const signature = generateRequestSignature({ lat, lng, radiusMiles, cuisine, priceLevel, noveltyMode, venueType });
+
+    // Build debug metadata if requested
+    const debugMetadata: DebugMetadata | undefined = debug ? {
+      signature,
+      seedUsed: effectiveSeed ?? null,
+      excludedCountsByReason,
+      qualityFilteredCount: 0, // Quality filtering happens in places-service
+      totalFromProviders,
+      finalCount: items.length,
+    } : undefined;
 
     return new Response(
       JSON.stringify({
         items,
         nextPageToken: null, // Multi-provider doesn't support pagination initially
         providerStats, // Include provider stats for debugging
-        forceFresh // Echo back for debugging
+        forceFresh, // Echo back for debugging
+        ...(debugMetadata && { debug: debugMetadata }),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

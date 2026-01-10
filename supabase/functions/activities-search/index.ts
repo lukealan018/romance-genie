@@ -41,6 +41,28 @@ function validateNoveltyMode(input: unknown): NoveltyMode {
   return valid.includes(input as NoveltyMode) ? (input as NoveltyMode) : 'balanced';
 }
 
+// Generate a signature hash for request deduplication/debugging
+function generateRequestSignature(params: Record<string, unknown>): string {
+  const sorted = Object.keys(params).sort().map(k => `${k}:${params[k]}`).join('|');
+  let hash = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    const char = sorted.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+// Debug metadata interface
+interface DebugMetadata {
+  signature: string;
+  seedUsed: number | null;
+  excludedCountsByReason: Record<string, number>;
+  qualityFilteredCount: number;
+  totalFromProviders: number;
+  finalCount: number;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -59,6 +81,7 @@ serve(async (req) => {
     const seed = body.seed !== undefined ? validateNumber(body.seed) : undefined;
     const forceFresh = body.forceFresh === true;
     const surpriseMe = body.surpriseMe === true;
+    const debug = body.debug === true;
     const excludePlaceIds = Array.isArray(body.excludePlaceIds) 
       ? body.excludePlaceIds.filter((id: unknown) => typeof id === 'string').slice(0, 100)
       : [];
@@ -111,12 +134,21 @@ serve(async (req) => {
     
     let { items: activities, providerStats } = await getActivitySuggestions(searchOptions);
     
+    const totalFromProviders = activities.length;
+    
+    // Track exclusion reasons for debug
+    const excludedCountsByReason: Record<string, number> = {
+      previouslyShown: 0,
+      genericPark: 0,
+    };
+    
     // === CONCIERGE INTELLIGENCE: Filter out generic parks for outdoor searches ===
     if (isOutdoorSearch) {
       const beforeFilter = activities.length;
       activities = activities.filter((item: any) => {
         const isGeneric = isGenericPark(item.name, item.types || []);
         if (isGeneric) {
+          excludedCountsByReason.genericPark++;
           console.log(`🚫 Concierge filter: Excluding generic park "${item.name}"`);
         }
         return !isGeneric;
@@ -173,14 +205,13 @@ serve(async (req) => {
     
     // Create Set for O(1) exclusion lookups
     const excludeSet = new Set(excludePlaceIds);
-    let excludedCount = 0;
     
     // Apply novelty scoring, sorting, and exclusion filtering
     const items = activities
       .filter((item: any) => {
         // Exclude previously shown activities
         if (excludeSet.has(item.id)) {
-          excludedCount++;
+          excludedCountsByReason.previouslyShown++;
           return false;
         }
         return true;
@@ -255,14 +286,29 @@ serve(async (req) => {
     });
 
     console.log(`📊 Provider stats:`, providerStats);
-    console.log(`✅ Returning ${cleanedItems.length} activities (forceFresh: ${forceFresh}, excluded: ${excludedCount})`);
+    const totalExcluded = Object.values(excludedCountsByReason).reduce((a, b) => a + b, 0);
+    console.log(`✅ Returning ${cleanedItems.length} activities (forceFresh: ${forceFresh}, excluded: ${totalExcluded})`);
+
+    // Generate request signature for debugging
+    const signature = generateRequestSignature({ lat, lng, radiusMiles, keyword, noveltyMode });
+
+    // Build debug metadata if requested
+    const debugMetadata: DebugMetadata | undefined = debug ? {
+      signature,
+      seedUsed: effectiveSeed ?? null,
+      excludedCountsByReason,
+      qualityFilteredCount: 0, // Quality filtering happens in activities-service
+      totalFromProviders,
+      finalCount: cleanedItems.length,
+    } : undefined;
 
     return new Response(
       JSON.stringify({
         items: cleanedItems,
         nextPageToken: null, // Multi-provider doesn't support pagination yet
         providerStats,
-        forceFresh // Echo back for debugging
+        forceFresh, // Echo back for debugging
+        ...(debugMetadata && { debug: debugMetadata }),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
