@@ -4,6 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   ArrowLeft, 
   Loader2, 
@@ -17,10 +34,14 @@ import {
   ChevronDown,
   ChevronUp,
   Copy,
-  ExternalLink
+  ExternalLink,
+  MoreVertical,
+  Trash2,
+  Pencil,
+  CalendarPlus
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { format, formatDistanceToNow, isPast } from "date-fns";
+import { format, formatDistanceToNow, isPast, addDays } from "date-fns";
 
 interface InviteResponse {
   id: string;
@@ -42,14 +63,16 @@ interface Invite {
   expires_at: string | null;
   created_at: string | null;
   intent: string | null;
+  message: string | null;
   host_name: string | null;
   responses?: InviteResponse[];
 }
 
 const responseConfig: Record<string, { label: string; icon: typeof Check; color: string }> = {
-  'im_in': { label: "I'm in!", icon: Check, color: 'text-green-500' },
+  'in': { label: "I'm in!", icon: Check, color: 'text-green-500' },
   'maybe': { label: 'Maybe', icon: HelpCircle, color: 'text-yellow-500' },
-  'cant_make_it': { label: "Can't make it", icon: X, color: 'text-red-500' },
+  'out': { label: "Can't make it", icon: X, color: 'text-red-500' },
+  'suggest_change': { label: 'Suggested change', icon: Pencil, color: 'text-blue-500' },
 };
 
 export default function InvitesDashboard() {
@@ -57,6 +80,15 @@ export default function InvitesDashboard() {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedInvite, setExpandedInvite] = useState<string | null>(null);
+  
+  // Dialog states
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editMessageDialogOpen, setEditMessageDialogOpen] = useState(false);
+  const [extendDialogOpen, setExtendDialogOpen] = useState(false);
+  const [selectedInvite, setSelectedInvite] = useState<Invite | null>(null);
+  const [editedMessage, setEditedMessage] = useState("");
+  const [extensionDays, setExtensionDays] = useState(7);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     fetchInvites();
@@ -90,11 +122,6 @@ export default function InvitesDashboard() {
       const invitesWithResponses = await Promise.all(
         invitesData.map(async (invite) => {
           try {
-            const { data, error } = await supabase.functions.invoke('get-invite-responses', {
-              body: null,
-            });
-            
-            // Use query params for GET-style request
             const response = await fetch(
               `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-invite-responses?inviteId=${invite.id}`,
               {
@@ -161,6 +188,132 @@ export default function InvitesDashboard() {
     return isPast(new Date(expiresAt));
   };
 
+  // Delete invite
+  const handleDeleteInvite = async () => {
+    if (!selectedInvite) return;
+    
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('invites')
+        .delete()
+        .eq('id', selectedInvite.id);
+
+      if (error) throw error;
+
+      setInvites(prev => prev.filter(i => i.id !== selectedInvite.id));
+      toast({
+        title: "Invite deleted",
+        description: "The invite has been cancelled",
+      });
+      setDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('Error deleting invite:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete invite",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdating(false);
+      setSelectedInvite(null);
+    }
+  };
+
+  // Update message
+  const handleUpdateMessage = async () => {
+    if (!selectedInvite) return;
+    
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('invites')
+        .update({ message: editedMessage || null })
+        .eq('id', selectedInvite.id);
+
+      if (error) throw error;
+
+      setInvites(prev => prev.map(i => 
+        i.id === selectedInvite.id ? { ...i, message: editedMessage || null } : i
+      ));
+      toast({
+        title: "Message updated",
+        description: "Your invite message has been updated",
+      });
+      setEditMessageDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update message",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdating(false);
+      setSelectedInvite(null);
+    }
+  };
+
+  // Extend expiration
+  const handleExtendExpiration = async () => {
+    if (!selectedInvite) return;
+    
+    setIsUpdating(true);
+    try {
+      const currentExpiry = selectedInvite.expires_at 
+        ? new Date(selectedInvite.expires_at) 
+        : new Date();
+      const newExpiry = addDays(
+        isPast(currentExpiry) ? new Date() : currentExpiry, 
+        extensionDays
+      );
+
+      const { error } = await supabase
+        .from('invites')
+        .update({ expires_at: newExpiry.toISOString() })
+        .eq('id', selectedInvite.id);
+
+      if (error) throw error;
+
+      setInvites(prev => prev.map(i => 
+        i.id === selectedInvite.id ? { ...i, expires_at: newExpiry.toISOString() } : i
+      ));
+      toast({
+        title: "Expiration extended",
+        description: `Invite now expires on ${format(newExpiry, 'MMM d, yyyy')}`,
+      });
+      setExtendDialogOpen(false);
+    } catch (error) {
+      console.error('Error extending expiration:', error);
+      toast({
+        title: "Error",
+        description: "Failed to extend expiration",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdating(false);
+      setSelectedInvite(null);
+    }
+  };
+
+  // Open dialogs
+  const openDeleteDialog = (invite: Invite) => {
+    setSelectedInvite(invite);
+    setDeleteDialogOpen(true);
+  };
+
+  const openEditMessageDialog = (invite: Invite) => {
+    setSelectedInvite(invite);
+    setEditedMessage(invite.message || "");
+    setEditMessageDialogOpen(true);
+  };
+
+  const openExtendDialog = (invite: Invite) => {
+    setSelectedInvite(invite);
+    setExtensionDays(7);
+    setExtendDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="themed-page-bg min-h-screen flex items-center justify-center">
@@ -206,7 +359,7 @@ export default function InvitesDashboard() {
               <CardContent className="p-4 text-center">
                 <Users className="h-6 w-6 mx-auto mb-2 text-green-500" />
                 <div className="text-2xl font-bold text-white">
-                  {invites.reduce((sum, i) => sum + (i.responses || []).filter(r => r.response === 'im_in').length, 0)}
+                  {invites.reduce((sum, i) => sum + (i.responses || []).filter(r => r.response === 'in').length, 0)}
                 </div>
                 <div className="text-xs text-[rgba(255,255,255,0.5)]">Confirmed</div>
               </CardContent>
@@ -266,6 +419,13 @@ export default function InvitesDashboard() {
                             </p>
                           )}
                         </div>
+
+                        {/* Message preview */}
+                        {invite.message && (
+                          <p className="text-xs text-[rgba(255,255,255,0.5)] italic truncate max-w-[250px]">
+                            "{invite.message}"
+                          </p>
+                        )}
                         
                         {/* Date/time and status */}
                         <div className="flex items-center gap-3 flex-wrap">
@@ -275,21 +435,20 @@ export default function InvitesDashboard() {
                               {invite.plan_json.time && ` at ${invite.plan_json.time}`}
                             </span>
                           )}
-                          {expired && (
+                          {expired ? (
                             <span className="text-xs px-2 py-1 rounded-full bg-red-500/10 text-red-400">
                               Expired
                             </span>
-                          )}
-                          {invite.created_at && (
+                          ) : invite.expires_at && (
                             <span className="text-xs text-[rgba(255,255,255,0.4)]">
-                              Sent {formatDistanceToNow(new Date(invite.created_at), { addSuffix: true })}
+                              Expires {formatDistanceToNow(new Date(invite.expires_at), { addSuffix: true })}
                             </span>
                           )}
                         </div>
                       </div>
 
                       {/* Quick actions */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -306,6 +465,33 @@ export default function InvitesDashboard() {
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
+                        
+                        {/* More actions dropdown */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={() => openEditMessageDialog(invite)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit Message
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openExtendDialog(invite)}>
+                              <CalendarPlus className="mr-2 h-4 w-4" />
+                              Extend Expiration
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => openDeleteDialog(invite)}
+                              className="text-red-500 focus:text-red-500"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Cancel Invite
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   </CardHeader>
@@ -314,10 +500,10 @@ export default function InvitesDashboard() {
                     {/* Response summary badges */}
                     <div className="flex items-center justify-between">
                       <div className="flex gap-2 flex-wrap">
-                        {counts['im_in'] && (
+                        {counts['in'] && (
                           <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-medium">
                             <Check className="w-3 h-3" />
-                            {counts['im_in']}
+                            {counts['in']}
                           </div>
                         )}
                         {counts['maybe'] && (
@@ -326,10 +512,10 @@ export default function InvitesDashboard() {
                             {counts['maybe']}
                           </div>
                         )}
-                        {counts['cant_make_it'] && (
+                        {counts['out'] && (
                           <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/10 text-red-500 text-xs font-medium">
                             <X className="w-3 h-3" />
-                            {counts['cant_make_it']}
+                            {counts['out']}
                           </div>
                         )}
                         {totalResponses === 0 && (
@@ -413,6 +599,143 @@ export default function InvitesDashboard() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Cancel Invite</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this invite? This action cannot be undone and all responses will be deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isUpdating}
+            >
+              Keep Invite
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteInvite}
+              disabled={isUpdating}
+            >
+              {isUpdating ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Cancel Invite
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Message Dialog */}
+      <Dialog open={editMessageDialogOpen} onOpenChange={setEditMessageDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Message</DialogTitle>
+            <DialogDescription>
+              Update the personal message shown to your invitees.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="message" className="text-sm font-medium mb-2 block">
+              Message
+            </Label>
+            <Input
+              id="message"
+              value={editedMessage}
+              onChange={(e) => setEditedMessage(e.target.value)}
+              placeholder="Add a personal note..."
+              className="bg-background"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditMessageDialogOpen(false)}
+              disabled={isUpdating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateMessage}
+              disabled={isUpdating}
+              className="btn-theme-primary"
+            >
+              {isUpdating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Save Message
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Extend Expiration Dialog */}
+      <Dialog open={extendDialogOpen} onOpenChange={setExtendDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Extend Expiration</DialogTitle>
+            <DialogDescription>
+              {selectedInvite?.expires_at && isPast(new Date(selectedInvite.expires_at))
+                ? "This invite has expired. Extending will set a new expiration from today."
+                : "Extend the invite expiration date to give more time for responses."
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="days" className="text-sm font-medium mb-2 block">
+              Extend by (days)
+            </Label>
+            <div className="flex gap-2">
+              {[3, 7, 14, 30].map((days) => (
+                <Button
+                  key={days}
+                  variant={extensionDays === days ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setExtensionDays(days)}
+                  className={extensionDays === days ? "btn-theme-primary" : ""}
+                >
+                  {days}
+                </Button>
+              ))}
+            </div>
+            {selectedInvite?.expires_at && (
+              <p className="text-xs text-muted-foreground mt-3">
+                New expiration: {format(
+                  addDays(
+                    isPast(new Date(selectedInvite.expires_at)) 
+                      ? new Date() 
+                      : new Date(selectedInvite.expires_at), 
+                    extensionDays
+                  ), 
+                  'MMMM d, yyyy'
+                )}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setExtendDialogOpen(false)}
+              disabled={isUpdating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleExtendExpiration}
+              disabled={isUpdating}
+              className="btn-theme-primary"
+            >
+              {isUpdating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Extend
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
