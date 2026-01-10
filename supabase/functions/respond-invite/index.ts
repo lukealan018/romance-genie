@@ -18,10 +18,17 @@ serve(async (req) => {
     // Use service role for public response submission
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { inviteId, responderName, response, suggestionJson } = await req.json();
+    const { inviteId, responderName, response, suggestionJson, fingerprint } = await req.json();
 
     if (!inviteId || !response) {
       return new Response(JSON.stringify({ error: 'Invite ID and response are required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!fingerprint) {
+      return new Response(JSON.stringify({ error: 'Fingerprint is required to prevent duplicate responses' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -37,7 +44,7 @@ serve(async (req) => {
     }
 
     console.log('Recording response for invite:', inviteId);
-    console.log('Response:', response, 'From:', responderName);
+    console.log('Response:', response, 'From:', responderName, 'Fingerprint:', fingerprint?.substring(0, 8));
 
     // Verify invite exists and hasn't expired
     const { data: invite, error: inviteError } = await supabase
@@ -60,6 +67,24 @@ serve(async (req) => {
       });
     }
 
+    // Check for existing response with same fingerprint (spam prevention)
+    const { data: existingResponse } = await supabase
+      .from('invite_responses')
+      .select('id')
+      .eq('invite_id', inviteId)
+      .eq('responder_fingerprint', fingerprint)
+      .single();
+
+    if (existingResponse) {
+      return new Response(JSON.stringify({ 
+        error: 'You have already responded to this invite',
+        alreadyResponded: true 
+      }), {
+        status: 409,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Insert the response
     const { data: responseData, error: insertError } = await supabase
       .from('invite_responses')
@@ -68,12 +93,23 @@ serve(async (req) => {
         responder_name: responderName || 'Guest',
         response,
         suggestion_json: suggestionJson || null,
+        responder_fingerprint: fingerprint,
       })
       .select()
       .single();
 
     if (insertError) {
       console.error('Insert error:', insertError);
+      // Handle unique constraint violation gracefully
+      if (insertError.code === '23505') {
+        return new Response(JSON.stringify({ 
+          error: 'You have already responded to this invite',
+          alreadyResponded: true 
+        }), {
+          status: 409,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       return new Response(JSON.stringify({ error: insertError.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -90,7 +126,8 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Unexpected error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

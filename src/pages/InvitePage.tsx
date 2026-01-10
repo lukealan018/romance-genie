@@ -14,10 +14,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+import { getStoredFingerprint } from '@/lib/fingerprint';
+
 interface InviteData {
   id: string;
   hostName: string;
   intent?: string;
+  message?: string;
   planJson: {
     restaurant?: {
       id: string;
@@ -47,22 +50,30 @@ interface InviteData {
   expiresAt?: string;
 }
 
-interface Response {
-  responder_name: string;
-  response: string;
-  created_at: string;
+interface ResponseCounts {
+  in?: number;
+  maybe?: number;
+  out?: number;
+  suggest_change?: number;
 }
 
 const InvitePage: React.FC = () => {
   const { inviteId } = useParams<{ inviteId: string }>();
   const [invite, setInvite] = useState<InviteData | null>(null);
-  const [responses, setResponses] = useState<Response[]>([]);
+  const [responseCounts, setResponseCounts] = useState<ResponseCounts>({});
+  const [totalResponses, setTotalResponses] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [responderName, setResponderName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasResponded, setHasResponded] = useState(false);
   const [showSuggestSheet, setShowSuggestSheet] = useState(false);
+  const [fingerprint, setFingerprint] = useState<string | null>(null);
+
+  // Generate fingerprint on mount
+  useEffect(() => {
+    getStoredFingerprint().then(setFingerprint);
+  }, []);
 
   useEffect(() => {
     const fetchInvite = async () => {
@@ -73,12 +84,6 @@ const InvitePage: React.FC = () => {
       }
 
       try {
-        const { data, error: fetchError } = await supabase.functions.invoke('get-invite', {
-          body: null,
-          method: 'GET',
-        });
-
-        // Use query params for GET request
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-invite?inviteId=${inviteId}`,
           {
@@ -97,7 +102,8 @@ const InvitePage: React.FC = () => {
 
         const result = await response.json();
         setInvite(result.invite);
-        setResponses(result.responses || []);
+        setResponseCounts(result.responseCounts || {});
+        setTotalResponses(result.totalResponses || 0);
       } catch (err: any) {
         console.error('Error fetching invite:', err);
         setError(err.message || 'Failed to load invite');
@@ -110,8 +116,9 @@ const InvitePage: React.FC = () => {
   }, [inviteId]);
 
   const handleResponse = async (response: 'in' | 'maybe' | 'out') => {
-    if (!inviteId || !responderName.trim()) {
-      // If no name, prompt for it
+    if (!inviteId || !fingerprint) return;
+    
+    if (!responderName.trim()) {
       const name = prompt('Please enter your name:');
       if (!name) return;
       setResponderName(name);
@@ -124,14 +131,25 @@ const InvitePage: React.FC = () => {
           inviteId,
           responderName: responderName.trim() || 'Guest',
           response,
+          fingerprint,
         },
       });
 
       if (error) throw error;
+      if (data?.alreadyResponded) {
+        setHasResponded(true);
+        alert('You have already responded to this invite.');
+        return;
+      }
       setHasResponded(true);
     } catch (err: any) {
       console.error('Error responding:', err);
-      alert('Failed to send response. Please try again.');
+      if (err.message?.includes('already responded')) {
+        setHasResponded(true);
+        alert('You have already responded to this invite.');
+      } else {
+        alert('Failed to send response. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -142,7 +160,7 @@ const InvitePage: React.FC = () => {
     note: string;
     responderName: string;
   }) => {
-    if (!inviteId) return;
+    if (!inviteId || !fingerprint) return;
 
     setIsSubmitting(true);
     try {
@@ -155,15 +173,27 @@ const InvitePage: React.FC = () => {
             type: suggestion.type,
             note: suggestion.note,
           },
+          fingerprint,
         },
       });
 
       if (error) throw error;
+      if (data?.alreadyResponded) {
+        setHasResponded(true);
+        alert('You have already responded to this invite.');
+        setShowSuggestSheet(false);
+        return;
+      }
       setHasResponded(true);
       setShowSuggestSheet(false);
     } catch (err: any) {
       console.error('Error suggesting change:', err);
-      alert('Failed to send suggestion. Please try again.');
+      if (err.message?.includes('already responded')) {
+        setHasResponded(true);
+        setShowSuggestSheet(false);
+      } else {
+        alert('Failed to send suggestion. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -221,6 +251,7 @@ const InvitePage: React.FC = () => {
         <InviteHero
           hostName={invite.hostName}
           intent={invite.intent}
+          message={invite.message}
           scheduledDate={planJson.scheduledDate}
           scheduledTime={planJson.scheduledTime}
         />
@@ -304,7 +335,8 @@ const InvitePage: React.FC = () => {
 
         {/* Response status */}
         <InviteStatus
-          responses={responses}
+          responseCounts={responseCounts}
+          totalResponses={totalResponses}
           inviteeCount={invite.inviteeCount}
         />
 

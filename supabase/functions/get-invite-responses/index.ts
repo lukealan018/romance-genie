@@ -15,6 +15,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
+    // Require authentication - only invite creator can view responses
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Authorization required' }), {
@@ -36,49 +37,52 @@ serve(async (req) => {
       });
     }
 
-    const { planJson, hostName, intent, message, inviteeCount } = await req.json();
+    const url = new URL(req.url);
+    const inviteId = url.searchParams.get('inviteId');
 
-    if (!planJson) {
-      return new Response(JSON.stringify({ error: 'Plan data is required' }), {
+    if (!inviteId) {
+      return new Response(JSON.stringify({ error: 'Invite ID is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('Creating invite for user:', user.id);
-    console.log('Plan JSON:', JSON.stringify(planJson).substring(0, 200));
+    console.log('Fetching responses for invite:', inviteId, 'by user:', user.id);
 
-    const { data: invite, error: insertError } = await supabase
+    // Verify user owns this invite
+    const { data: invite, error: inviteError } = await supabase
       .from('invites')
-      .insert({
-        created_by: user.id,
-        host_name: hostName || 'Someone special',
-        intent: intent || null,
-        message: message || null,
-        plan_json: planJson,
-        invitee_count: inviteeCount || 1,
-      })
-      .select()
+      .select('id, created_by')
+      .eq('id', inviteId)
+      .eq('created_by', user.id)
       .single();
 
-    if (insertError) {
-      console.error('Insert error:', insertError);
-      return new Response(JSON.stringify({ error: insertError.message }), {
+    if (inviteError || !invite) {
+      return new Response(JSON.stringify({ error: 'Invite not found or access denied' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Fetch full responses (host-only access)
+    const { data: responses, error: responsesError } = await supabase
+      .from('invite_responses')
+      .select('id, responder_name, response, suggestion_json, created_at')
+      .eq('invite_id', inviteId)
+      .order('created_at', { ascending: false });
+
+    if (responsesError) {
+      console.error('Responses error:', responsesError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch responses' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Generate the invite URL
-    const baseUrl = req.headers.get('origin') || 'https://romance-genie.lovable.app';
-    const inviteUrl = `${baseUrl}/i/${invite.id}`;
-
-    console.log('Invite created:', invite.id);
-    console.log('Invite URL:', inviteUrl);
+    console.log('Found', responses?.length || 0, 'responses');
 
     return new Response(JSON.stringify({ 
-      inviteId: invite.id,
-      inviteUrl,
+      responses: responses || [],
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

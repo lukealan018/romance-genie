@@ -52,39 +52,39 @@ serve(async (req) => {
       });
     }
 
-    // Get response count
-    const { count: responseCount } = await supabase
+    // Get response counts by type (privacy: no names/list for public)
+    const { data: responseCounts } = await supabase
       .from('invite_responses')
-      .select('*', { count: 'exact', head: true })
+      .select('response')
       .eq('invite_id', inviteId);
 
-    // Get responses (for status display)
-    const { data: responses } = await supabase
-      .from('invite_responses')
-      .select('responder_name, response, created_at')
-      .eq('invite_id', inviteId)
-      .order('created_at', { ascending: false });
+    const counts = (responseCounts || []).reduce((acc: Record<string, number>, r) => {
+      acc[r.response] = (acc[r.response] || 0) + 1;
+      return acc;
+    }, {});
 
-    console.log('Invite found:', invite.id, 'Responses:', responseCount);
+    console.log('Invite found:', invite.id, 'Response counts:', counts);
 
     return new Response(JSON.stringify({ 
       invite: {
         id: invite.id,
         hostName: invite.host_name,
         intent: invite.intent,
+        message: invite.message,
         planJson: invite.plan_json,
         inviteeCount: invite.invitee_count,
         createdAt: invite.created_at,
         expiresAt: invite.expires_at,
       },
-      responseCount: responseCount || 0,
-      responses: responses || [],
+      responseCounts: counts,
+      totalResponses: responseCounts?.length || 0,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Unexpected error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
