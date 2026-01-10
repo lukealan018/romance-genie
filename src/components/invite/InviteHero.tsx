@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 interface InviteHeroProps {
   hostName: string;
   intent?: string;
+  message?: string;
   scheduledDate?: string;
   scheduledTime?: string;
 }
@@ -13,6 +14,7 @@ interface InviteHeroProps {
 const InviteHero: React.FC<InviteHeroProps> = ({
   hostName,
   intent,
+  message,
   scheduledDate,
   scheduledTime,
 }) => {
@@ -60,8 +62,21 @@ const InviteHero: React.FC<InviteHeroProps> = ({
         <span className="text-primary font-semibold">{hostName}</span> has planned something special
       </motion.p>
 
-      {/* Intent message if provided */}
-      {intent && (
+      {/* Message from host */}
+      {message && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 border border-border/50 mb-4"
+        >
+          <Heart className="w-4 h-4 text-primary" />
+          <span className="text-sm text-foreground/80 italic">"{message}"</span>
+        </motion.div>
+      )}
+
+      {/* Legacy intent display (if no message but intent exists) */}
+      {!message && intent && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

@@ -19,6 +19,7 @@ export type Database = {
           created_at: string | null
           id: string
           invite_id: string
+          responder_fingerprint: string | null
           responder_name: string | null
           response: string
           suggestion_json: Json | null
@@ -27,6 +28,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           invite_id: string
+          responder_fingerprint?: string | null
           responder_name?: string | null
           response: string
           suggestion_json?: Json | null
@@ -35,6 +37,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           invite_id?: string
+          responder_fingerprint?: string | null
           responder_name?: string | null
           response?: string
           suggestion_json?: Json | null
@@ -58,6 +61,7 @@ export type Database = {
           id: string
           intent: string | null
           invitee_count: number | null
+          message: string | null
           plan_json: Json
         }
         Insert: {
@@ -68,6 +72,7 @@ export type Database = {
           id?: string
           intent?: string | null
           invitee_count?: number | null
+          message?: string | null
           plan_json: Json
         }
         Update: {
@@ -78,6 +83,7 @@ export type Database = {
           id?: string
           intent?: string | null
           invitee_count?: number | null
+          message?: string | null
           plan_json?: Json
         }
         Relationships: []

@@ -86,22 +86,46 @@ export default function InvitesDashboard() {
         return;
       }
 
-      // Fetch responses for all invites
-      const inviteIds = invitesData.map(i => i.id);
-      const { data: responsesData, error: responsesError } = await supabase
-        .from('invite_responses')
-        .select('*')
-        .in('invite_id', inviteIds)
-        .order('created_at', { ascending: false });
+      // Fetch responses for each invite using the host-only endpoint
+      const invitesWithResponses = await Promise.all(
+        invitesData.map(async (invite) => {
+          try {
+            const { data, error } = await supabase.functions.invoke('get-invite-responses', {
+              body: null,
+            });
+            
+            // Use query params for GET-style request
+            const response = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-invite-responses?inviteId=${invite.id}`,
+              {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                  'Authorization': `Bearer ${session.access_token}`,
+                },
+              }
+            );
 
-      if (responsesError) throw responsesError;
-
-      // Map responses to invites
-      const invitesWithResponses = invitesData.map(invite => ({
-        ...invite,
-        plan_json: invite.plan_json as Invite['plan_json'],
-        responses: (responsesData || []).filter(r => r.invite_id === invite.id)
-      }));
+            if (response.ok) {
+              const result = await response.json();
+              return {
+                ...invite,
+                plan_json: invite.plan_json as Invite['plan_json'],
+                responses: result.responses || [],
+              };
+            }
+          } catch (err) {
+            console.error('Error fetching responses for invite:', invite.id, err);
+          }
+          
+          return {
+            ...invite,
+            plan_json: invite.plan_json as Invite['plan_json'],
+            responses: [],
+          };
+        })
+      );
 
       setInvites(invitesWithResponses);
     } catch (error) {
