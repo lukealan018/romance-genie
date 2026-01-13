@@ -862,7 +862,10 @@ export const usePlaceSearch = (
       return;
     }
     
-    if ((currentMode === 'both' || currentMode === 'restaurant_only') && !cuisine) {
+    // Get venueType from store - coffee/brunch bypass cuisine requirement
+    const { venueType } = usePlanStore.getState();
+    
+    if ((currentMode === 'both' || currentMode === 'restaurant_only') && !cuisine && venueType !== 'coffee' && venueType !== 'brunch') {
       toast({ title: "Error", description: "Please select a cuisine", variant: "destructive" });
       return;
     }
