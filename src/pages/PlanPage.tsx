@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, RefreshCw, Loader2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,8 @@ const PlanPage = () => {
     getCurrentActivityIdx,
     getNextRestaurantsToken,
     getNextActivitiesToken,
+    addToExcludePlaceIds,
+    addToExcludeActivityIds,
   } = usePlanStore();
 
   // Use mode-aware getters
@@ -193,6 +195,13 @@ const PlanPage = () => {
     const searchLat = lat;
     const searchLng = lng;
 
+    // Add currently displayed restaurant to exclusions before swapping
+    const currentRestaurant = restaurantResults[restaurantIndex];
+    if (currentRestaurant?.id) {
+      console.log('🚫 Adding swapped-away restaurant to exclusions:', currentRestaurant.name);
+      addToExcludePlaceIds([currentRestaurant.id]);
+    }
+
     if (restaurantIndex + 1 < restaurantResults.length) {
       const newIndex = restaurantIndex + 1;
       setRestaurantIndex(newIndex);
@@ -261,6 +270,13 @@ const PlanPage = () => {
     if (lat === null || lng === null) return;
     const searchLat = lat;
     const searchLng = lng;
+
+    // Add currently displayed activity to exclusions before swapping
+    const currentActivity = activityResults[activityIndex];
+    if (currentActivity?.id) {
+      console.log('🚫 Adding swapped-away activity to exclusions:', currentActivity.name);
+      addToExcludeActivityIds([currentActivity.id]);
+    }
 
     if (activityIndex + 1 < activityResults.length) {
       const newIndex = activityIndex + 1;
@@ -347,11 +363,29 @@ const PlanPage = () => {
     );
   }
 
+  // Handle back navigation - add current places to exclusions
+  const handleBackToHome = useCallback(() => {
+    // Add currently displayed places to exclusions so they won't reappear
+    const currentRestaurant = restaurantResults[restaurantIndex];
+    const currentActivity = activityResults[activityIndex];
+    
+    if (currentRestaurant?.id) {
+      console.log('🚫 Adding current restaurant to exclusions on back:', currentRestaurant.name);
+      addToExcludePlaceIds([currentRestaurant.id]);
+    }
+    if (currentActivity?.id) {
+      console.log('🚫 Adding current activity to exclusions on back:', currentActivity.name);
+      addToExcludeActivityIds([currentActivity.id]);
+    }
+    
+    navigate('/');
+  }, [restaurantResults, activityResults, restaurantIndex, activityIndex, addToExcludePlaceIds, addToExcludeActivityIds, navigate]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px'}}>
-        <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => navigate('/')}>
+        <Button variant="ghost" size="icon" className="h-10 w-10" onClick={handleBackToHome}>
           <ArrowLeft className="w-6 h-6" />
         </Button>
         <div className="flex items-center gap-4">
@@ -382,6 +416,10 @@ const PlanPage = () => {
           onSwapActivity={handleSwapActivity}
           onReroll={handleReroll}
           onSkipRestaurant={(restaurant) => {
+            // Add to exclusions when explicitly skipped
+            if (restaurant?.id) {
+              addToExcludePlaceIds([restaurant.id]);
+            }
             trackInteraction(
               { ...restaurant, cuisine: lastSearchedCuisine },
               'restaurant',
@@ -389,6 +427,10 @@ const PlanPage = () => {
             );
           }}
           onSkipActivity={(activity) => {
+            // Add to exclusions when explicitly skipped
+            if (activity?.id) {
+              addToExcludeActivityIds([activity.id]);
+            }
             trackInteraction(
               { ...activity, category: lastSearchedActivity },
               'activity',
