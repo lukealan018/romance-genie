@@ -117,18 +117,31 @@ export const googlePlacesProvider: PlacesProvider = {
     console.log(`🌍 Google provider: Searching ${isCoffeeSearch ? 'coffee shops' : 'restaurants'}`);
     
     // Map price level to Google's scale (1-4)
-    // RELAXED: Include more results, we filter by quality after
-    const priceLevelMap: Record<string, { min: number; max: number }> = {
-      'budget': { min: 1, max: 2 },
-      'moderate': { min: 2, max: 3 },
-      'upscale': { min: 2, max: 4 },      // Include moderate+ (many upscale places show as 2)
-      'fine_dining': { min: 3, max: 4 }   // Include 3+ for fine dining
+    // These define MINIMUM acceptable price levels for filtering
+    const priceLevelMinMap: Record<string, number> = {
+      'budget': 1,      // $-$$ acceptable
+      'moderate': 2,    // $$ and up
+      'upscale': 3,     // $$$ and up only
+      'fine_dining': 3  // $$$ and $$$$ only (we'll prioritize $$$$ in sorting)
     };
     
-    // Only apply price filter if explicitly budget, otherwise get all and sort by quality
+    // Max prices for API query (relaxed to get more results)
+    const priceQueryMap: Record<string, { min: number; max: number }> = {
+      'budget': { min: 1, max: 2 },
+      'moderate': { min: 2, max: 3 },
+      'upscale': { min: 2, max: 4 },      // Query wider, filter strictly after
+      'fine_dining': { min: 3, max: 4 }   // Query 3+, filter strictly after
+    };
+    
+    // Get minimum acceptable price for post-filtering
+    const minAcceptablePrice = options.priceLevel ? priceLevelMinMap[options.priceLevel] : null;
+    
+    // Only apply API-level price filter for budget (to limit results)
     const priceRange = (options.priceLevel === 'budget') 
-      ? priceLevelMap['budget'] 
-      : null;  // Don't restrict upscale/fine_dining at API level - filter after
+      ? priceQueryMap['budget'] 
+      : (options.priceLevel === 'fine_dining' || options.priceLevel === 'upscale')
+        ? priceQueryMap[options.priceLevel]
+        : null;
     
     // Build keyword based on venue type
     let enhancedKeyword: string;
@@ -150,7 +163,7 @@ export const googlePlacesProvider: PlacesProvider = {
       }
         
       if (options.priceLevel === 'fine_dining') {
-        enhancedKeyword = `luxury ${enhancedKeyword} fine dining michelin tasting menu`;
+        enhancedKeyword = `luxury ${enhancedKeyword} fine dining michelin tasting menu steakhouse upscale`;
       } else if (options.priceLevel === 'upscale') {
         enhancedKeyword = `upscale ${enhancedKeyword} fine dining elegant`;
       } else if (options.priceLevel === 'budget') {
@@ -235,10 +248,24 @@ export const googlePlacesProvider: PlacesProvider = {
             return false;
           }
           
-          // Apply price filtering
-          if (!priceRange) return true;
-          const placePrice = place.price_level || 2;
-          return placePrice >= priceRange.min && placePrice <= priceRange.max;
+          // === STRICT PRICE LEVEL FILTERING ===
+          // For upscale/fine_dining, ENFORCE minimum price level
+          const placePrice = place.price_level;
+          
+          if (minAcceptablePrice !== null) {
+            // If place has no price info, exclude for fine_dining/upscale (too risky)
+            if (placePrice === undefined || placePrice === null) {
+              if (options.priceLevel === 'fine_dining' || options.priceLevel === 'upscale') {
+                console.log(`💰 Google: Filtering out "${name}" - no price data for ${options.priceLevel} search`);
+                return false;
+              }
+            } else if (placePrice < minAcceptablePrice) {
+              console.log(`💰 Google: Filtering out "${name}" - price level ${placePrice} < required ${minAcceptablePrice} for ${options.priceLevel}`);
+              return false;
+            }
+          }
+          
+          return true;
         }
       })
       .map((place: any): ProviderPlace => {

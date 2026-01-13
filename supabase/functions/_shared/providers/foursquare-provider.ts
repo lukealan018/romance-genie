@@ -116,11 +116,21 @@ export const foursquarePlacesProvider: PlacesProvider = {
       console.log(`🟦 Foursquare: Searching "${isCoffeeSearch ? 'coffee' : options.cuisine || 'restaurant'}" with category ${categoryId}`);
       
       // Map price level to Foursquare's 1-4 scale (skip for coffee)
+      // Define minimum acceptable price for strict filtering
+      const priceLevelMinMap: Record<string, number> = {
+        'budget': 1,
+        'moderate': 2,
+        'upscale': 3,
+        'fine_dining': 3
+      };
+      const minAcceptablePrice = options.priceLevel ? priceLevelMinMap[options.priceLevel] : null;
+      
       if (options.priceLevel && !isCoffeeSearch) {
         const priceMap: Record<string, string> = {
-          'budget': '1',
-          'moderate': '2',
-          'upscale': '3,4'
+          'budget': '1,2',
+          'moderate': '2,3',
+          'upscale': '3,4',
+          'fine_dining': '3,4'
         };
         const foursquarePrice = priceMap[options.priceLevel];
         if (foursquarePrice) {
@@ -256,6 +266,22 @@ export const foursquarePlacesProvider: PlacesProvider = {
           if (place.reviewCount === 0) {
             console.log(`🟦 Foursquare: Filtering out 0-review venue "${place.name}" - unverified ghost entry`);
             return false;
+          }
+          
+          // === STRICT PRICE LEVEL FILTERING ===
+          if (minAcceptablePrice !== null && !isCoffeeSearch) {
+            const placePrice = place.priceLevel;
+            
+            // If place has no price info, exclude for fine_dining/upscale (too risky)
+            if (placePrice === undefined || placePrice === null) {
+              if (options.priceLevel === 'fine_dining' || options.priceLevel === 'upscale') {
+                console.log(`💰 Foursquare: Filtering out "${place.name}" - no price data for ${options.priceLevel} search`);
+                return false;
+              }
+            } else if (placePrice < minAcceptablePrice) {
+              console.log(`💰 Foursquare: Filtering out "${place.name}" - price level ${placePrice} < required ${minAcceptablePrice} for ${options.priceLevel}`);
+              return false;
+            }
           }
           
           return true;
