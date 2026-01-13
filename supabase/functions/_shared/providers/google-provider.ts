@@ -114,7 +114,8 @@ export const googlePlacesProvider: PlacesProvider = {
     }
     
     const isCoffeeSearch = options.venueType === 'coffee';
-    console.log(`🌍 Google provider: Searching ${isCoffeeSearch ? 'coffee shops' : 'restaurants'}`);
+    const isBrunchSearch = options.venueType === 'brunch';
+    console.log(`🌍 Google provider: Searching ${isCoffeeSearch ? 'coffee shops' : isBrunchSearch ? 'brunch spots' : 'restaurants'}`);
     
     // Map price level to Google's scale (1-4)
     // These define MINIMUM acceptable price levels for filtering
@@ -151,6 +152,10 @@ export const googlePlacesProvider: PlacesProvider = {
       // Coffee-specific search
       enhancedKeyword = 'coffee shop';
       searchType = 'cafe';
+    } else if (isBrunchSearch) {
+      // Brunch-specific search
+      enhancedKeyword = 'brunch breakfast restaurant';
+      searchType = 'restaurant';
     } else {
       // Regular restaurant search
       enhancedKeyword = options.cuisine === 'restaurant' || !options.cuisine 

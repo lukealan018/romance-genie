@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export type SearchMode = "both" | "restaurant_only" | "activity_only";
-export type VenueType = "any" | "coffee";
+export type VenueType = "any" | "coffee" | "brunch";
 
 interface Place {
   id: string;

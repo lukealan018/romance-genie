@@ -1,4 +1,4 @@
-import { Loader2, Coffee } from "lucide-react";
+import { Loader2, Coffee, Egg } from "lucide-react";
 import { CuisinePicker } from "@/components/CuisinePicker";
 import { PriceLevelPicker } from "@/components/PriceLevelPicker";
 import { ActivityPicker } from "@/components/ActivityPicker";
@@ -59,8 +59,8 @@ export const ManualFilters = ({
     <div className="space-y-6 mt-6">
       {(searchMode === 'both' || searchMode === 'restaurant_only') && (
         <>
-          {/* Coffee Shop Toggle */}
-          <div className="flex items-center gap-3">
+          {/* Quick Search Presets: Coffee & Brunch */}
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => onVenueTypeChange(venueType === 'coffee' ? 'any' : 'coffee')}
               className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
@@ -70,14 +70,28 @@ export const ManualFilters = ({
               }`}
             >
               <Coffee className="w-4 h-4" />
-              <span className="text-sm font-medium">Coffee Shops</span>
+              <span className="text-sm font-medium">Coffee</span>
+            </button>
+            <button
+              onClick={() => onVenueTypeChange(venueType === 'brunch' ? 'any' : 'brunch')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
+                venueType === 'brunch'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-card border border-border text-muted-foreground hover:border-primary/50'
+              }`}
+            >
+              <Egg className="w-4 h-4" />
+              <span className="text-sm font-medium">Brunch</span>
             </button>
             {venueType === 'coffee' && (
               <span className="text-xs text-muted-foreground">Showing coffee shops only</span>
             )}
+            {venueType === 'brunch' && (
+              <span className="text-xs text-muted-foreground">Showing brunch spots only</span>
+            )}
           </div>
           
-          {venueType !== 'coffee' && (
+          {venueType !== 'coffee' && venueType !== 'brunch' && (
             <>
               <PriceLevelPicker
                 selected={priceLevel}
