@@ -133,26 +133,19 @@ export const foursquarePlacesProvider: PlacesProvider = {
       console.log(`🟦 Foursquare: Searching "${isCoffeeSearch ? 'coffee' : isBrunchSearch ? 'brunch' : options.cuisine || 'restaurant'}" with category ${categoryId}`);
       
       // Map price level to Foursquare's 1-4 scale (skip for coffee/brunch)
-      // Define minimum acceptable price for strict filtering
-      const priceLevelMinMap: Record<string, number> = {
+      // RELAXED minimum - don't be too strict, high-end places often lack price data
+      const priceLevelRelaxedMin: Record<string, number> = {
         'budget': 1,
         'moderate': 2,
-        'upscale': 3,
-        'fine_dining': 3
+        'upscale': 2,     // Relaxed from 3 - many upscale places show as $$
+        'fine_dining': 2  // Relaxed from 3 - let sorting handle it
       };
-      const minAcceptablePrice = options.priceLevel ? priceLevelMinMap[options.priceLevel] : null;
+      const relaxedMinPrice = options.priceLevel ? priceLevelRelaxedMin[options.priceLevel] : null;
       
-      if (options.priceLevel && !isCoffeeSearch && !isBrunchSearch) {
-        const priceMap: Record<string, string> = {
-          'budget': '1,2',
-          'moderate': '2,3',
-          'upscale': '3,4',
-          'fine_dining': '3,4'
-        };
-        const foursquarePrice = priceMap[options.priceLevel];
-        if (foursquarePrice) {
-          fsUrl.searchParams.set('price', foursquarePrice);
-        }
+      // For upscale/fine_dining, DON'T use API price filter - it misses venues
+      // Only use price filter for budget searches
+      if (options.priceLevel === 'budget' && !isCoffeeSearch && !isBrunchSearch) {
+        fsUrl.searchParams.set('price', '1,2');
       }
       
       // Make API request with Bearer token format for Service API Key
@@ -285,20 +278,18 @@ export const foursquarePlacesProvider: PlacesProvider = {
             return false;
           }
           
-          // === STRICT PRICE LEVEL FILTERING ===
-          if (minAcceptablePrice !== null && !isCoffeeSearch) {
+          // === RELAXED PRICE LEVEL FILTERING ===
+          // For upscale/fine_dining: DON'T exclude venues without price data
+          // Many high-end restaurants don't have price data in Foursquare
+          if (relaxedMinPrice !== null && !isCoffeeSearch && !isBrunchSearch) {
             const placePrice = place.priceLevel;
             
-            // If place has no price info, exclude for fine_dining/upscale (too risky)
-            if (placePrice === undefined || placePrice === null) {
-              if (options.priceLevel === 'fine_dining' || options.priceLevel === 'upscale') {
-                console.log(`💰 Foursquare: Filtering out "${place.name}" - no price data for ${options.priceLevel} search`);
-                return false;
-              }
-            } else if (placePrice < minAcceptablePrice) {
-              console.log(`💰 Foursquare: Filtering out "${place.name}" - price level ${placePrice} < required ${minAcceptablePrice} for ${options.priceLevel}`);
+            // ONLY filter out venues that HAVE price data and are definitely too cheap
+            if (placePrice !== undefined && placePrice !== null && placePrice < relaxedMinPrice) {
+              console.log(`💰 Foursquare: Filtering out "${place.name}" - price level ${placePrice} < relaxed min ${relaxedMinPrice} for ${options.priceLevel}`);
               return false;
             }
+            // Venues without price data are KEPT - sorting will prioritize those with high prices
           }
           
           return true;
