@@ -448,15 +448,38 @@ export const usePlanStore = create<PlanState>((set, get) => ({
   }),
   
   // Exclusion management for fresh results
-  addToExcludePlaceIds: (ids) => set((state) => ({
-    excludePlaceIds: [...new Set([...state.excludePlaceIds, ...ids])],
-    lastExclusionTimestamp: Date.now()
-  })),
+  // Max exclusions before auto-cycling (prevents excluding everything)
+  addToExcludePlaceIds: (ids) => set((state) => {
+    const MAX_EXCLUSIONS = 20; // After seeing ~20 places, start cycling
+    let newExclusions = [...new Set([...state.excludePlaceIds, ...ids])];
+    
+    // If we've excluded too many, keep only the most recent ones
+    if (newExclusions.length > MAX_EXCLUSIONS) {
+      console.log(`🔄 Exclusion limit reached (${newExclusions.length}), cycling - keeping last ${MAX_EXCLUSIONS}`);
+      newExclusions = newExclusions.slice(-MAX_EXCLUSIONS);
+    }
+    
+    return {
+      excludePlaceIds: newExclusions,
+      lastExclusionTimestamp: Date.now()
+    };
+  }),
   
-  addToExcludeActivityIds: (ids) => set((state) => ({
-    excludeActivityIds: [...new Set([...state.excludeActivityIds, ...ids])],
-    lastExclusionTimestamp: Date.now()
-  })),
+  addToExcludeActivityIds: (ids) => set((state) => {
+    const MAX_EXCLUSIONS = 15; // Activities typically have fewer options
+    let newExclusions = [...new Set([...state.excludeActivityIds, ...ids])];
+    
+    // If we've excluded too many, keep only the most recent ones
+    if (newExclusions.length > MAX_EXCLUSIONS) {
+      console.log(`🔄 Activity exclusion limit reached (${newExclusions.length}), cycling - keeping last ${MAX_EXCLUSIONS}`);
+      newExclusions = newExclusions.slice(-MAX_EXCLUSIONS);
+    }
+    
+    return {
+      excludeActivityIds: newExclusions,
+      lastExclusionTimestamp: Date.now()
+    };
+  }),
   
   clearExclusions: () => set({
     excludePlaceIds: [],
@@ -467,10 +490,10 @@ export const usePlanStore = create<PlanState>((set, get) => ({
   
   getExcludePlaceIds: () => {
     const state = get();
-    // Auto-expire exclusions after 30 minutes of inactivity
-    const EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
+    // Auto-expire exclusions after 10 minutes of inactivity (shorter for better cycling)
+    const EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
     if (state.lastExclusionTimestamp && (Date.now() - state.lastExclusionTimestamp > EXPIRY_MS)) {
-      console.log('⏰ Exclusions expired after 30 min inactivity, clearing');
+      console.log('⏰ Exclusions expired after 10 min inactivity, clearing for fresh shuffle');
       get().clearExclusions();
       return [];
     }
@@ -478,10 +501,10 @@ export const usePlanStore = create<PlanState>((set, get) => ({
   },
   getExcludeActivityIds: () => {
     const state = get();
-    // Auto-expire exclusions after 30 minutes of inactivity
-    const EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
+    // Auto-expire exclusions after 10 minutes of inactivity
+    const EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
     if (state.lastExclusionTimestamp && (Date.now() - state.lastExclusionTimestamp > EXPIRY_MS)) {
-      console.log('⏰ Exclusions expired after 30 min inactivity, clearing');
+      console.log('⏰ Exclusions expired after 10 min inactivity, clearing for fresh shuffle');
       get().clearExclusions();
       return [];
     }
