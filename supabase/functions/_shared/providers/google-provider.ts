@@ -167,11 +167,14 @@ export const googlePlacesProvider: PlacesProvider = {
         enhancedKeyword = 'italian restaurant trattoria osteria ristorante -pizza -pizzeria';
       }
         
-      // ENHANCED LUXURY KEYWORDS - More specific terms that Google understands
+      // ENHANCED LUXURY KEYWORDS - Comprehensive high-end restaurant terms
+      // Primary search uses strongest signals, fallback uses alternative terms
       if (options.priceLevel === 'fine_dining') {
-        enhancedKeyword = `upscale ${enhancedKeyword} fine dining tasting menu chef's table prix fixe`;
+        // Primary: Michelin + tasting menu focused
+        enhancedKeyword = `${enhancedKeyword} Michelin star fine dining tasting menu chef's table gourmet culinary experience award winning`;
       } else if (options.priceLevel === 'upscale') {
-        enhancedKeyword = `upscale ${enhancedKeyword} upscale elegant sophisticated`;
+        // Upscale: Elegant + refined + prix fixe
+        enhancedKeyword = `${enhancedKeyword} upscale elegant refined prix fixe signature menu sophisticated gourmet`;
       } else if (options.priceLevel === 'budget') {
         enhancedKeyword = `affordable ${enhancedKeyword}`;
       } else if (!options.priceLevel) {
