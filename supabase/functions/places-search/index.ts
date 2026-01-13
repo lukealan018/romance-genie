@@ -116,7 +116,7 @@ serve(async (req) => {
 
   try {
     // Parse request parameters
-    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean, venueType: 'any' | 'coffee', searchTime: string | undefined, surpriseMe: boolean, excludePlaceIds: string[], debug: boolean;
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean, venueType: 'any' | 'coffee' | 'brunch', searchTime: string | undefined, surpriseMe: boolean, excludePlaceIds: string[], debug: boolean;
 
     if (req.method === 'POST') {
       const body = await req.json();
@@ -130,7 +130,7 @@ serve(async (req) => {
       noveltyMode = validateNoveltyMode(body.noveltyMode);
       seed = body.seed !== undefined ? validateNumber(body.seed) : undefined;
       forceFresh = body.forceFresh === true;
-      venueType = body.venueType === 'coffee' ? 'coffee' : 'any';
+      venueType = body.venueType === 'coffee' ? 'coffee' : body.venueType === 'brunch' ? 'brunch' : 'any';
       searchTime = validateString(body.searchTime, 20) || undefined;
       surpriseMe = body.surpriseMe === true;
       excludePlaceIds = Array.isArray(body.excludePlaceIds) 
@@ -148,7 +148,7 @@ serve(async (req) => {
       noveltyMode = validateNoveltyMode(url.searchParams.get('noveltyMode'));
       seed = url.searchParams.get('seed') ? validateNumber(url.searchParams.get('seed')) : undefined;
       forceFresh = url.searchParams.get('forceFresh') === 'true';
-      venueType = url.searchParams.get('venueType') === 'coffee' ? 'coffee' : 'any';
+      venueType = url.searchParams.get('venueType') === 'coffee' ? 'coffee' : url.searchParams.get('venueType') === 'brunch' ? 'brunch' : 'any';
       searchTime = validateString(url.searchParams.get('searchTime'), 20) || undefined;
       surpriseMe = url.searchParams.get('surpriseMe') === 'true';
       excludePlaceIds = [];
@@ -195,8 +195,8 @@ serve(async (req) => {
       lat,
       lng,
       radiusMeters,
-      cuisine: venueType === 'coffee' ? '' : cuisine, // Ignore cuisine for coffee search
-      priceLevel: venueType === 'coffee' ? undefined : priceLevel, // Ignore price for coffee
+      cuisine: (venueType === 'coffee' || venueType === 'brunch') ? '' : cuisine, // Ignore cuisine for coffee/brunch search
+      priceLevel: (venueType === 'coffee' || venueType === 'brunch') ? undefined : priceLevel, // Ignore price for coffee/brunch
       targetCity,
       noveltyMode,
       limit: 50,

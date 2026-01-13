@@ -33,9 +33,21 @@ const COFFEE_CATEGORY_IDS = [
   '13036', // Tea Room (some overlap)
 ];
 
+// Brunch-specific Foursquare category IDs
+const BRUNCH_CATEGORY_IDS = [
+  '13065', // Restaurant (general)
+  '13027', // Breakfast Spot
+  '13028', // Brunch Restaurant
+  '13035', // Café (often serves brunch)
+  '13064', // American Restaurant (many brunch spots)
+];
+
 // Coffee shop name patterns for Foursquare filtering
 const FOURSQUARE_COFFEE_PATTERNS = /coffee|café|cafe|espresso|roasters|roastery|java|brew|roast|grind|bean|drip|latte|coffeehouse/i;
 const FOURSQUARE_COFFEE_EXCLUSIONS = /boba|bubble|milk tea|tapioca|tea shop|tea house|starbucks|dunkin|peet's|caribou|tim horton|mccafe/i;
+
+// Brunch name patterns for Foursquare filtering
+const FOURSQUARE_BRUNCH_PATTERNS = /brunch|breakfast|pancake|waffle|eggs|benedict|mimosa|bloody mary|morning|diner/i;
 
 // Helper: Get Foursquare category ID for cuisine
 function getCuisineCategory(cuisine?: string): string {
@@ -88,21 +100,26 @@ export const foursquarePlacesProvider: PlacesProvider = {
     }
     
     const isCoffeeSearch = options.venueType === 'coffee';
+    const isBrunchSearch = options.venueType === 'brunch';
     
     try {
-      console.log(`🟦 Foursquare provider: Searching ${isCoffeeSearch ? 'coffee shops' : 'restaurants'} near ${options.lat},${options.lng} radius ${options.radiusMeters}m`);
+      console.log(`🟦 Foursquare provider: Searching ${isCoffeeSearch ? 'coffee shops' : isBrunchSearch ? 'brunch spots' : 'restaurants'} near ${options.lat},${options.lng} radius ${options.radiusMeters}m`);
       
       // Build Foursquare Places API search URL (new endpoint)
       const fsUrl = new URL('https://places-api.foursquare.com/places/search');
       fsUrl.searchParams.set('ll', `${options.lat},${options.lng}`);
       fsUrl.searchParams.set('radius', options.radiusMeters.toString());
       
-      // Add category ID for cuisine type (or coffee categories)
+      // Add category ID for cuisine type (or coffee/brunch categories)
       let categoryId: string;
       if (isCoffeeSearch) {
         categoryId = COFFEE_CATEGORY_IDS.join(',');
         fsUrl.searchParams.set('query', 'coffee');
         console.log(`☕ Foursquare: Coffee search with categories ${categoryId}`);
+      } else if (isBrunchSearch) {
+        categoryId = BRUNCH_CATEGORY_IDS.join(',');
+        fsUrl.searchParams.set('query', 'brunch breakfast');
+        console.log(`🍳 Foursquare: Brunch search with categories ${categoryId}`);
       } else {
         categoryId = getCuisineCategory(options.cuisine);
         // Add cuisine-specific query if provided for additional precision
@@ -113,9 +130,9 @@ export const foursquarePlacesProvider: PlacesProvider = {
       fsUrl.searchParams.set('categories', categoryId);
       fsUrl.searchParams.set('limit', '50');
       
-      console.log(`🟦 Foursquare: Searching "${isCoffeeSearch ? 'coffee' : options.cuisine || 'restaurant'}" with category ${categoryId}`);
+      console.log(`🟦 Foursquare: Searching "${isCoffeeSearch ? 'coffee' : isBrunchSearch ? 'brunch' : options.cuisine || 'restaurant'}" with category ${categoryId}`);
       
-      // Map price level to Foursquare's 1-4 scale (skip for coffee)
+      // Map price level to Foursquare's 1-4 scale (skip for coffee/brunch)
       // Define minimum acceptable price for strict filtering
       const priceLevelMinMap: Record<string, number> = {
         'budget': 1,
@@ -125,7 +142,7 @@ export const foursquarePlacesProvider: PlacesProvider = {
       };
       const minAcceptablePrice = options.priceLevel ? priceLevelMinMap[options.priceLevel] : null;
       
-      if (options.priceLevel && !isCoffeeSearch) {
+      if (options.priceLevel && !isCoffeeSearch && !isBrunchSearch) {
         const priceMap: Record<string, string> = {
           'budget': '1,2',
           'moderate': '2,3',
