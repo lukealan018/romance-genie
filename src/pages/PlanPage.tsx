@@ -352,18 +352,8 @@ const PlanPage = () => {
     }
   };
 
-  if (!plan) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading your plan...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Handle back navigation - add current places to exclusions
+  // MUST be defined before any conditional returns (React hooks rule)
   const handleBackToHome = useCallback(() => {
     // Add currently displayed places to exclusions so they won't reappear
     const currentRestaurant = restaurantResults[restaurantIndex];
@@ -380,6 +370,17 @@ const PlanPage = () => {
     
     navigate('/');
   }, [restaurantResults, activityResults, restaurantIndex, activityIndex, addToExcludePlaceIds, addToExcludeActivityIds, navigate]);
+
+  if (!plan) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading your plan...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
