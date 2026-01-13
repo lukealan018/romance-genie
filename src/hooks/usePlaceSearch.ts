@@ -222,6 +222,7 @@ export const usePlaceSearch = (
     });
 
     // Check if we can use cached results (unless forceFresh OR userTriggered)
+    // NOTE: userTriggered means the user clicked "See Tonight's Plan" again - they want fresh results!
     // Read signature fresh from store to avoid stale closure
     if (!forceFresh && !userTriggered && currentSignature === freshSignature) {
       console.log('🔄 Same search signature, using cached results');
@@ -245,6 +246,12 @@ export const usePlaceSearch = (
         setPlan(cachedPlan);
         return;
       }
+    }
+    
+    // When user triggers search again (same params), force fresh results with new shuffle
+    const shouldForceNewShuffle = userTriggered && currentSignature === freshSignature;
+    if (shouldForceNewShuffle) {
+      console.log('🔀 User triggered re-search - forcing new shuffle for variety');
     }
 
     // Clear results for fresh search
@@ -928,14 +935,25 @@ export const usePlaceSearch = (
     // Check if signature changed (using fresh value from store)
     const needsFreshSearch = currentSignature !== freshSignature;
     
+    // Check if we have any results cached
+    const currentRestaurants = getCurrentRestaurants();
+    const currentActivities = getCurrentActivities();
+    const hasResults = currentRestaurants.length > 0 || currentActivities.length > 0;
+    
     console.log('🔍 [handleSeePlan] Signature check:', {
       currentSignature,
       lastSignature: freshSignature,
-      needsFreshSearch
+      needsFreshSearch,
+      hasResults
     });
 
     if (needsFreshSearch) {
-      // Always pass userTriggered=true for explicit user actions
+      // New search parameters - fetch fresh
+      await handleFindPlaces(undefined, undefined, false, true);
+    } else if (hasResults) {
+      // Same parameters but user clicked again - re-fetch for variety
+      // userTriggered=true forces new shuffle even with same signature
+      console.log('🔀 Same search params but user wants new results - forcing fresh shuffle');
       await handleFindPlaces(undefined, undefined, false, true);
     }
     
