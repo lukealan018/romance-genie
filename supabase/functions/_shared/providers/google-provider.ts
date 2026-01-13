@@ -118,31 +118,31 @@ export const googlePlacesProvider: PlacesProvider = {
     console.log(`🌍 Google provider: Searching ${isCoffeeSearch ? 'coffee shops' : isBrunchSearch ? 'brunch spots' : 'restaurants'}`);
     
     // Map price level to Google's scale (1-4)
-    // These define MINIMUM acceptable price levels for filtering
-    const priceLevelMinMap: Record<string, number> = {
-      'budget': 1,      // $-$$ acceptable
-      'moderate': 2,    // $$ and up
-      'upscale': 3,     // $$$ and up only
-      'fine_dining': 3  // $$$ and $$$$ only (we'll prioritize $$$$ in sorting)
+    // For strict filtering (when we have price data) - but DON'T exclude missing data
+    const priceLevelStrictMin: Record<string, number> = {
+      'budget': 1,      // Only $ acceptable with strict filter
+      'moderate': 2,    // $$ strict minimum
+      'upscale': 3,     // $$$ strict minimum
+      'fine_dining': 4  // $$$$ strict minimum
     };
     
-    // Max prices for API query (relaxed to get more results)
-    const priceQueryMap: Record<string, { min: number; max: number }> = {
-      'budget': { min: 1, max: 2 },
-      'moderate': { min: 2, max: 3 },
-      'upscale': { min: 2, max: 4 },      // Query wider, filter strictly after
-      'fine_dining': { min: 3, max: 4 }   // Query 3+, filter strictly after
+    // For relaxed filtering - keeps more results when data is sparse
+    const priceLevelRelaxedMin: Record<string, number> = {
+      'budget': 1,
+      'moderate': 2,
+      'upscale': 2,     // Relax to $$ as minimum, boost $$$ in sorting
+      'fine_dining': 3  // Relax to $$$ as minimum, boost $$$$ in sorting
     };
     
-    // Get minimum acceptable price for post-filtering
-    const minAcceptablePrice = options.priceLevel ? priceLevelMinMap[options.priceLevel] : null;
+    // Get minimum acceptable prices for filtering
+    const strictMinPrice = options.priceLevel ? priceLevelStrictMin[options.priceLevel] : null;
+    const relaxedMinPrice = options.priceLevel ? priceLevelRelaxedMin[options.priceLevel] : null;
     
     // Only apply API-level price filter for budget (to limit results)
+    // For upscale/fine_dining, use keywords instead - more reliable
     const priceRange = (options.priceLevel === 'budget') 
-      ? priceQueryMap['budget'] 
-      : (options.priceLevel === 'fine_dining' || options.priceLevel === 'upscale')
-        ? priceQueryMap[options.priceLevel]
-        : null;
+      ? { min: 1, max: 2 } 
+      : null; // Don't use API price filter for upscale - it misses too many venues
     
     // Build keyword based on venue type
     let enhancedKeyword: string;
@@ -167,10 +167,11 @@ export const googlePlacesProvider: PlacesProvider = {
         enhancedKeyword = 'italian restaurant trattoria osteria ristorante -pizza -pizzeria';
       }
         
+      // ENHANCED LUXURY KEYWORDS - More specific terms that Google understands
       if (options.priceLevel === 'fine_dining') {
-        enhancedKeyword = `luxury ${enhancedKeyword} fine dining michelin tasting menu steakhouse upscale`;
+        enhancedKeyword = `upscale ${enhancedKeyword} fine dining tasting menu chef's table prix fixe`;
       } else if (options.priceLevel === 'upscale') {
-        enhancedKeyword = `upscale ${enhancedKeyword} fine dining elegant`;
+        enhancedKeyword = `upscale ${enhancedKeyword} upscale elegant sophisticated`;
       } else if (options.priceLevel === 'budget') {
         enhancedKeyword = `affordable ${enhancedKeyword}`;
       } else if (!options.priceLevel) {
@@ -253,21 +254,18 @@ export const googlePlacesProvider: PlacesProvider = {
             return false;
           }
           
-          // === STRICT PRICE LEVEL FILTERING ===
-          // For upscale/fine_dining, ENFORCE minimum price level
+          // === RELAXED PRICE LEVEL FILTERING ===
+          // For upscale/fine_dining: DON'T exclude venues without price data
+          // Many high-end restaurants don't have price_level set in Google
           const placePrice = place.price_level;
           
-          if (minAcceptablePrice !== null) {
-            // If place has no price info, exclude for fine_dining/upscale (too risky)
-            if (placePrice === undefined || placePrice === null) {
-              if (options.priceLevel === 'fine_dining' || options.priceLevel === 'upscale') {
-                console.log(`💰 Google: Filtering out "${name}" - no price data for ${options.priceLevel} search`);
-                return false;
-              }
-            } else if (placePrice < minAcceptablePrice) {
-              console.log(`💰 Google: Filtering out "${name}" - price level ${placePrice} < required ${minAcceptablePrice} for ${options.priceLevel}`);
+          if (relaxedMinPrice !== null) {
+            // ONLY filter out venues that HAVE price data and are too cheap
+            if (placePrice !== undefined && placePrice !== null && placePrice < relaxedMinPrice) {
+              console.log(`💰 Google: Filtering out "${name}" - price level ${placePrice} < relaxed min ${relaxedMinPrice} for ${options.priceLevel}`);
               return false;
             }
+            // Venues without price data are KEPT - they'll be sorted later
           }
           
           return true;
