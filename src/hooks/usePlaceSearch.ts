@@ -1119,7 +1119,19 @@ export const usePlaceSearch = (
       if (activitiesResponse.error) throw activitiesResponse.error;
 
       const restaurants = restaurantsResponse.data?.items || [];
-      const activities = activitiesResponse.data?.items || [];
+      let activities = activitiesResponse.data?.items || [];
+      
+      // === LIVE EVENTS ONLY: Handle empty results gracefully ===
+      if (liveEventsOnly && activities.length === 0) {
+        toast({
+          title: "No live events found",
+          description: "Try again without the Live Events filter, or check back later for upcoming shows.",
+          variant: "destructive",
+          duration: 5000,
+        });
+        setLoading(false);
+        return; // Don't navigate - stay on current page
+      }
       
       // SURPRISE ME: Score with learned prefs for boost only, NOT profile preferences
       const sortedRestaurants = scorePlaces(
