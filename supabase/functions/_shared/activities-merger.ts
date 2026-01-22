@@ -70,6 +70,6 @@ export function mergeAndDedupeActivities(resultArrays: ProviderActivity[][]): Pr
   
   console.log(`✅ Deduped to ${unique.length} unique activities`);
   
-  // Sort by rating descending (highest first)
-  return unique.sort((a, b) => b.rating - a.rating);
+  // Return without sorting - let search function handle final order based on intent
+  return unique;
 }

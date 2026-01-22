@@ -967,7 +967,8 @@ export const usePlaceSearch = (
   };
 
   // SURPRISE ME: Completely ignores profile preferences - pure random discovery
-  const handleSurpriseMe = async () => {
+  const handleSurpriseMe = async (options?: { liveEventsOnly?: boolean }) => {
+    const liveEventsOnly = options?.liveEventsOnly ?? false;
     // ALWAYS clear results for Surprise Me - fresh experience
     clearAllResults();
     
@@ -1103,7 +1104,8 @@ export const usePlaceSearch = (
               seed: randomSeed,
               forceFresh: true,
               voiceTriggered: true,  // Signal this bypasses profile
-              surpriseMe: true       // Signal to skip random shuffle, keep top gems
+              surpriseMe: true,      // Signal to skip random shuffle, keep top gems
+              liveEventsOnly        // Pass Live Events toggle state
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });

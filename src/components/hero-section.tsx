@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, Sparkles, ChevronDown, Loader2 } from "lucide-react";
+import { Mic, Sparkles, ChevronDown, Loader2, Ticket } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface HeroSectionProps {
@@ -8,12 +9,108 @@ interface HeroSectionProps {
   loading: boolean;
   isListening?: boolean;
   onVoiceInput: () => void;
-  onSurpriseMe: () => void;
+  onSurpriseMe: (options?: { liveEventsOnly?: boolean }) => void;
   onTogglePickers: () => void;
   showPickers: boolean;
   searchMode: "both" | "restaurant_only" | "activity_only";
   children?: React.ReactNode;
 }
+
+// Surprise Me button with optional Live Events toggle
+const SurpriseMeButton = ({
+  loading,
+  searchMode,
+  onSurpriseMe
+}: {
+  loading: boolean;
+  searchMode: "both" | "restaurant_only" | "activity_only";
+  onSurpriseMe: (options?: { liveEventsOnly?: boolean }) => void;
+}) => {
+  const [liveEventsMode, setLiveEventsMode] = useState(false);
+  const showLiveEventsToggle = searchMode === 'activity_only';
+
+  const handleClick = () => {
+    onSurpriseMe({ liveEventsOnly: showLiveEventsToggle && liveEventsMode });
+  };
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLiveEventsMode(!liveEventsMode);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.8 }}
+      className="relative inline-flex items-center gap-2"
+    >
+      {/* Button glow underneath */}
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `radial-gradient(ellipse 80% 60% at 50% 100%, rgba(var(--theme-accent-rgb),0.10) 0%, transparent 70%)`,
+          filter: 'blur(18px)',
+          transform: 'translateY(6px)',
+        }}
+      />
+      <button
+        onClick={handleClick}
+        disabled={loading}
+        className="relative inline-flex items-center justify-center gap-2 font-medium py-2.5 px-5 rounded-[12px] transition-all duration-200 disabled:opacity-50"
+        style={{
+          background: 'var(--btn-secondary-bg)',
+          border: `1.5px solid var(--btn-secondary-border)`,
+          color: 'var(--btn-secondary-text)',
+          boxShadow: 'var(--btn-secondary-glow)',
+        }}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" style={{ color: '#60A5FA' }} />
+            <span>Finding magic...</span>
+          </>
+        ) : (
+          <>
+            <Sparkles className="h-5 w-5" style={{ color: '#FFFFFF', filter: 'drop-shadow(0 0 5px rgba(96, 165, 250, 0.9))' }} strokeWidth={2} />
+            <span>Surprise Me!</span>
+          </>
+        )}
+      </button>
+      
+      {/* Live Events toggle - only shown in activity_only mode */}
+      {showLiveEventsToggle && !loading && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          onClick={handleToggle}
+          className="relative p-2.5 rounded-[10px] transition-all duration-200"
+          style={{
+            background: liveEventsMode 
+              ? 'linear-gradient(135deg, rgba(251, 146, 60, 0.25) 0%, rgba(234, 88, 12, 0.20) 100%)'
+              : 'rgba(255,255,255,0.06)',
+            border: liveEventsMode 
+              ? '1.5px solid rgba(251, 146, 60, 0.6)'
+              : '1.5px solid rgba(255,255,255,0.10)',
+            boxShadow: liveEventsMode 
+              ? '0 0 16px rgba(251, 146, 60, 0.3)'
+              : 'none',
+          }}
+          title={liveEventsMode ? "Live Events ON - Shows concerts, comedy, theater" : "Live Events OFF - Mixed activities"}
+        >
+          <Ticket 
+            className="h-4 w-4 transition-all duration-200" 
+            style={{ 
+              color: liveEventsMode ? '#fb923c' : 'rgba(255,255,255,0.5)',
+              filter: liveEventsMode ? 'drop-shadow(0 0 6px rgba(251, 146, 60, 0.8))' : 'none'
+            }} 
+            strokeWidth={2} 
+          />
+        </motion.button>
+      )}
+    </motion.div>
+  );
+};
 
 export const HeroSection = ({
   userName,
@@ -257,46 +354,12 @@ export const HeroSection = ({
             </Button>
           </motion.div>
 
-          {/* Secondary CTA - Surprise Me */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="relative inline-block"
-          >
-            {/* Button glow underneath */}
-            <div 
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: `radial-gradient(ellipse 80% 60% at 50% 100%, rgba(var(--theme-accent-rgb),0.10) 0%, transparent 70%)`,
-                filter: 'blur(18px)',
-                transform: 'translateY(6px)',
-              }}
-            />
-            <button
-              onClick={onSurpriseMe}
-              disabled={loading}
-              className="relative inline-flex items-center justify-center gap-2 font-medium py-2.5 px-5 rounded-[12px] transition-all duration-200 disabled:opacity-50"
-              style={{
-                background: 'var(--btn-secondary-bg)',
-                border: `1.5px solid var(--btn-secondary-border)`,
-                color: 'var(--btn-secondary-text)',
-                boxShadow: 'var(--btn-secondary-glow)',
-              }}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" style={{ color: '#60A5FA' }} />
-                  <span>Finding magic...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-5 w-5" style={{ color: '#FFFFFF', filter: 'drop-shadow(0 0 5px rgba(96, 165, 250, 0.9))' }} strokeWidth={2} />
-                  <span>Surprise Me!</span>
-                </>
-              )}
-            </button>
-          </motion.div>
+          {/* Secondary CTA - Surprise Me with Live Events toggle */}
+          <SurpriseMeButton 
+            loading={loading}
+            searchMode={searchMode}
+            onSurpriseMe={onSurpriseMe}
+          />
         </div>
       </motion.div>
 
