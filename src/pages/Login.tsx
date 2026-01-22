@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { Mail, Sparkles, CheckCircle } from 'lucide-react';
+import { Mail, Sparkles, CheckCircle, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 export default function LoginPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [error, setError] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
 
   const handleMagicLink = async () => {
     if (!email) return;
@@ -39,40 +44,125 @@ export default function LoginPage() {
     }
   };
 
+  const handleVerifyOtp = async () => {
+    if (otpCode.length !== 6) return;
+
+    setVerifying(true);
+    setError('');
+
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: 'email',
+      });
+
+      if (error) throw error;
+
+      // Successfully verified - redirect to home
+      navigate('/');
+    } catch (error: any) {
+      setError(error.message || 'Invalid code. Please try again.');
+      setOtpCode('');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setOtpCode('');
+    setError('');
+    await handleMagicLink();
+  };
+
   if (emailSent) {
     return (
       <div className="themed-page-bg min-h-screen flex items-center justify-center p-4">
         <div className="card-glass rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="mb-6">
-            <CheckCircle className="w-20 h-20 mx-auto text-green-500 mb-4" />
-            <h2 className="text-3xl font-bold text-white mb-2">Check Your Email!</h2>
+            <CheckCircle className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--theme-accent)' }} />
+            <h2 className="text-2xl font-bold text-white mb-2">Check Your Email</h2>
             <p className="text-[rgba(255,255,255,0.6)]">
-              We sent a magic link to <span style={{ color: 'var(--theme-accent)' }} className="font-semibold">{email}</span>
+              We sent a 6-digit code to <span style={{ color: 'var(--theme-accent)' }} className="font-semibold">{email}</span>
             </p>
           </div>
 
-          <div 
-            className="rounded-lg p-4 mb-6"
-            style={{ background: 'rgba(255,255,255,0.05)' }}
-          >
-            <p className="text-sm text-[rgba(255,255,255,0.75)] mb-2">
-              Click the link in your email to sign in instantly.
-            </p>
-            <p className="text-xs text-[rgba(255,255,255,0.45)]">
-              The link expires in 60 minutes.
-            </p>
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-[rgba(255,255,255,0.75)] mb-4">
+              Enter your verification code
+            </label>
+            <div className="flex justify-center">
+              <InputOTP
+                maxLength={6}
+                value={otpCode}
+                onChange={(value) => setOtpCode(value)}
+                onComplete={handleVerifyOtp}
+              >
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} className="bg-white/10 border-white/20 text-white" />
+                  <InputOTPSlot index={1} className="bg-white/10 border-white/20 text-white" />
+                  <InputOTPSlot index={2} className="bg-white/10 border-white/20 text-white" />
+                  <InputOTPSlot index={3} className="bg-white/10 border-white/20 text-white" />
+                  <InputOTPSlot index={4} className="bg-white/10 border-white/20 text-white" />
+                  <InputOTPSlot index={5} className="bg-white/10 border-white/20 text-white" />
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
           </div>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 mb-4">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
 
           <button
-            onClick={() => {
-              setEmailSent(false);
-              setEmail('');
-            }}
-            className="text-sm font-medium transition-colors"
-            style={{ color: 'var(--theme-accent)' }}
+            onClick={handleVerifyOtp}
+            disabled={verifying || otpCode.length !== 6}
+            className="btn-theme-primary w-full py-3 rounded-lg font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mb-4"
           >
-            Use a different email
+            {verifying ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Verifying...
+              </>
+            ) : (
+              'Verify & Sign In'
+            )}
           </button>
+
+          <div 
+            className="rounded-lg p-4 mb-4"
+            style={{ background: 'rgba(255,255,255,0.05)' }}
+          >
+            <p className="text-xs text-[rgba(255,255,255,0.45)]">
+              Didn't receive the code? Check your spam folder.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={handleResendCode}
+              disabled={loading}
+              className="text-sm font-medium transition-colors"
+              style={{ color: 'var(--theme-accent)' }}
+            >
+              {loading ? 'Sending...' : 'Resend code'}
+            </button>
+            <span className="text-[rgba(255,255,255,0.3)]">•</span>
+            <button
+              onClick={() => {
+                setEmailSent(false);
+                setEmail('');
+                setOtpCode('');
+                setError('');
+              }}
+              className="text-sm font-medium text-[rgba(255,255,255,0.6)] flex items-center gap-1"
+            >
+              <ArrowLeft className="w-3 h-3" />
+              Different email
+            </button>
+          </div>
         </div>
       </div>
     );
