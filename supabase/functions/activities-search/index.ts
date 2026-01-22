@@ -21,6 +21,50 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ============= INTENT-BASED KEYWORD DETECTION =============
+// Event-heavy keywords (prioritize Ticketmaster)
+const EVENT_KEYWORDS = ['comedy', 'concert', 'theater', 'show', 'live music', 'festival', 'tour', 'stand up', 'tickets', 'performance', 'musical'];
+
+// Venue-heavy keywords (prioritize Google/Foursquare)
+const VENUE_KEYWORDS = ['bar', 'bowling', 'arcade', 'escape room', 'brewery', 'lounge', 'pool hall', 'mini golf', 'speakeasy', 'karaoke', 'wine bar', 'whiskey bar', 'tiki'];
+
+type SearchIntent = 'events' | 'venues' | 'mixed';
+
+function detectSearchIntent(keyword: string): SearchIntent {
+  const lower = keyword.toLowerCase();
+  const isEvent = EVENT_KEYWORDS.some(k => lower.includes(k));
+  const isVenue = VENUE_KEYWORDS.some(k => lower.includes(k));
+  
+  if (isEvent && !isVenue) return 'events';
+  if (isVenue && !isEvent) return 'venues';
+  return 'mixed';
+}
+
+// Round-robin interleave results from different providers
+function interleaveByProvider(items: any[]): any[] {
+  const bySource: Record<string, any[]> = {};
+  items.forEach(item => {
+    const source = item.source || 'google';
+    if (!bySource[source]) bySource[source] = [];
+    bySource[source].push(item);
+  });
+  
+  const result: any[] = [];
+  const sources = Object.keys(bySource);
+  if (sources.length === 0) return result;
+  
+  const maxLen = Math.max(...sources.map(s => bySource[s].length));
+  
+  for (let i = 0; i < maxLen; i++) {
+    for (const source of sources) {
+      if (bySource[source][i]) {
+        result.push(bySource[source][i]);
+      }
+    }
+  }
+  return result;
+}
+
 // Input validation helpers
 function validateString(input: unknown, maxLength: number): string {
   if (input === undefined || input === null) return '';
@@ -81,6 +125,7 @@ serve(async (req) => {
     const seed = body.seed !== undefined ? validateNumber(body.seed) : undefined;
     const forceFresh = body.forceFresh === true;
     const surpriseMe = body.surpriseMe === true;
+    const liveEventsOnly = body.liveEventsOnly === true;
     const debug = body.debug === true;
     const excludePlaceIds = Array.isArray(body.excludePlaceIds) 
       ? body.excludePlaceIds.filter((id: unknown) => typeof id === 'string').slice(0, 100)
@@ -104,8 +149,13 @@ serve(async (req) => {
     console.log('Seed:', seed || 'none');
     console.log('Force Fresh:', forceFresh);
     console.log('Surprise Me:', surpriseMe);
+    console.log('Live Events Only:', liveEventsOnly);
     console.log('Exclude IDs:', excludePlaceIds.length);
     console.log('======================================');
+    
+    // Detect search intent from keyword
+    const searchIntent = detectSearchIntent(keyword);
+    console.log('🎯 Search Intent:', searchIntent);
 
     // If forceFresh, generate a new seed to ensure different results
     let effectiveSeed = seed;
@@ -207,7 +257,7 @@ serve(async (req) => {
     const excludeSet = new Set(excludePlaceIds);
     
     // Apply novelty scoring, sorting, and exclusion filtering
-    const items = activities
+    let items = activities
       .filter((item: any) => {
         // Exclude previously shown activities
         if (excludeSet.has(item.id)) {
@@ -239,44 +289,68 @@ serve(async (req) => {
           isLocalFavorite: isLocalFavorite(placeData)
         };
       })
-      .sort((a: any, b: any) => {
-        // === DATE NIGHT CONCIERGE SORTING ===
-        // 1. First priority: Rating (higher is better)
-        if (Math.abs((a.rating || 0) - (b.rating || 0)) > 0.2) {
-          return (b.rating || 0) - (a.rating || 0);
-        }
-        
-        // 2. Second priority: Date-worthiness score
-        if (Math.abs((a.dateScore || 0) - (b.dateScore || 0)) > 5) {
-          return (b.dateScore || 0) - (a.dateScore || 0);
-        }
-        
-        // 3. Third priority: Uniqueness score
-        if (Math.abs(a.uniquenessScore - b.uniquenessScore) > 0.1) {
-          return b.uniquenessScore - a.uniquenessScore;
-        }
-        
-        // 4. Final tiebreaker: Distance
-        return (a.distance || 0) - (b.distance || 0);
-      });
+      .map((item: any) => item); // Preserve items for intent-based sorting
     
-    // SURPRISE ME MODE: Don't shuffle - keep top hidden gems in score order!
-    // Only shuffle for regular searches (not Surprise Me)
-    if (effectiveSeed !== undefined && !surpriseMe) {
+    // === LIVE EVENTS ONLY MODE ===
+    if (liveEventsOnly) {
+      const beforeFilter = items.length;
+      items = items.filter((item: any) => item.source === 'ticketmaster' || item.source === 'eventbrite');
+      console.log(`🎫 Live Events mode: filtered ${beforeFilter} → ${items.length} (Ticketmaster/Eventbrite only)`);
+    }
+    
+    // === INTENT-BASED SORTING ===
+    if (searchIntent === 'events') {
+      // Event intent: Ticketmaster/Eventbrite first, then venues
+      console.log('🎭 Sorting for EVENT intent: prioritizing Ticketmaster');
+      items.sort((a: any, b: any) => {
+        const aIsEvent = a.source === 'ticketmaster' || a.source === 'eventbrite';
+        const bIsEvent = b.source === 'ticketmaster' || b.source === 'eventbrite';
+        if (aIsEvent && !bIsEvent) return -1;
+        if (!aIsEvent && bIsEvent) return 1;
+        // Within same category, sort by rating
+        return (b.rating || 0) - (a.rating || 0);
+      });
+    } else if (searchIntent === 'venues') {
+      // Venue intent: Google/Foursquare first, then events
+      console.log('🍸 Sorting for VENUE intent: prioritizing Google/Foursquare');
+      items.sort((a: any, b: any) => {
+        const aIsVenue = a.source === 'google' || a.source === 'foursquare';
+        const bIsVenue = b.source === 'google' || b.source === 'foursquare';
+        if (aIsVenue && !bIsVenue) return -1;
+        if (!aIsVenue && bIsVenue) return 1;
+        // Within same category, sort by rating
+        return (b.rating || 0) - (a.rating || 0);
+      });
+    } else {
+      // Mixed intent: Round-robin interleave for variety
+      console.log('🔀 Mixed intent: interleaving providers for variety');
+      // First sort each source by rating, then interleave
+      items.sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0));
+      items = interleaveByProvider(items);
+    }
+    
+    // SURPRISE ME MODE: Don't shuffle - keep in intent-sorted order
+    if (surpriseMe) {
+      console.log(`✨ Surprise Me mode: keeping top ${Math.min(15, items.length)} in intent-sorted order`);
+      items.splice(15);
+    } else if (effectiveSeed !== undefined) {
+      // Regular search with seed: light shuffle while preserving top results
       console.log(`🎲 Shuffling activity results with seed: ${effectiveSeed}`);
       const seededRandom = (s: number) => {
         const x = Math.sin(s) * 10000;
         return x - Math.floor(x);
       };
       
-      for (let i = items.length - 1; i > 0; i--) {
+      // Only shuffle positions 5+ to preserve top picks
+      const top5 = items.slice(0, 5);
+      const rest = items.slice(5);
+      
+      for (let i = rest.length - 1; i > 0; i--) {
         const j = Math.floor(seededRandom(effectiveSeed + i) * (i + 1));
-        [items[i], items[j]] = [items[j], items[i]];
+        [rest[i], rest[j]] = [rest[j], rest[i]];
       }
-    } else if (surpriseMe) {
-      console.log(`✨ Surprise Me mode: keeping top ${Math.min(15, items.length)} hidden gems in score order`);
-      // Take only top 15 hidden gems, no shuffle
-      items.splice(15);
+      
+      items = [...top5, ...rest];
     }
     
     // Remove internal fields before returning
