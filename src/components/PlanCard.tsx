@@ -1,4 +1,4 @@
-import { RefreshCw, ArrowRight, MapPin, Star, Phone, Loader2, ExternalLink, Heart, Share2 } from "lucide-react";
+import { RefreshCw, ArrowRight, MapPin, Star, Phone, Loader2, ExternalLink, Heart, Share2, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -35,10 +35,18 @@ interface Place {
   priceLevel?: string;
   city?: string;
   category?: 'event' | 'activity';
-  source?: string; // 'google' | 'foursquare'
+  source?: string; // 'google' | 'foursquare' | 'ticketmaster'
   isHiddenGem?: boolean;
   isNewDiscovery?: boolean;
   isLocalFavorite?: boolean;
+  // Ticketmaster-specific fields
+  ticketUrl?: string;
+  eventDate?: string;
+  eventTime?: string;
+  priceMin?: number;
+  priceMax?: number;
+  imageUrl?: string;
+  venueName?: string;
 }
 
 interface PlanCardProps {
@@ -592,7 +600,12 @@ export const PlanCard = ({
                   <span className="text-xs text-muted-foreground">({activity.totalRatings})</span>
                 </div>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {activity.source && (
+                  {activity.source === 'ticketmaster' || activity.id.startsWith('tm_') ? (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 flex items-center gap-1">
+                      <Ticket className="w-3 h-3" />
+                      Live Event
+                    </span>
+                  ) : activity.source && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                       {activity.source === 'foursquare' ? '🟦 Foursquare' : '🌐 Google'}
                     </span>
@@ -688,62 +701,50 @@ export const PlanCard = ({
                 </Button>
               )}
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    {activity.category === 'event' ? 'Get Tickets' : 'Visit'}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  {(() => {
-                    const links = getActivityLinks(
-                      {
-                        name: activity.name,
-                        city: activity.city,
-                        lat: activity.lat,
-                        lng: activity.lng,
-                        address: activity.address,
-                        category: activity.category,
-                      },
-                      userPreferences
-                    );
-                    return (
-                      <>
-                        <DropdownMenuItem asChild>
-                          <a 
-                            href={links.googleMaps} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="cursor-pointer"
-                            onClick={() => trackActivity({
-                              action_type: 'reserve',
-                              activity_id: activity.id,
-                              activity_name: activity.name
-                            })}
-                          >
-                            Google Maps
-                          </a>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <a 
-                            href={links.yelp} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="cursor-pointer"
-                            onClick={() => trackActivity({
-                              action_type: 'reserve',
-                              activity_id: activity.id,
-                              activity_name: activity.name
-                            })}
-                          >
-                            Yelp
-                          </a>
-                        </DropdownMenuItem>
-                        {activity.category === 'event' && links.eventbrite && (
+              {/* Direct Get Tickets button for Ticketmaster events */}
+              {(activity.source === 'ticketmaster' || activity.id.startsWith('tm_')) && activity.ticketUrl ? (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    trackActivity({
+                      action_type: 'reserve',
+                      activity_id: activity.id,
+                      activity_name: activity.name
+                    });
+                    window.open(activity.ticketUrl, '_blank');
+                  }}
+                  className="gap-2"
+                >
+                  <Ticket className="w-4 h-4" />
+                  Get Tickets
+                </Button>
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      {activity.category === 'event' ? 'Get Tickets' : 'Visit'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    {(() => {
+                      const links = getActivityLinks(
+                        {
+                          name: activity.name,
+                          city: activity.city,
+                          lat: activity.lat,
+                          lng: activity.lng,
+                          address: activity.address,
+                          category: activity.category,
+                        },
+                        userPreferences
+                      );
+                      return (
+                        <>
                           <DropdownMenuItem asChild>
                             <a 
-                              href={links.eventbrite} 
+                              href={links.googleMaps} 
                               target="_blank" 
                               rel="noopener noreferrer" 
                               className="cursor-pointer"
@@ -753,14 +754,12 @@ export const PlanCard = ({
                                 activity_name: activity.name
                               })}
                             >
-                              Eventbrite
+                              Google Maps
                             </a>
                           </DropdownMenuItem>
-                        )}
-                        {activity.category === 'event' && links.ticketmaster && (
                           <DropdownMenuItem asChild>
                             <a 
-                              href={links.ticketmaster} 
+                              href={links.yelp} 
                               target="_blank" 
                               rel="noopener noreferrer" 
                               className="cursor-pointer"
@@ -770,32 +769,66 @@ export const PlanCard = ({
                                 activity_name: activity.name
                               })}
                             >
-                              Ticketmaster
+                              Yelp
                             </a>
                           </DropdownMenuItem>
-                        )}
-                        {activity.category === 'event' && links.fever && (
-                          <DropdownMenuItem asChild>
-                            <a 
-                              href={links.fever} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="cursor-pointer"
-                              onClick={() => trackActivity({
-                                action_type: 'reserve',
-                                activity_id: activity.id,
-                                activity_name: activity.name
-                              })}
-                            >
-                              Fever
-                            </a>
-                          </DropdownMenuItem>
-                        )}
-                      </>
-                    );
-                  })()}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                          {activity.category === 'event' && links.eventbrite && (
+                            <DropdownMenuItem asChild>
+                              <a 
+                                href={links.eventbrite} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="cursor-pointer"
+                                onClick={() => trackActivity({
+                                  action_type: 'reserve',
+                                  activity_id: activity.id,
+                                  activity_name: activity.name
+                                })}
+                              >
+                                Eventbrite
+                              </a>
+                            </DropdownMenuItem>
+                          )}
+                          {activity.category === 'event' && links.ticketmaster && (
+                            <DropdownMenuItem asChild>
+                              <a 
+                                href={links.ticketmaster} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="cursor-pointer"
+                                onClick={() => trackActivity({
+                                  action_type: 'reserve',
+                                  activity_id: activity.id,
+                                  activity_name: activity.name
+                                })}
+                              >
+                                Ticketmaster
+                              </a>
+                            </DropdownMenuItem>
+                          )}
+                          {activity.category === 'event' && links.fever && (
+                            <DropdownMenuItem asChild>
+                              <a 
+                                href={links.fever} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="cursor-pointer"
+                                onClick={() => trackActivity({
+                                  action_type: 'reserve',
+                                  activity_id: activity.id,
+                                  activity_name: activity.name
+                                })}
+                              >
+                                Fever
+                              </a>
+                            </DropdownMenuItem>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
         )}
