@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, Sparkles, ChevronDown, Loader2, Ticket } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,6 +28,14 @@ const SurpriseMeButton = ({
 }) => {
   const [liveEventsMode, setLiveEventsMode] = useState(false);
   const showLiveEventsToggle = searchMode === 'activity_only';
+
+  // Reset toggle when search mode changes away from activity_only
+  // This prevents stale state when user switches modes
+  React.useEffect(() => {
+    if (searchMode !== 'activity_only') {
+      setLiveEventsMode(false);
+    }
+  }, [searchMode]);
 
   const handleClick = () => {
     onSurpriseMe({ liveEventsOnly: showLiveEventsToggle && liveEventsMode });
