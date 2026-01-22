@@ -178,7 +178,7 @@ export const ticketmasterProvider: ActivityProvider = {
       return [];
     }
     
-    const { lat, lng, radiusMeters, keyword, limit = 20 } = options;
+    const { lat, lng, radiusMeters, keyword, limit = 20, searchDate, findNextAvailable } = options;
     
     // Convert meters to miles (Ticketmaster uses miles)
     const radiusMiles = Math.min(Math.ceil(radiusMeters / 1609.34), 100); // Max 100 miles
@@ -190,7 +190,7 @@ export const ticketmasterProvider: ActivityProvider = {
       radius: radiusMiles.toString(),
       unit: 'miles',
       size: Math.min(limit, 50).toString(), // Max 50 per request
-      sort: 'relevance,desc',
+      sort: 'date,asc', // Sort by date for "next available" logic
     });
     
     // Add classification if we can map the keyword
@@ -204,9 +204,33 @@ export const ticketmasterProvider: ActivityProvider = {
       console.log(`[Ticketmaster] Using keyword search for "${keyword}"`);
     }
     
-    // Only get events from today onwards
-    const startDateTime = new Date().toISOString().split('.')[0] + 'Z';
+    // === DATE FILTERING ===
+    // If searchDate provided, search for events on that specific date
+    // If findNextAvailable, search from today up to 14 days ahead
+    let startDateTime: string;
+    let endDateTime: string | undefined;
+    
+    if (searchDate) {
+      // Search for specific date - from start of day to end of day
+      startDateTime = `${searchDate}T00:00:00Z`;
+      endDateTime = `${searchDate}T23:59:59Z`;
+      console.log(`[Ticketmaster] Searching for date: ${searchDate}`);
+    } else if (findNextAvailable) {
+      // Search next 14 days to find any available events
+      const today = new Date();
+      startDateTime = today.toISOString().split('.')[0] + 'Z';
+      const twoWeeksOut = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
+      endDateTime = twoWeeksOut.toISOString().split('.')[0] + 'Z';
+      console.log(`[Ticketmaster] Searching next 14 days for available events`);
+    } else {
+      // Default: today onwards (no end limit)
+      startDateTime = new Date().toISOString().split('.')[0] + 'Z';
+    }
+    
     params.set('startDateTime', startDateTime);
+    if (endDateTime) {
+      params.set('endDateTime', endDateTime);
+    }
     
     const url = `https://app.ticketmaster.com/discovery/v2/events.json?${params.toString()}`;
     

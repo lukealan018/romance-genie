@@ -107,6 +107,27 @@ interface DebugMetadata {
   finalCount: number;
 }
 
+// Helper to format date as YYYY-MM-DD
+function formatDateYMD(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+// Helper to get human-readable day name
+function getRelativeDayName(dateStr: string): string {
+  const date = new Date(dateStr + 'T12:00:00'); // Noon to avoid timezone issues
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  
+  const diffDays = Math.round((date.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+  
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'tomorrow';
+  if (diffDays < 7) {
+    return date.toLocaleDateString('en-US', { weekday: 'long' });
+  }
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -130,6 +151,12 @@ serve(async (req) => {
     const excludePlaceIds = Array.isArray(body.excludePlaceIds) 
       ? body.excludePlaceIds.filter((id: unknown) => typeof id === 'string').slice(0, 100)
       : [];
+    
+    // === DATE PARAMETERS FOR EVENT FILTERING ===
+    // searchDate: YYYY-MM-DD format for specific date search
+    const searchDate = validateString(body.searchDate, 10) || undefined;
+    // findNextAvailable: when true and no results, search wider range and return next available date
+    const findNextAvailable = body.findNextAvailable === true;
 
     if (isNaN(lat) || isNaN(lng) || isNaN(radiusMiles) || !keyword) {
       return new Response(
@@ -151,6 +178,8 @@ serve(async (req) => {
     console.log('Surprise Me:', surpriseMe);
     console.log('Live Events Only:', liveEventsOnly);
     console.log('Exclude IDs:', excludePlaceIds.length);
+    console.log('Search Date:', searchDate || 'any');
+    console.log('Find Next Available:', findNextAvailable);
     console.log('======================================');
     
     // Detect search intent from keyword
@@ -179,10 +208,58 @@ serve(async (req) => {
       keyword,
       targetCity,
       noveltyMode,
-      limit: 50
+      limit: 50,
+      searchDate,
+      findNextAvailable: false, // First search with specific date if provided
     };
     
     let { items: activities, providerStats } = await getActivitySuggestions(searchOptions);
+    
+    // === NEXT AVAILABLE DATE LOGIC ===
+    // If liveEventsOnly and no events found for target date, find when next events are available
+    let nextAvailableDate: string | null = null;
+    let nextAvailableDayName: string | null = null;
+    
+    if (liveEventsOnly && activities.length === 0 && (searchDate || findNextAvailable)) {
+      console.log('🔍 No live events for target date, searching for next available...');
+      
+      // Search with findNextAvailable to get events in the next 14 days
+      const fallbackOptions: ActivitySearchOptions = {
+        lat,
+        lng,
+        radiusMeters,
+        keyword,
+        targetCity,
+        noveltyMode,
+        limit: 50,
+        findNextAvailable: true, // Search wider date range
+      };
+      
+      const fallbackResult = await getActivitySuggestions(fallbackOptions);
+      
+      if (fallbackResult.items.length > 0) {
+        // Find the earliest event date from results
+        const ticketmasterEvents = fallbackResult.items.filter((item: any) => 
+          item.source === 'ticketmaster' && item.eventDate
+        );
+        
+        if (ticketmasterEvents.length > 0) {
+          // Sort by date and get the earliest
+          ticketmasterEvents.sort((a: any, b: any) => 
+            (a.eventDate || '').localeCompare(b.eventDate || '')
+          );
+          
+          const earliestDate = ticketmasterEvents[0].eventDate;
+          if (earliestDate) {
+            nextAvailableDate = earliestDate;
+            nextAvailableDayName = getRelativeDayName(earliestDate);
+            console.log(`📅 Next available events on: ${nextAvailableDate} (${nextAvailableDayName})`);
+          }
+        }
+      } else {
+        console.log('❌ No live events found in the next 14 days');
+      }
+    }
     
     const totalFromProviders = activities.length;
     
@@ -382,6 +459,11 @@ serve(async (req) => {
         nextPageToken: null, // Multi-provider doesn't support pagination yet
         providerStats,
         forceFresh, // Echo back for debugging
+        // Next available date info when no events found for requested date
+        ...(nextAvailableDate && { 
+          nextAvailableDate,
+          nextAvailableDayName 
+        }),
         ...(debugMetadata && { debug: debugMetadata }),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

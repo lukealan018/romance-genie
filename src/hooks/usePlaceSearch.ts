@@ -24,6 +24,12 @@ export const usePlaceSearch = (
   const [plan, setPlan] = useState<any>(null);
   const [searchType, setSearchType] = useState<"restaurants" | "activities">("restaurants");
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
+  
+  // State for next available date suggestion dialog
+  const [nextAvailableDateInfo, setNextAvailableDateInfo] = useState<{
+    date: string;
+    dayName: string;
+  } | null>(null);
 
   const {
     lat,
@@ -1094,19 +1100,26 @@ export const usePlaceSearch = (
           })
         : Promise.resolve({ data: { items: [] }, error: null });
 
+      // Get today's date in YYYY-MM-DD format for live events search
+      const today = new Date();
+      const searchDateStr = today.toISOString().split('T')[0];
+      
       const activitiesPromise = (currentMode === 'both' || currentMode === 'activity_only')
         ? supabase.functions.invoke('activities-search', {
             body: { 
               lat: searchLat, 
               lng: searchLng, 
-              radiusMiles: surpriseRadius,  // Fixed 5mi radius
+              radiusMiles: surpriseRadius,  // Fixed radius (25mi for live events, 5mi otherwise)
               keyword: selectedActivity,
               noveltyMode: 'hidden_gems',  // FORCE hidden gems mode!
               seed: randomSeed,
               forceFresh: true,
               voiceTriggered: true,  // Signal this bypasses profile
               surpriseMe: true,      // Signal to skip random shuffle, keep top gems
-              liveEventsOnly        // Pass Live Events toggle state
+              liveEventsOnly,        // Pass Live Events toggle state
+              // For live events, search specifically for today to enable "next available" fallback
+              searchDate: liveEventsOnly ? searchDateStr : undefined,
+              findNextAvailable: liveEventsOnly, // Enable next available date detection
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -1122,16 +1135,28 @@ export const usePlaceSearch = (
       const restaurants = restaurantsResponse.data?.items || [];
       let activities = activitiesResponse.data?.items || [];
       
-      // === LIVE EVENTS ONLY: Handle empty results gracefully ===
+      // === LIVE EVENTS ONLY: Handle empty results with next available date ===
       if (liveEventsOnly && activities.length === 0) {
-        toast({
-          title: "No live events found",
-          description: "Try again without the Live Events filter, or check back later for upcoming shows.",
-          variant: "destructive",
-          duration: 5000,
-        });
-        setLoading(false);
-        return; // Don't navigate - stay on current page
+        const nextDate = activitiesResponse.data?.nextAvailableDate;
+        const nextDayName = activitiesResponse.data?.nextAvailableDayName;
+        
+        if (nextDate && nextDayName) {
+          // Show next available date dialog instead of just a toast
+          console.log(`📅 No live events tonight, next available: ${nextDayName} (${nextDate})`);
+          setNextAvailableDateInfo({ date: nextDate, dayName: nextDayName });
+          setLoading(false);
+          return; // Don't navigate - dialog will handle next steps
+        } else {
+          // No events in the next 14 days
+          toast({
+            title: "No live events found",
+            description: "No upcoming events in your area for the next 2 weeks. Try a different activity or check back later.",
+            variant: "destructive",
+            duration: 5000,
+          });
+          setLoading(false);
+          return; // Don't navigate - stay on current page
+        }
       }
       
       // SURPRISE ME: Score with learned prefs for boost only, NOT profile preferences
@@ -1254,6 +1279,27 @@ export const usePlaceSearch = (
     });
   };
 
+  // Handler to search with a specific date (called when user accepts next available date)
+  const handleSearchWithDate = useCallback(async (targetDate: string) => {
+    console.log(`🎫 Searching for live events on ${targetDate}`);
+    
+    // Clear the dialog state
+    setNextAvailableDateInfo(null);
+    
+    // Update the search date in store
+    const { setSearchDate } = usePlanStore.getState();
+    setSearchDate(new Date(targetDate + 'T12:00:00'));
+    
+    // Trigger a new search with the specific date
+    // Re-invoke handleSurpriseMe with liveEventsOnly - but this time with the date set
+    await handleSurpriseMe({ liveEventsOnly: true });
+  }, [handleSurpriseMe]);
+
+  // Handler to dismiss the next available date dialog
+  const handleDismissNextAvailableDate = useCallback(() => {
+    setNextAvailableDateInfo(null);
+  }, []);
+
   return {
     loading,
     gettingLocation,
@@ -1270,5 +1316,9 @@ export const usePlaceSearch = (
     handleSeePlan,
     handleSurpriseMe,
     handleSelectRecentPlan,
+    // Next available date handling
+    nextAvailableDateInfo,
+    handleSearchWithDate,
+    handleDismissNextAvailableDate,
   };
 };
