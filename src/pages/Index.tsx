@@ -14,6 +14,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { FloatingPlanAheadButton } from "@/components/FloatingPlanAheadButton";
 import { PlanAheadDialog } from "@/components/PlanAheadDialog";
 import { DateChoiceDialog } from "@/components/DateChoiceDialog";
+import { NextAvailableDateDialog } from "@/components/NextAvailableDateDialog";
 
 import { toast } from "@/hooks/use-toast";
 import { usePlanStore } from "@/store/planStore";
@@ -267,6 +268,18 @@ const Index = () => {
           onClose={closeDateChoice}
           options={dateChoiceOptions}
           onSelect={handleDateChoice}
+        />
+
+        {/* Next Available Date Dialog for live events */}
+        <NextAvailableDateDialog
+          open={!!search.nextAvailableDateInfo}
+          onOpenChange={(open) => {
+            if (!open) search.handleDismissNextAvailableDate();
+          }}
+          nextAvailableDate={search.nextAvailableDateInfo?.date || ""}
+          nextAvailableDayName={search.nextAvailableDateInfo?.dayName || ""}
+          onAccept={search.handleSearchWithDate}
+          onDecline={search.handleDismissNextAvailableDate}
         />
 
         {/* Plan Ahead Floating Button & Dialog */}

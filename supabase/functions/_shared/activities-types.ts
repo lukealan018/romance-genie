@@ -36,6 +36,10 @@ export interface ActivitySearchOptions {
   limit?: number;
   targetCity?: string;
   noveltyMode?: 'popular' | 'balanced' | 'hidden_gems';
+  // Date filtering for events (YYYY-MM-DD format)
+  searchDate?: string;
+  // When true, search wider date range to find next available events
+  findNextAvailable?: boolean;
 }
 
 export interface ActivityProvider {
