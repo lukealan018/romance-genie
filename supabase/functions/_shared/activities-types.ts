@@ -7,7 +7,7 @@ export interface ProviderActivity {
   rating: number;
   lat: number;
   lng: number;
-  source: "mock" | "google" | "yelp" | "foursquare";
+  source: "mock" | "google" | "yelp" | "foursquare" | "ticketmaster";
   totalRatings: number;
   city?: string;
   category: 'event' | 'activity';
