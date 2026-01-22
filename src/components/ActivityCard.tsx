@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Star, MapPin, Phone, Loader2, ExternalLink } from "lucide-react";
+import { Star, MapPin, Phone, Loader2, ExternalLink, Calendar, Ticket, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { getActivityLinks, getMapUrl } from "@/lib/external-links";
+import { format, parseISO } from "date-fns";
 
 interface ActivityCardProps {
   id: string;
@@ -22,7 +23,44 @@ interface ActivityCardProps {
   isLocalFavorite?: boolean;
   isPersonalMatch?: boolean;
   onClick?: () => void;
+  // Ticketmaster-specific props
+  ticketUrl?: string;
+  eventDate?: string;
+  eventTime?: string;
+  priceMin?: number;
+  priceMax?: number;
+  imageUrl?: string;
+  venueName?: string;
 }
+
+// Format event date for display
+const formatEventDate = (dateStr?: string, timeStr?: string): string | null => {
+  if (!dateStr) return null;
+  try {
+    const date = parseISO(dateStr);
+    let formatted = format(date, "EEE, MMM d");
+    if (timeStr) {
+      const [hours, minutes] = timeStr.split(':');
+      const hour = parseInt(hours, 10);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour % 12 || 12;
+      formatted += ` · ${hour12}:${minutes} ${ampm}`;
+    }
+    return formatted;
+  } catch {
+    return dateStr;
+  }
+};
+
+// Format price range for display
+const formatPriceRange = (min?: number, max?: number): string | null => {
+  if (!min && !max) return null;
+  if (min && max && min === max) return `$${min.toFixed(0)}`;
+  if (min && max) return `$${min.toFixed(0)} - $${max.toFixed(0)}`;
+  if (min) return `From $${min.toFixed(0)}`;
+  if (max) return `Up to $${max.toFixed(0)}`;
+  return null;
+};
 
 export const ActivityCard = ({
   id,
@@ -40,14 +78,32 @@ export const ActivityCard = ({
   isLocalFavorite = false,
   isPersonalMatch = false,
   onClick,
+  ticketUrl,
+  eventDate,
+  eventTime,
+  priceMin,
+  priceMax,
+  imageUrl,
+  venueName,
 }: ActivityCardProps) => {
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [loadingPhone, setLoadingPhone] = useState(false);
+
+  const isTicketmasterEvent = source === 'ticketmaster' || id.startsWith('tm_');
+  const formattedDate = formatEventDate(eventDate, eventTime);
+  const formattedPrice = formatPriceRange(priceMin, priceMax);
 
   const handleAddressClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const url = getMapUrl(name, address, lat, lng);
     window.open(url, '_blank');
+  };
+
+  const handleGetTickets = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (ticketUrl) {
+      window.open(ticketUrl, '_blank');
+    }
   };
 
   const handlePhoneClick = async (e: React.MouseEvent) => {
@@ -95,10 +151,29 @@ export const ActivityCard = ({
       className="card fade-slide-in hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer overflow-hidden"
       onClick={onClick}
     >
+      {/* Hero image area - show event poster for Ticketmaster, fallback for others */}
       <div className="h-48 bg-gradient-to-br from-accent/20 to-primary/20 relative overflow-hidden flex items-center justify-center -mx-[var(--space-3)] -mt-[var(--space-3)] mb-[var(--space-3)]">
-        <div className="text-5xl font-bold text-accent/40">
+        {imageUrl ? (
+          <img 
+            src={imageUrl} 
+            alt={name}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }}
+          />
+        ) : null}
+        <div className={`text-5xl font-bold text-accent/40 ${imageUrl ? 'hidden' : ''}`}>
           {name.charAt(0)}
         </div>
+        {/* Live Event badge for Ticketmaster */}
+        {isTicketmasterEvent && (
+          <div className="absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-medium bg-red-500/90 text-white flex items-center gap-1">
+            <Ticket className="w-3 h-3" />
+            Live Event
+          </div>
+        )}
       </div>
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-2">
@@ -109,7 +184,7 @@ export const ActivityCard = ({
                 💫 For You
               </span>
             )}
-            {source && !isPersonalMatch && (
+            {source && !isPersonalMatch && !isTicketmasterEvent && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-500/20 text-slate-300 border border-slate-500/30">
                 {source === 'foursquare' ? '🟦 Foursquare' : '🌐 Google'}
               </span>
@@ -131,6 +206,29 @@ export const ActivityCard = ({
             )}
           </div>
         </div>
+
+        {/* Show venue name for Ticketmaster events */}
+        {isTicketmasterEvent && venueName && (
+          <p className="text-sm text-muted-foreground line-clamp-1">at {venueName}</p>
+        )}
+
+        {/* Event date and price for Ticketmaster */}
+        {isTicketmasterEvent && (formattedDate || formattedPrice) && (
+          <div className="flex items-center gap-3 text-sm">
+            {formattedDate && (
+              <span className="flex items-center gap-1 text-accent">
+                <Calendar className="w-4 h-4" />
+                {formattedDate}
+              </span>
+            )}
+            {formattedPrice && (
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <DollarSign className="w-4 h-4" />
+                {formattedPrice}
+              </span>
+            )}
+          </div>
+        )}
         
         <div 
           className="flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer"
@@ -141,42 +239,62 @@ export const ActivityCard = ({
         </div>
         
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 fill-accent text-accent" />
-            <span className="font-medium">{rating.toFixed(1)}</span>
-            {totalRatings > 0 && (
-              <span className="text-xs text-muted-foreground">({totalRatings})</span>
-            )}
-          </div>
+          {/* Rating - hide for Ticketmaster since they don't have ratings */}
+          {!isTicketmasterEvent ? (
+            <div className="flex items-center gap-1">
+              <Star className="w-4 h-4 fill-accent text-accent" />
+              <span className="font-medium">{rating.toFixed(1)}</span>
+              {totalRatings > 0 && (
+                <span className="text-xs text-muted-foreground">({totalRatings})</span>
+              )}
+            </div>
+          ) : (
+            <div /> // Spacer
+          )}
+
           <div className="flex items-center gap-2">
-            {phoneNumber ? (
-              <a
-                href={`tel:${phoneNumber}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  console.log('Clicking call button with number:', phoneNumber);
-                  window.location.href = `tel:${phoneNumber}`;
-                }}
-                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors"
-              >
-                <Phone className="h-4 w-4" />
-                <span>Call</span>
-              </a>
-            ) : (
+            {/* Get Tickets button for Ticketmaster events */}
+            {isTicketmasterEvent && ticketUrl ? (
               <Button
-                size="icon"
-                variant="outline"
-                className="h-8 w-8"
-                onClick={handlePhoneClick}
-                disabled={loadingPhone}
+                size="sm"
+                onClick={handleGetTickets}
+                className="gap-1"
               >
-                {loadingPhone ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Phone className="h-4 w-4" />
-                )}
+                <Ticket className="h-4 w-4" />
+                Get Tickets
               </Button>
+            ) : (
+              <>
+                {phoneNumber ? (
+                  <a
+                    href={`tel:${phoneNumber}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      console.log('Clicking call button with number:', phoneNumber);
+                      window.location.href = `tel:${phoneNumber}`;
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors"
+                  >
+                    <Phone className="h-4 w-4" />
+                    <span>Call</span>
+                  </a>
+                ) : (
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-8 w-8"
+                    onClick={handlePhoneClick}
+                    disabled={loadingPhone}
+                  >
+                    {loadingPhone ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Phone className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+              </>
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
