@@ -114,6 +114,9 @@ function mapEventToActivity(event: TicketmasterEvent): ProviderActivity | null {
   const segment = event.classifications?.[0]?.segment?.name?.toLowerCase() || '';
   const category: 'event' | 'activity' = 'event'; // All Ticketmaster results are events
   
+  // Get best quality image (prefer 16:9 ratio images)
+  const bestImage = event.images?.sort((a, b) => (b.width || 0) - (a.width || 0))?.[0];
+  
   return {
     id: `tm_${event.id}`,
     name: event.name,
@@ -126,6 +129,14 @@ function mapEventToActivity(event: TicketmasterEvent): ProviderActivity | null {
     category,
     city: venue.city?.name,
     types: [segment, event.classifications?.[0]?.genre?.name?.toLowerCase()].filter(Boolean) as string[],
+    // Ticketmaster-specific enriched data
+    ticketUrl: event.url,
+    eventDate: event.dates?.start?.localDate,
+    eventTime: event.dates?.start?.localTime,
+    priceMin: event.priceRanges?.[0]?.min,
+    priceMax: event.priceRanges?.[0]?.max,
+    imageUrl: bestImage?.url,
+    venueName: venue.name,
   };
 }
 

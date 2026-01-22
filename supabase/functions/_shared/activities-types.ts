@@ -18,6 +18,14 @@ export interface ProviderActivity {
   // Foursquare-specific fields for scoring (FREE tier)
   chains?: { id: string; name: string }[]; // Chain detection array
   hasPremiumData?: boolean; // Flag indicating if rating/reviews are available
+  // Ticketmaster-specific fields for events
+  ticketUrl?: string; // Direct link to buy tickets
+  eventDate?: string; // YYYY-MM-DD
+  eventTime?: string; // HH:MM:SS
+  priceMin?: number;
+  priceMax?: number;
+  imageUrl?: string; // Event poster/image
+  venueName?: string; // Venue name (separate from event name)
 }
 
 export interface ActivitySearchOptions {

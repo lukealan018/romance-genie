@@ -50,6 +50,85 @@ serve(async (req) => {
       );
     }
 
+    // Handle Ticketmaster event details
+    if (source === 'ticketmaster' || placeId.startsWith('tm_')) {
+      const TICKETMASTER_API_KEY = Deno.env.get('TICKETMASTER_API_KEY');
+      
+      if (!TICKETMASTER_API_KEY) {
+        console.error('TICKETMASTER_API_KEY is not configured');
+        throw new Error('TICKETMASTER_API_KEY is not configured');
+      }
+
+      // Strip the tm_ prefix to get the actual event ID
+      const eventId = placeId.replace('tm_', '');
+      console.log('Fetching Ticketmaster event details for:', eventId);
+
+      const tmUrl = `https://app.ticketmaster.com/discovery/v2/events/${eventId}.json?apikey=${TICKETMASTER_API_KEY}`;
+      const response = await fetch(tmUrl);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Ticketmaster API error ${response.status}: ${errorText}`);
+        throw new Error(`Ticketmaster API error: ${response.status}`);
+      }
+
+      const event = await response.json();
+      const venue = event._embedded?.venues?.[0];
+      
+      // Build address from venue data
+      const addressParts: string[] = [];
+      if (venue?.address?.line1) addressParts.push(venue.address.line1);
+      if (venue?.city?.name) addressParts.push(venue.city.name);
+      if (venue?.state?.stateCode) addressParts.push(venue.state.stateCode);
+      if (venue?.postalCode) addressParts.push(venue.postalCode);
+      const address = addressParts.join(', ') || venue?.name || 'Address unavailable';
+      
+      // Format price range
+      const priceRange = event.priceRanges?.[0];
+      const priceDisplay = priceRange 
+        ? `$${priceRange.min?.toFixed(0) || '?'} - $${priceRange.max?.toFixed(0) || '?'}`
+        : '';
+      
+      // Get photos - select highest quality images
+      const photos = event.images?.slice(0, 5).map((img: any) => ({
+        url: img.url,
+        width: img.width || 800,
+        height: img.height || 600,
+      })) || [];
+
+      // Format event date/time for display
+      const eventDate = event.dates?.start?.localDate;
+      const eventTime = event.dates?.start?.localTime;
+      
+      const details = {
+        name: event.name,
+        address,
+        phoneNumber: null, // Events don't have phone numbers
+        website: event.url, // Ticket purchase URL
+        googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue?.name + ' ' + address)}`,
+        rating: 0,
+        totalRatings: 0,
+        priceLevel: priceDisplay,
+        hours: [], // Events don't have hours
+        isOpen: null,
+        lat: venue?.location?.latitude ? parseFloat(venue.location.latitude) : 0,
+        lng: venue?.location?.longitude ? parseFloat(venue.location.longitude) : 0,
+        photos,
+        // Ticketmaster-specific fields
+        ticketUrl: event.url,
+        eventDate,
+        eventTime,
+        venueName: venue?.name,
+        isEvent: true,
+      };
+
+      console.log('Returning Ticketmaster event details:', event.name);
+      return new Response(
+        JSON.stringify(details),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Handle Foursquare place details
     if (source === 'foursquare') {
       const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY')?.trim();
