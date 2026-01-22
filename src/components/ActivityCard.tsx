@@ -303,54 +303,73 @@ export const ActivityCard = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                {(() => {
-                  const links = getActivityLinks(
-                    {
-                      name,
-                      city,
-                      lat,
-                      lng,
-                      address,
-                      category,
-                    },
-                    undefined
-                  );
-                  return (
-                    <>
+                {isTicketmasterEvent ? (
+                  // Simplified menu for Ticketmaster events - just maps and direct ticket link
+                  <>
+                    {ticketUrl && (
                       <DropdownMenuItem asChild>
-                        <a href={links.googleMaps} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-                          Google Maps
+                        <a href={ticketUrl} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                          🎫 Buy on Ticketmaster
                         </a>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <a href={links.yelp} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-                          Yelp
-                        </a>
-                      </DropdownMenuItem>
-                      {category === 'event' && links.eventbrite && (
+                    )}
+                    <DropdownMenuItem asChild>
+                      <a href={getMapUrl(venueName || name, address, lat, lng)} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                        📍 Directions to Venue
+                      </a>
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  // Full menu for non-Ticketmaster activities
+                  (() => {
+                    const links = getActivityLinks(
+                      {
+                        name,
+                        city,
+                        lat,
+                        lng,
+                        address,
+                        category,
+                      },
+                      undefined
+                    );
+                    return (
+                      <>
                         <DropdownMenuItem asChild>
-                          <a href={links.eventbrite} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-                            Eventbrite
+                          <a href={links.googleMaps} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            Google Maps
                           </a>
                         </DropdownMenuItem>
-                      )}
-                      {category === 'event' && links.ticketmaster && (
                         <DropdownMenuItem asChild>
-                          <a href={links.ticketmaster} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-                            Ticketmaster
+                          <a href={links.yelp} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            Yelp
                           </a>
                         </DropdownMenuItem>
-                      )}
-                      {category === 'event' && links.fever && (
-                        <DropdownMenuItem asChild>
-                          <a href={links.fever} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-                            Fever
-                          </a>
-                        </DropdownMenuItem>
-                      )}
-                    </>
-                  );
-                })()}
+                        {category === 'event' && links.eventbrite && (
+                          <DropdownMenuItem asChild>
+                            <a href={links.eventbrite} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                              Eventbrite
+                            </a>
+                          </DropdownMenuItem>
+                        )}
+                        {category === 'event' && links.ticketmaster && (
+                          <DropdownMenuItem asChild>
+                            <a href={links.ticketmaster} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                              Ticketmaster
+                            </a>
+                          </DropdownMenuItem>
+                        )}
+                        {category === 'event' && links.fever && (
+                          <DropdownMenuItem asChild>
+                            <a href={links.fever} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                              Fever
+                            </a>
+                          </DropdownMenuItem>
+                        )}
+                      </>
+                    );
+                  })()
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
