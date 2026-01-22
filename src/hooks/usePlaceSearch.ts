@@ -972,8 +972,9 @@ export const usePlaceSearch = (
     // ALWAYS clear results for Surprise Me - fresh experience
     clearAllResults();
     
-    // Default radius: 5 miles (NOT from profile)
-    const surpriseRadius = 5;
+    // Live Events need a much larger radius to find concerts/shows in major venues
+    // Regular discovery stays tight at 5 miles for local hidden gems
+    const surpriseRadius = liveEventsOnly ? 25 : 5;
     
     // Try to resolve location if not set (use current GPS location)
     let searchLat = lat;
