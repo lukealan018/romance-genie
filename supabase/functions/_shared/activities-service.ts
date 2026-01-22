@@ -74,6 +74,11 @@ export async function getActivitySuggestions(
   
   // === QUALITY FLOOR FILTERING ===
   const qualityFiltered = merged.filter(activity => {
+    // Skip quality filters for Ticketmaster events (events don't have ratings)
+    if (activity.source === 'ticketmaster') {
+      return true; // Keep - events are curated by nature
+    }
+    
     // Skip quality filters for Foursquare venues without premium data
     const hasPremiumData = (activity as any).hasPremiumData;
     if (activity.source === 'foursquare' && hasPremiumData === false) {

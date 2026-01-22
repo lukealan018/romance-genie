@@ -10,7 +10,7 @@ export const FEATURE_FLAGS = {
   ENABLE_YELP: false,       // ⏸️ READY (disabled)
   
   // Activity Providers
-  ENABLE_TICKETMASTER: false,   // ⏸️ READY (disabled)
+  ENABLE_TICKETMASTER: true,    // ✅ ACTIVE
   ENABLE_EVENTBRITE: false,     // ⏸️ READY (disabled)
   ENABLE_YELP_ACTIVITIES: false, // ⏸️ READY (disabled)
   
