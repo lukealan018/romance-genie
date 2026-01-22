@@ -80,31 +80,31 @@ export default function LoginPage() {
       <div className="themed-page-bg min-h-screen flex items-center justify-center p-4">
         <div className="card-glass rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="mb-6">
-            <CheckCircle className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--theme-accent)' }} />
-            <h2 className="text-2xl font-bold text-white mb-2">Check Your Email</h2>
-            <p className="text-[rgba(255,255,255,0.6)]">
+            <h2 className="text-2xl font-bold text-white mb-2">Enter Your Code</h2>
+            <p className="text-[rgba(255,255,255,0.6)] text-sm">
               We sent a 6-digit code to <span style={{ color: 'var(--theme-accent)' }} className="font-semibold">{email}</span>
+            </p>
+            <p className="text-[rgba(255,255,255,0.45)] text-xs mt-1">
+              Look for the code below the magic link in your email
             </p>
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-[rgba(255,255,255,0.75)] mb-4">
-              Enter your verification code
-            </label>
             <div className="flex justify-center">
               <InputOTP
                 maxLength={6}
                 value={otpCode}
                 onChange={(value) => setOtpCode(value)}
                 onComplete={handleVerifyOtp}
+                className="gap-2"
               >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} className="bg-white/10 border-white/20 text-white" />
-                  <InputOTPSlot index={1} className="bg-white/10 border-white/20 text-white" />
-                  <InputOTPSlot index={2} className="bg-white/10 border-white/20 text-white" />
-                  <InputOTPSlot index={3} className="bg-white/10 border-white/20 text-white" />
-                  <InputOTPSlot index={4} className="bg-white/10 border-white/20 text-white" />
-                  <InputOTPSlot index={5} className="bg-white/10 border-white/20 text-white" />
+                <InputOTPGroup className="gap-2">
+                  <InputOTPSlot index={0} className="w-12 h-14 bg-white/5 border-0 border-b-2 border-white/20 rounded-none text-white text-xl font-semibold focus-within:border-[var(--theme-accent)]" />
+                  <InputOTPSlot index={1} className="w-12 h-14 bg-white/5 border-0 border-b-2 border-white/20 rounded-none text-white text-xl font-semibold focus-within:border-[var(--theme-accent)]" />
+                  <InputOTPSlot index={2} className="w-12 h-14 bg-white/5 border-0 border-b-2 border-white/20 rounded-none text-white text-xl font-semibold focus-within:border-[var(--theme-accent)]" />
+                  <InputOTPSlot index={3} className="w-12 h-14 bg-white/5 border-0 border-b-2 border-white/20 rounded-none text-white text-xl font-semibold focus-within:border-[var(--theme-accent)]" />
+                  <InputOTPSlot index={4} className="w-12 h-14 bg-white/5 border-0 border-b-2 border-white/20 rounded-none text-white text-xl font-semibold focus-within:border-[var(--theme-accent)]" />
+                  <InputOTPSlot index={5} className="w-12 h-14 bg-white/5 border-0 border-b-2 border-white/20 rounded-none text-white text-xl font-semibold focus-within:border-[var(--theme-accent)]" />
                 </InputOTPGroup>
               </InputOTP>
             </div>
