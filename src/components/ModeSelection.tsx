@@ -13,7 +13,7 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
     {
       id: "both" as SearchMode,
       icon: Heart,
-      title: "Full Date Night",
+      title: "Full Night Out",
       subtitle: "Dinner + Activity",
     },
     {
