@@ -389,6 +389,7 @@ const PlanPage = () => {
         <Button variant="ghost" size="icon" className="h-10 w-10" onClick={handleBackToHome}>
           <ArrowLeft className="w-6 h-6" />
         </Button>
+        <span className="text-sm font-medium text-primary tracking-wide">Curated for You</span>
         <div className="flex items-center gap-4">
           {plan?.restaurant && plan?.activity && (
             <SharePlanButton
