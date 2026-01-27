@@ -173,8 +173,8 @@ export default function LoginPage() {
       <div className="card-glass rounded-2xl shadow-2xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
           <Sparkles className="themed-icon w-16 h-16 mx-auto mb-4" />
-          <h1 className="text-4xl font-bold text-white mb-2">Romance Genie</h1>
-          <p className="text-[rgba(255,255,255,0.6)]">Your perfect night out awaits ✨</p>
+          <h1 className="text-4xl font-bold text-white mb-2">Andate</h1>
+          <p className="text-[rgba(255,255,255,0.6)]">your night figured out</p>
         </div>
 
         <div className="space-y-6">
