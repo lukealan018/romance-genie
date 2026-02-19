@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { usePlanStore } from "@/store/planStore";
-import { isDevModeActive, getDevUserId, getMockProfile, logDevMode } from "@/lib/dev-utils";
+import { isDevModeActive, getDevUserId, getMockProfile, logDevMode, isPreviewEnvironment } from "@/lib/dev-utils";
 
 // Map profile experience_level to search priceLevel values
 const experienceToPriceLevel: Record<string, string> = {
@@ -54,6 +54,33 @@ export const useAuthAndProfile = () => {
         const session = sessionData?.session;
         
         if (!session?.user) {
+          // In preview/dev, skip login and load as guest
+          if (isPreviewEnvironment()) {
+            console.log('[GUEST MODE] No session found — loading as guest in preview');
+            setUserId('guest-preview-user');
+            setNickname('Guest');
+            setFilters({
+              radius: 25,
+              zipCode: '90401',
+              locationMode: 'zip',
+              priceLevel: '',
+            });
+            setUserPreferences({
+              cuisines: ['Italian', 'Japanese', 'Mexican'],
+              activities: ['Live Music', 'Movie Theater', 'Museums'],
+            });
+            // Try to geocode default ZIP
+            try {
+              const { data: geocodeData } = await supabase.functions.invoke('geocode', {
+                body: { zipCode: '90401' }
+              });
+              if (geocodeData?.lat && geocodeData?.lng) {
+                setLocation(geocodeData.lat, geocodeData.lng);
+              }
+            } catch {}
+            setIsCheckingOnboarding(false);
+            return;
+          }
           navigate('/login');
           return;
         }
