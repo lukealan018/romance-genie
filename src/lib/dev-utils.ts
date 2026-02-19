@@ -7,6 +7,16 @@ export const isDevelopment = () => {
   return import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
 };
 
+export const isPreviewEnvironment = () => {
+  const hostname = window.location.hostname;
+  return (
+    import.meta.env.DEV ||
+    hostname.includes('lovable.app') ||
+    hostname.includes('lovable.dev') ||
+    hostname === 'localhost'
+  );
+};
+
 export const isDevModeActive = () => {
   // SECURITY: Only allow dev mode in development environment
   if (!import.meta.env.DEV) {
