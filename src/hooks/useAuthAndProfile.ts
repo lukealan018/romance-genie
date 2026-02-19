@@ -69,7 +69,6 @@ export const useAuthAndProfile = () => {
               cuisines: ['Italian', 'Japanese', 'Mexican'],
               activities: ['Live Music', 'Movie Theater', 'Museums'],
             });
-            // Try to geocode default ZIP
             try {
               const { data: geocodeData } = await supabase.functions.invoke('geocode', {
                 body: { zipCode: '90401' }
@@ -98,6 +97,23 @@ export const useAuthAndProfile = () => {
         }
 
         if (!profile) {
+          // In preview, skip onboarding and load as guest with session user
+          if (isPreviewEnvironment()) {
+            console.log('[GUEST MODE] No profile found — skipping onboarding in preview');
+            setNickname('Guest');
+            setFilters({
+              radius: 25,
+              zipCode: '90401',
+              locationMode: 'zip',
+              priceLevel: '',
+            });
+            setUserPreferences({
+              cuisines: ['Italian', 'Japanese', 'Mexican'],
+              activities: ['Live Music', 'Movie Theater', 'Museums'],
+            });
+            setIsCheckingOnboarding(false);
+            return;
+          }
           navigate('/onboarding');
           return;
         }
@@ -133,7 +149,13 @@ export const useAuthAndProfile = () => {
         }
       } catch (error) {
         console.error('Auth check error:', error);
-        navigate('/login');
+        if (!isPreviewEnvironment()) {
+          navigate('/login');
+        } else {
+          console.log('[GUEST MODE] Auth error in preview — continuing as guest');
+          setUserId('guest-preview-user');
+          setNickname('Guest');
+        }
       } finally {
         setIsCheckingOnboarding(false);
       }
