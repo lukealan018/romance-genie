@@ -89,6 +89,15 @@ const activityMappings: Record<string, { googleType: string; keywords: string[] 
   
   // Generic bar fallback with good keywords
   'bar': { googleType: 'bar', keywords: ['bar', 'cocktail bar', 'lounge bar', 'pub'] },
+  
+  // === VAGUE/GENERIC KEYWORD MAPPINGS (Fix 3) ===
+  // These catch generic keywords from vague voice prompts and map them to real venue types
+  'entertainment': { googleType: 'amusement_center', keywords: ['entertainment venue', 'comedy club', 'escape room', 'bowling', 'arcade', 'game venue'] },
+  'nightlife': { googleType: 'night_club', keywords: ['cocktail bar', 'lounge', 'speakeasy', 'jazz bar', 'rooftop bar', 'cocktail lounge'] },
+  'fun things to do': { googleType: 'amusement_center', keywords: ['escape room', 'bowling', 'arcade', 'axe throwing', 'comedy club'] },
+  'popular attractions': { googleType: 'tourist_attraction', keywords: ['cocktail bar', 'rooftop bar', 'comedy club', 'escape room', 'bowling'] },
+  'things to do': { googleType: 'amusement_center', keywords: ['escape room', 'bowling', 'comedy club', 'arcade', 'karaoke'] },
+  'fun activities': { googleType: 'amusement_center', keywords: ['bowling', 'escape room', 'arcade', 'axe throwing', 'comedy club', 'karaoke'] },
 };
 
 function getActivityMapping(keyword: string): { googleType: string; keywords: string[] } | null {

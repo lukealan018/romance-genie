@@ -482,14 +482,21 @@ When the user gives a broad, open-ended request with no specific venue type, cui
 "nice dinner", "nice upscale place", "somewhere nice to eat", "find me a good restaurant",
 "nice place this evening", "upscale place tonight"),
 do NOT set needsClarification to true. Instead treat it as a discovery request:
-- mode: infer from context ("nice dinner" → "restaurant_only", "something fun" → "both")
 - intent: "surprise" or "flexible" (never "specific" for vague prompts)
 - noveltyLevel: "adventurous"
 - priceLevel: infer from descriptors ("nice"/"upscale"/"fancy" → "upscale", otherwise null)
-- restaurantQueryBundles: ["popular restaurant", "trendy restaurant", "highly rated restaurant"]
-- activityQueryBundles: ["fun things to do", "nightlife", "entertainment", "popular attractions"]
 - mood: infer from context clues, default to "fun"
 - needsClarification: false
+
+MODE for vague prompts (CRITICAL — read carefully):
+- "nice dinner" / "find me a good restaurant" / "somewhere nice to eat" / "upscale place tonight" → mode: "restaurant_only" (user clearly wants FOOD only)
+- ALL OTHER vague prompts → mode: "both" (ALWAYS — fun/interesting/exciting/surprise/bored/entertain/night out ALL imply a full night out with dinner + activity)
+- NEVER set mode: "restaurant_only" for: "something fun", "something interesting", "find me something to do", "plan a night out", "what should we do tonight", "entertain me", "I'm bored", "let's go out", "chill night", "something different", "surprise me"
+
+QUERY BUNDLES for vague prompts:
+- restaurantQueryBundles: ["popular restaurant", "trendy restaurant", "highly rated restaurant", "lively restaurant"]
+- activityQueryBundles: ["comedy club", "cocktail bar", "escape room", "bowling", "speakeasy", "rooftop bar", "arcade", "karaoke", "jazz lounge", "axe throwing"]
+- These CONCRETE bundles ensure the search returns real date-night venues, not generic "entertainment" businesses
 
 AMBIGUITY / CLARIFICATION:
 Reserve needsClarification ONLY for genuinely ambiguous SPECIFIC terms where you truly cannot determine
@@ -542,7 +549,12 @@ QUERY BUNDLE EXAMPLES:
 - "sushi date" → restaurantQueryBundles: ["sushi restaurant","sushi bar","omakase"], occasion: "date_night", mood: "romantic"
 - "something outside tonight" → activityQueryBundles: ["rooftop bar","patio cocktails","beer garden","outdoor live music"], negativeKeywords: ["hiking trail","campground"]
 - "comedy club" → activityQueryBundles: ["comedy club","comedy show","improv","stand up comedy"]
-- "something fun" → mode: "both", intent: "surprise", noveltyLevel: "adventurous", restaurantQueryBundles: ["popular restaurant","trendy restaurant","highly rated restaurant"], activityQueryBundles: ["fun things to do","nightlife","entertainment"], needsClarification: false
+- "something fun" → mode: "both", intent: "surprise", noveltyLevel: "adventurous", restaurantQueryBundles: ["popular restaurant","trendy restaurant","highly rated restaurant","lively restaurant"], activityQueryBundles: ["comedy club","cocktail bar","escape room","bowling","speakeasy","rooftop bar","arcade","karaoke"], needsClarification: false
+- "find me something interesting to do" → mode: "both", intent: "surprise", activityQueryBundles: ["comedy club","escape room","speakeasy","jazz lounge","rooftop bar","bowling","arcade","karaoke"]
+- "plan a night out" → mode: "both", intent: "surprise", activityQueryBundles: ["cocktail bar","comedy club","speakeasy","rooftop bar","bowling","karaoke","jazz lounge"]
+- "what should we do tonight" → mode: "both", intent: "surprise", activityQueryBundles: ["comedy club","cocktail bar","escape room","bowling","speakeasy","arcade"]
+- "I'm bored" / "entertain me" → mode: "both", intent: "surprise", activityQueryBundles: ["comedy club","escape room","bowling","arcade","karaoke","axe throwing"]
+- "let's go out" / "chill night" → mode: "both", intent: "surprise", activityQueryBundles: ["cocktail bar","speakeasy","jazz lounge","rooftop bar","wine tasting","lounge"]
 - "nice dinner" → mode: "restaurant_only", intent: "flexible", restaurantQueryBundles: ["popular restaurant","highly rated restaurant","upscale restaurant","trendy restaurant"], needsClarification: false
 - "nice upscale place this evening" → mode: "restaurant_only", intent: "specific", priceLevel: "upscale", restaurantQueryBundles: ["upscale restaurant","fine dining","highly rated restaurant","trendy restaurant"], searchDate: today, searchTime: "19:00", needsClarification: false
 - "find me somewhere nice to eat" → mode: "restaurant_only", intent: "flexible", restaurantQueryBundles: ["popular restaurant","highly rated restaurant","trendy restaurant"], needsClarification: false
@@ -561,6 +573,16 @@ CRITICAL EXAMPLES for MODE DETECTION:
 - "looking for pizza" → mode: "restaurant_only"
 - "casual place to eat" → mode: "restaurant_only"
 - "I'm looking for something casual to eat" → mode: "restaurant_only"
+- "something fun" → mode: "both" (NOT restaurant_only — fun implies an activity)
+- "something interesting" → mode: "both"
+- "find me something to do" → mode: "both"
+- "plan a night out" → mode: "both"
+- "what should we do tonight" → mode: "both"
+- "entertain me" → mode: "both"
+- "I'm bored" → mode: "both"
+- "let's go out" → mode: "both"
+- "surprise me" → mode: "both"
+- "looking for something fun" → mode: "both" (the word "fun" overrides the "looking for" pattern)
 - "whiskey bar" → mode: "activity_only"
 - "comedy club tonight" → mode: "activity_only"
 - "find a lounge" → mode: "activity_only"
