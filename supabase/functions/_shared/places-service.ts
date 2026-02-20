@@ -8,6 +8,8 @@ import {
   MIN_RATING_RESTAURANT,
   MIN_REVIEW_COUNT,
   MIN_REVIEW_COUNT_IF_NO_PHOTOS,
+  isBobaVenue,
+  isNonVenueBusiness,
 } from './place-filters.ts';
 
 const ALL_PROVIDERS = [
@@ -71,6 +73,18 @@ export async function getRestaurantSuggestions(
   
   // === QUALITY FLOOR FILTERING ===
   const qualityFiltered = merged.filter(place => {
+    // Global exclusion: boba/bubble tea shops are never dinner venues
+    if (isBobaVenue(place.name)) {
+      console.log(`🧋🚫 Post-merge: Excluding "${place.name}" - boba/bubble tea not a dinner venue`);
+      return false;
+    }
+    
+    // Global exclusion: catering companies / non-venue businesses
+    if (isNonVenueBusiness(place.name)) {
+      console.log(`🚫 Post-merge: Excluding "${place.name}" - non-venue business`);
+      return false;
+    }
+    
     // Skip quality filters for Foursquare venues without premium data
     if (place.source === 'foursquare' && place.hasPremiumData === false) {
       return true; // Keep - can't evaluate quality
@@ -84,7 +98,6 @@ export async function getRestaurantSuggestions(
     
     // Review count floor
     if (place.reviewCount < MIN_REVIEW_COUNT) {
-      // TODO: Add "super new" mode exception for brand-new hidden gems
       console.log(`🚫 Quality filter: "${place.name}" reviews ${place.reviewCount} < ${MIN_REVIEW_COUNT}`);
       return false;
     }
