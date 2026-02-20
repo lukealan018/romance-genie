@@ -89,8 +89,11 @@ export const useVoiceSearch = ({
     let restaurantCity: string | undefined = undefined;
     let activityCity: string | undefined = undefined;
     
-    // DEFAULT RADIUS: 5 miles for voice search (NOT from profile)
-    let searchRadius = preferences.radiusMiles || 5;
+    // Dynamic radius: 8 miles for vague/surprise prompts, 5 miles for specific requests
+    const isSurpriseIntent = preferences.intent === 'surprise' || 
+      (!preferences.restaurantRequest?.cuisine && !preferences.restaurantRequest?.type && 
+       !preferences.activityRequest?.type && !preferences.activityRequest?.activity);
+    let searchRadius = preferences.radiusMiles || (isSurpriseIntent ? 8 : 5);
     
     const currentMode = preferences.mode || searchMode || 'both';
     console.log('Detected mode:', currentMode);
@@ -129,7 +132,7 @@ export const useVoiceSearch = ({
         restaurantCity = coords.city;
         
         const isZipCode = /^\d+$/.test(preferences.restaurantRequest.location.trim());
-        if (!isZipCode) {
+        if (!isZipCode && !isSurpriseIntent) {
           searchRadius = 3;
         }
       }
@@ -151,7 +154,7 @@ export const useVoiceSearch = ({
         
         const isZipCode = /^\d+$/.test(preferences.activityRequest.location.trim());
         // If searching a city (not ZIP) and we haven't tightened radius yet, use 3mi
-        if (!isZipCode && searchRadius === 5) {
+        if (!isZipCode && searchRadius === 5 && !isSurpriseIntent) {
           searchRadius = 3;
         }
       }
