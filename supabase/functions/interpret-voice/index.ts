@@ -478,12 +478,15 @@ If the user requests outdoor activities or venues:
 VAGUE PROMPT HANDLING (CRITICAL):
 When the user gives a broad, open-ended request with no specific venue type, cuisine, or activity
 (e.g., "something fun", "plan a night out", "find me something interesting", "what should we do tonight",
-"let's go out", "nice evening", "chill night", "surprise me", "I'm bored", "entertain me"),
-do NOT set needsClarification to true. Instead treat it as a surprise/discovery request:
-- mode: "both"
-- intent: "surprise"
+"let's go out", "nice evening", "chill night", "surprise me", "I'm bored", "entertain me",
+"nice dinner", "nice upscale place", "somewhere nice to eat", "find me a good restaurant",
+"nice place this evening", "upscale place tonight"),
+do NOT set needsClarification to true. Instead treat it as a discovery request:
+- mode: infer from context ("nice dinner" → "restaurant_only", "something fun" → "both")
+- intent: "surprise" or "flexible" (never "specific" for vague prompts)
 - noveltyLevel: "adventurous"
-- restaurantQueryBundles: ["popular restaurant", "date night restaurant", "trendy restaurant", "highly rated restaurant"]
+- priceLevel: infer from descriptors ("nice"/"upscale"/"fancy" → "upscale", otherwise null)
+- restaurantQueryBundles: ["popular restaurant", "trendy restaurant", "highly rated restaurant"]
 - activityQueryBundles: ["fun things to do", "nightlife", "entertainment", "popular attractions"]
 - mood: infer from context clues, default to "fun"
 - needsClarification: false
@@ -539,8 +542,10 @@ QUERY BUNDLE EXAMPLES:
 - "sushi date" → restaurantQueryBundles: ["sushi restaurant","sushi bar","omakase"], occasion: "date_night", mood: "romantic"
 - "something outside tonight" → activityQueryBundles: ["rooftop bar","patio cocktails","beer garden","outdoor live music"], negativeKeywords: ["hiking trail","campground"]
 - "comedy club" → activityQueryBundles: ["comedy club","comedy show","improv","stand up comedy"]
-- "something fun" → needsClarification: true, clarificationOptions: ["Cocktail bar","Comedy club","Arcade","Live music","Surprise me"]
-- "nice dinner" → needsClarification: true, clarificationOptions: ["Italian","Steakhouse","Sushi","Seafood","Surprise me"]
+- "something fun" → mode: "both", intent: "surprise", noveltyLevel: "adventurous", restaurantQueryBundles: ["popular restaurant","trendy restaurant","highly rated restaurant"], activityQueryBundles: ["fun things to do","nightlife","entertainment"], needsClarification: false
+- "nice dinner" → mode: "restaurant_only", intent: "flexible", restaurantQueryBundles: ["popular restaurant","highly rated restaurant","upscale restaurant","trendy restaurant"], needsClarification: false
+- "nice upscale place this evening" → mode: "restaurant_only", intent: "specific", priceLevel: "upscale", restaurantQueryBundles: ["upscale restaurant","fine dining","highly rated restaurant","trendy restaurant"], searchDate: today, searchTime: "19:00", needsClarification: false
+- "find me somewhere nice to eat" → mode: "restaurant_only", intent: "flexible", restaurantQueryBundles: ["popular restaurant","highly rated restaurant","trendy restaurant"], needsClarification: false
 - "whiskey bar" → activityQueryBundles: ["whiskey bar","bourbon bar","scotch bar","craft cocktail bar"]
 - "bougie sushi date night" → restaurantQueryBundles: ["sushi restaurant","omakase","high-end sushi"], priceLevel: "upscale", mood: "romantic", occasion: "date_night"
 - "lowkey bar with the boys" → activityQueryBundles: ["sports bar","dive bar","pub","beer garden"], energyLevel: "low", occasion: "guys_night", groupContext: "group"
