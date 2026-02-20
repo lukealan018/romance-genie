@@ -424,9 +424,16 @@ serve(async (req) => {
         [items[i], items[j]] = [items[j], items[i]];
       }
     } else if (surpriseMe) {
-      console.log(`✨ Surprise Me mode: keeping top ${Math.min(15, items.length)} hidden gems in score order`);
-      // Take only top 15 hidden gems, no shuffle
-      items.splice(15);
+      // Weighted shuffle: higher-rated venues are more likely to appear first,
+      // but not guaranteed — ensures rotation across searches
+      console.log(`✨ Surprise Me mode: weighted shuffle on ${items.length} items`);
+      const weighted = items.map(item => ({
+        item,
+        weight: Math.pow(item.rating, 2) * Math.random()
+      }));
+      weighted.sort((a, b) => b.weight - a.weight);
+      items.length = 0;
+      items.push(...weighted.slice(0, 15).map(w => w.item));
     }
 
     // Log booking insights stats when feature is enabled
