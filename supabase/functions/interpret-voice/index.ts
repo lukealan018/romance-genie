@@ -191,7 +191,7 @@ INTENT DETECTION:
 "specific" → I want, find me, looking for, need, [specific place type], exact location mentioned, must have
 "flexible" → maybe, something like, open to, whatever, doesn't matter, any, either way, suggest
 
-MODE DETECTION (CRITICAL - determines what searches run):
+MODE DETECTION (NOTE: The UI-selected mode is authoritative. The mode you return here is a SUGGESTION/FALLBACK only — the frontend will override it with the user's UI selection. Still detect mode accurately for logging/analytics):
 "both" → mentions BOTH restaurant/dining AND activity (e.g., "sushi and karaoke", "dinner and movie", "tacos then bar")
 "restaurant_only" → ONLY mentions restaurant/dining, no activity (e.g., "just find me tacos", "looking for pizza", "casual place to eat", "sandwich shop")
 "activity_only" → ONLY mentions activity, no restaurant (e.g., "whiskey bar", "comedy club tonight", "find a lounge", "just looking for a bar")
