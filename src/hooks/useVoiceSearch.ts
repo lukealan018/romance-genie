@@ -98,9 +98,16 @@ export const useVoiceSearch = ({
     // Voice mode logic: If the AI explicitly detected a specific mode from the transcript
     // (e.g., "dinner and a movie" → both, "just find me tacos" → restaurant_only),
     // use that. Otherwise, respect the UI-selected mode from ModeSelection.
+    // FIX 4: Protect UI "both" mode from being silently downgraded by vague AI intent.
+    // If UI is in Full Night Out (both) mode AND the prompt is vague/flexible,
+    // NEVER downgrade to restaurant_only — keep 'both' to deliver the full experience.
     const aiMode = preferences.mode;
-    const currentMode = aiMode || searchMode || 'both';
-    console.log('Mode resolution:', { aiMode, uiMode: searchMode, resolved: currentMode });
+    const isVagueIntent = preferences.intent === 'surprise' || preferences.intent === 'flexible';
+    const uiModeIsBoth = searchMode === 'both' || !searchMode;
+    const currentMode = (isVagueIntent && uiModeIsBoth && aiMode === 'restaurant_only')
+      ? 'both'
+      : (aiMode || searchMode || 'both');
+    console.log('Mode resolution:', { aiMode, uiMode: searchMode, isVagueIntent, resolved: currentMode });
     
     const geocodeLocation = async (location: string): Promise<{ lat: number; lng: number; city?: string } | null> => {
       try {
@@ -411,11 +418,25 @@ export const useVoiceSearch = ({
         'comedy club', 'bowling alley', 'escape room', 'arcade bar',
         'karaoke bar', 'live music venue', 'wine bar', 'brewery',
       ];
-      const activityBundles = (preferences.activityQueryBundles?.length > 0)
+      // FIX 2: Detect vague/generic activity bundles from AI and replace with concrete ones.
+      // The AI sometimes returns bundles like ["fun things to do", "nightlife", "entertainment"]
+      // which produce terrible results. Replace them with the good default bundles.
+      const VAGUE_ACTIVITY_KEYWORDS = new Set([
+        'fun things to do', 'nightlife', 'entertainment', 'popular attractions',
+        'things to do', 'activities', 'fun', 'something fun', 'entertainment venues',
+        'interesting things to do', 'fun activities', 'night out activities',
+      ]);
+      const areVagueActivityBundles = (bundles: string[]): boolean => {
+        if (!bundles || bundles.length === 0) return true;
+        return bundles.every(b => VAGUE_ACTIVITY_KEYWORDS.has(b.toLowerCase().trim()));
+      };
+      
+      const activityBundles = (preferences.activityQueryBundles?.length > 0 && !areVagueActivityBundles(preferences.activityQueryBundles))
         ? preferences.activityQueryBundles
         : (!searchActivity 
             ? (voiceMode === 'both' ? DEFAULT_ACTIVITY_BUNDLES_BOTH_MODE : DEFAULT_ACTIVITY_BUNDLES_ACTIVITY_ONLY)
             : []);
+      console.log('🎯 Activity bundles resolved:', { aiReturned: preferences.activityQueryBundles, usingFallback: areVagueActivityBundles(preferences.activityQueryBundles || []), final: activityBundles });
       
       // Always add negative keywords to keep restaurant chains out of activity results
       const activityNegativeKeywords = [
