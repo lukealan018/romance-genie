@@ -1,125 +1,141 @@
 
 
-# Elevate Result Quality: Kill Cafes, Prioritize Date-Worthy Venues
+# Concierge Polish -- 6 UI Refinements
 
-## The Core Problem
-
-Romance Genie is a **curated experience concierge**, not a search engine. Right now, cafes and low-effort venues leak into results because the system treats them as valid restaurants. A cafe is only appropriate when someone explicitly asks for coffee (which we already handle with the Coffee Shops toggle). In every other context, suggesting a cafe for an outing is like a concierge recommending a gas station.
-
-## What Changes
-
-### 1. Block cafes from general restaurant results (backend)
-**File: `supabase/functions/_shared/providers/google-provider.ts`**
-
-- Remove `'cafe'` from the restaurant name allowlist (line 57) so cafe-named venues no longer bypass filtering
-- Add cafe/coffee-related names to the **exclusion** list when `venueType !== 'coffee'`
-- This means "Blue Bottle Coffee", "The Daily Cafe", "Sunrise Cafe" will be filtered out of dinner/outing searches but still appear when someone uses the Coffee Shops toggle
-
-### 2. Remove `'cafe'` from RESTAURANT_TYPES (backend)
-**File: `supabase/functions/_shared/place-filters.ts`**
-
-- Remove `'cafe'` from the `RESTAURANT_TYPES` array (line 86) so venues typed as `cafe` by Google don't get classified as "primarily a restaurant" and slip through activity filters either
-- Add a new `CAFE_EXCLUSION_KEYWORDS` list for name-based filtering: `cafe, café, coffee, espresso, roasters, coffeehouse`
-
-### 3. Add a "date-night quality floor" to restaurant scoring (backend)
-**File: `supabase/functions/places-search/index.ts`**
-
-- In the final sort, add a penalty for venues with very low review counts (under 30) unless they're in hidden_gems mode
-- This prevents obscure, untested venues from ranking alongside proven options
-- Keeps the hidden gems path open for adventurous users while filtering noise for everyone else
-
-### 4. Exclude low-effort venue types from activity results (backend)  
-**File: `supabase/functions/_shared/place-filters.ts`**
-
-- Add to `EXCLUDED_ACTIVITY_TYPES`: `'cafe'`, `'bakery'`
-- These should never appear as "activities" — they're not outings
-
-### 5. Foursquare cafe filtering (backend)
-**File: `supabase/functions/_shared/providers/foursquare-provider.ts`**
-
-- When `venueType !== 'coffee'`, exclude Foursquare category IDs `13034` (Coffee Shop) and `13035` (Cafe) from restaurant results
-- This mirrors the Google-side fix for the other provider
+Transform the app from "search engine showing results" to "personal concierge presenting curated picks."
 
 ---
 
-## Technical Details
+## 1. Remove Source Badges (Google/Foursquare)
 
-### Change 1 -- `google-provider.ts` (lines 56-66)
-Remove `'cafe'` from the allowlist and add cafe exclusion for non-coffee searches:
+Nobody cares which API found the venue. These technical badges break the premium illusion.
 
+**Files:**
+- `src/components/PlanCard.tsx` -- Remove the `restaurant.source` and `activity.source` badge blocks (lines 375-379 and 608-611) that show "Foursquare" / "Google"
+- `src/components/RestaurantCard.tsx` -- Remove source badge block (lines 112-116)
+- `src/components/ActivityCard.tsx` -- Remove source badge block that shows "Foursquare" / "Google" (keep the Ticketmaster "Live Event" badge since that's useful context, not a technical detail)
+
+The Hidden Gem, New Discovery, Local Favorite, and Personal Match badges all stay -- those are concierge-style curation signals.
+
+---
+
+## 2. Replace Raw Ratings with Concierge Language
+
+Instead of "4.7 (342)" which feels like a search engine, show warm descriptors.
+
+**File: `src/components/PlanCard.tsx`**
+
+Create a helper function `getConciergeRatingLabel`:
 ```typescript
-const restaurantKeywords = [
-  'restaurant', 'bistro', 'steakhouse', 'trattoria', 
-  'brasserie', 'eatery', 'dining', 'grill', 'kitchen', 
-  'tavern', 'pub', 'diner', 'bar & grill', 'ristorante', 'osteria'
-  // 'cafe' REMOVED -- only valid when venueType === 'coffee'
-];
-
-// NEW: Exclude cafe/coffee venues from non-coffee searches
-if (!isCoffeeSearch) {
-  const cafePatterns = /\bcafe\b|\bcafé\b|\bcoffee\b|\bespresso\b|\broasters?\b|\bcoffeehouse\b/i;
-  if (cafePatterns.test(name) && !name.includes('bistro') && !name.includes('kitchen') && !name.includes('grill')) {
-    console.log(`☕🚫 Google: Filtering out "${placeName}" - cafe/coffee venue in non-coffee search`);
-    return true;
-  }
-}
+const getConciergeRatingLabel = (rating: number, totalRatings: number): string => {
+  if (rating >= 4.7 && totalRatings >= 500) return "Exceptional";
+  if (rating >= 4.7) return "Highly Rated";
+  if (rating >= 4.3 && totalRatings >= 200) return "Local Favorite";
+  if (rating >= 4.3) return "Well Loved";
+  if (rating >= 4.0) return "Great Pick";
+  if (rating >= 3.5) return "Solid Choice";
+  return "Worth a Try";
+};
 ```
 
-### Change 2 -- `place-filters.ts` (line 86)
-```typescript
-export const RESTAURANT_TYPES: string[] = [
-  'restaurant', 'food', 'meal_takeaway', 'meal_delivery', 'bakery',
-  // 'cafe' REMOVED - cafes are only valid for coffee-specific searches
-];
+Replace the Star + number display (lines 366-369 for restaurant, 597-601 for activity) with:
+```
+<Star icon filled /> "Highly Rated"
 ```
 
-### Change 3 -- `place-filters.ts` (EXCLUDED_ACTIVITY_TYPES, line 57-67)
-Add `'cafe'` and `'bakery'` to the excluded activity types list.
+No raw numbers. The concierge doesn't say "4.7 out of 5 based on 342 reviews" -- they say "this place is exceptional."
 
-### Change 4 -- `foursquare-provider.ts`
-When `venueType !== 'coffee'`, filter results whose primary category is Coffee Shop (13034) or Cafe (13035):
+Apply the same treatment to `RestaurantCard.tsx` and `ActivityCard.tsx` (the list view cards).
 
+---
+
+## 3. Rename "Swap" to "Show Me Something Else"
+
+The word "Swap" is transactional. A concierge says "let me show you another option."
+
+**Files:**
+- `src/components/PlanCard.tsx` -- Change both Swap buttons (lines 416 and 648) from "Swap" to "Something Else"
+- `src/pages/PlanPage.tsx` -- Change "Swap Food" (lines 469, 493) to "Different Dinner" and "Swap Activity" (lines 478, 493) to "Different Activity"
+- Also change "Reroll" button text (line 336) to "Start Fresh"
+
+---
+
+## 4. Add Venue Taglines
+
+Generate a one-line "why this place" descriptor using existing data (category, price level, rating). No AI call needed -- pure pattern matching.
+
+**File: `src/components/PlanCard.tsx`**
+
+Add a helper function:
 ```typescript
-// After building results, exclude cafe/coffee venues for non-coffee searches
-if (venueType !== 'coffee') {
-  results = results.filter(r => {
-    const isCafeCategory = r.categories.some(c => 
-      ['13034', '13035'].includes(c) || 
-      c.toLowerCase().includes('coffee') || c.toLowerCase().includes('café')
-    );
-    if (isCafeCategory) {
-      console.log(`☕🚫 Foursquare: Filtering "${r.name}" - cafe in non-coffee search`);
-      return false;
-    }
-    return true;
-  });
-}
-```
-
-### Change 5 -- `places-search/index.ts` (quality floor in sort)
-Add review count awareness to the sort to prevent untested venues from surfacing:
-
-```typescript
-.sort((a, b) => {
-  // Quality floor: penalize venues with very few reviews (except hidden_gems mode)
-  const aHasEnoughReviews = a.totalRatings >= 30 || noveltyMode === 'hidden_gems';
-  const bHasEnoughReviews = b.totalRatings >= 30 || noveltyMode === 'hidden_gems';
-  if (aHasEnoughReviews !== bHasEnoughReviews) {
-    return aHasEnoughReviews ? -1 : 1; // Prefer venues with enough reviews
+const getVenueTagline = (place: Place, type: 'restaurant' | 'activity'): string => {
+  const { rating, totalRatings, priceLevel, city, category } = place;
+  
+  if (place.isHiddenGem) return "A rare find most people don't know about";
+  if (place.isLocalFavorite) return "A neighborhood staple locals swear by";
+  
+  if (type === 'restaurant') {
+    if (priceLevel === '$$$$') return "Upscale dining for a special evening";
+    if (priceLevel === '$$$' && rating >= 4.5) return "Refined dining with outstanding reviews";
+    if (rating >= 4.7 && totalRatings >= 300) return "One of the highest-rated spots nearby";
+    if (rating >= 4.5) return "Consistently impressive dining experience";
+    return "A solid pick for tonight";
   }
   
-  // ... existing rating/price/uniqueness sort
-})
+  // Activity
+  if (category === 'event') return "A live experience happening near you";
+  if (rating >= 4.7 && totalRatings >= 200) return "A top-rated experience in the area";
+  if (rating >= 4.5) return "Highly recommended by visitors";
+  return "Something fun to round out your evening";
+};
 ```
 
-## Deployment
+Display it as a subtle italic line below the venue name in the PlanCard, styled with `text-sm italic text-muted-foreground/80`.
 
-All changes are in edge functions, so `places-search` needs redeployment. No frontend changes needed -- the filtering happens entirely server-side.
+---
 
-## What This Does NOT Change
+## 5. Time-Aware Greetings
 
-- Coffee Shops toggle still works exactly as before (venueType='coffee' bypasses all cafe filters)
-- Brunch search still works (cafes that serve brunch have separate handling)
-- Hidden gems mode still surfaces unique low-review spots
-- Fine dining chains (Mastro's, Ruth's Chris, etc.) remain allowed
+The hero section should feel contextual, not static.
+
+**File: `src/components/hero-section.tsx`**
+
+Add a time-aware greeting helper:
+```typescript
+const getTimeGreeting = (): { greeting: string; subtitle: string } => {
+  const hour = new Date().getHours();
+  if (hour < 12) return { greeting: "Good morning", subtitle: "Planning a brunch or daytime date?" };
+  if (hour < 17) return { greeting: "Good afternoon", subtitle: "Getting ahead on tonight's plans?" };
+  if (hour < 21) return { greeting: "Good evening", subtitle: "Let's find something perfect for tonight" };
+  return { greeting: "Night owl?", subtitle: "Let's find a late-night spot" };
+};
+```
+
+Replace the static "Welcome back," (line 203) and "Ready for tonight's adventure?" (line 209) with the dynamic greeting. The non-logged-in state stays as-is since it's already good.
+
+---
+
+## 6. Clean Up Plan Page Header
+
+The Plan page header currently has a "Profile" button that doesn't belong on a results page -- it breaks the concierge flow.
+
+**File: `src/pages/PlanPage.tsx`**
+
+- Remove the Profile button (line 406) -- users access Profile from the home screen
+- Keep the Share button and Back arrow
+- The "Curated for You" center text stays -- it reinforces the concierge positioning
+
+---
+
+## Summary of Files Changed
+
+| File | Changes |
+|------|---------|
+| `src/components/PlanCard.tsx` | Remove source badges, replace raw ratings, rename Swap, add taglines |
+| `src/components/RestaurantCard.tsx` | Remove source badge, replace raw rating |
+| `src/components/ActivityCard.tsx` | Remove source badge (keep Live Event), replace raw rating |
+| `src/components/hero-section.tsx` | Time-aware greetings |
+| `src/pages/PlanPage.tsx` | Remove Profile button, rename swap buttons |
+
+No new files. No new dependencies. All changes are frontend-only.
 
