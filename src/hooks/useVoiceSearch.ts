@@ -95,8 +95,11 @@ export const useVoiceSearch = ({
        !preferences.activityRequest?.type && !preferences.activityRequest?.activity);
     let searchRadius = preferences.radiusMiles || (isSurpriseIntent ? 8 : 5);
     
-    const currentMode = preferences.mode || searchMode || 'both';
-    console.log('Detected mode:', currentMode);
+    // CRITICAL: Voice mode takes priority over store searchMode
+    // preferences.mode comes directly from AI interpretation and should NOT fall back to the 
+    // previously-selected UI mode (which could be "both" from ModeSelection)
+    const currentMode = preferences.mode || 'both';
+    console.log('Detected mode from voice:', currentMode, '(store mode was:', searchMode, ')');
     
     const geocodeLocation = async (location: string): Promise<{ lat: number; lng: number; city?: string } | null> => {
       try {
@@ -326,7 +329,9 @@ export const useVoiceSearch = ({
     
     try {
       // Price level ONLY from voice intent, not profile
-      const restaurantPriceLevel = preferences.restaurantRequest?.priceLevel || null;
+      // Price level from voice: check both restaurantRequest.priceLevel and top-level priceLevel
+      const restaurantPriceLevel = preferences.restaurantRequest?.priceLevel || preferences.priceLevel || null;
+      console.log('💰 Voice price level:', restaurantPriceLevel);
       
       // VOICE SEARCH: Do NOT use profile preferences for filtering
       // Learned preferences are ONLY used for scoring/ranking, never as hard filters

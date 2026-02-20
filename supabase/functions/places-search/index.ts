@@ -223,6 +223,9 @@ serve(async (req) => {
         })
       );
       
+      console.log(`💰 Bundle fan-out priceLevel: ${priceLevel || 'none'}`);
+
+      
       const bundleResults = await Promise.allSettled(bundlePromises);
       
       // Merge all bundle results
