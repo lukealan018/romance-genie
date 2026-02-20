@@ -95,11 +95,12 @@ export const useVoiceSearch = ({
        !preferences.activityRequest?.type && !preferences.activityRequest?.activity);
     let searchRadius = preferences.radiusMiles || (isSurpriseIntent ? 8 : 5);
     
-    // CRITICAL: Voice mode takes priority over store searchMode
-    // preferences.mode comes directly from AI interpretation and should NOT fall back to the 
-    // previously-selected UI mode (which could be "both" from ModeSelection)
-    const currentMode = preferences.mode || 'both';
-    console.log('Detected mode from voice:', currentMode, '(store mode was:', searchMode, ')');
+    // Voice mode logic: If the AI explicitly detected a specific mode from the transcript
+    // (e.g., "dinner and a movie" → both, "just find me tacos" → restaurant_only),
+    // use that. Otherwise, respect the UI-selected mode from ModeSelection.
+    const aiMode = preferences.mode;
+    const currentMode = aiMode || searchMode || 'both';
+    console.log('Mode resolution:', { aiMode, uiMode: searchMode, resolved: currentMode });
     
     const geocodeLocation = async (location: string): Promise<{ lat: number; lng: number; city?: string } | null> => {
       try {
