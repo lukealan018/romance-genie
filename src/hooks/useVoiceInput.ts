@@ -27,6 +27,12 @@ export interface VoicePreferences {
   mode?: "both" | "restaurant_only" | "activity_only";
 }
 
+interface CurrentWeather {
+  temperature: number;
+  description: string;
+  isRaining: boolean;
+}
+
 interface UseVoiceInputProps {
   onPreferencesExtracted: (preferences: VoicePreferences) => void;
   userProfile?: {
@@ -34,9 +40,10 @@ interface UseVoiceInputProps {
     activities?: string[];
     home_zip?: string;
   };
+  currentWeather?: CurrentWeather | null;
 }
 
-export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceInputProps) => {
+export const useVoiceInput = ({ onPreferencesExtracted, userProfile, currentWeather }: UseVoiceInputProps) => {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState("");
@@ -125,7 +132,7 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
         // Send to AI for interpretation
         console.log('Final transcript captured:', speechResult);
         try {
-          await interpretVoiceInput(speechResult, onPreferencesExtracted, userProfile);
+          await interpretVoiceInput(speechResult, onPreferencesExtracted, userProfile, currentWeather);
         } catch (error) {
           console.error('Error interpreting voice:', error);
           toast({
@@ -180,7 +187,7 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
     };
 
     recognition.start();
-  }, [isSpeechRecognitionSupported, onPreferencesExtracted, userProfile]);
+  }, [isSpeechRecognitionSupported, onPreferencesExtracted, userProfile, currentWeather]);
 
   return {
     isListening,
@@ -194,13 +201,14 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile }: UseVoiceI
 async function interpretVoiceInput(
   transcript: string,
   onPreferencesExtracted: (preferences: VoicePreferences) => void,
-  userProfile?: { cuisines?: string[]; activities?: string[]; home_zip?: string }
+  userProfile?: { cuisines?: string[]; activities?: string[]; home_zip?: string },
+  currentWeather?: CurrentWeather | null
 ) {
   try {
     console.log('Calling interpret-voice edge function with transcript:', transcript);
     
     const { data, error } = await supabase.functions.invoke('interpret-voice', {
-      body: { transcript, userProfile }
+      body: { transcript, userProfile, currentWeather: currentWeather || undefined }
     });
 
     if (error) {
