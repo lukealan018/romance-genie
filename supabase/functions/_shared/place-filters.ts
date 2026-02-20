@@ -119,6 +119,55 @@ export const RESTAURANT_KEYWORDS: string[] = [
   'del taco', 'taco bell', 'chipotle', 'panda express', 'wingstop',
 ];
 
+// ===== UPSCALE / FINE DINING QUALITY GATE =====
+// For upscale/fine_dining requests, a venue MUST pass this positive signal check
+// if it lacks confirmed price data. This replaces whack-a-mole blacklisting.
+
+// Strong upscale signals in the venue name
+export const UPSCALE_NAME_SIGNALS = /steakhouse|steak\s*house|chophouse|chop\s*house|brasserie|ristorante|trattoria|osteria|enoteca|maison|le\s+\w|la\s+\w|bistro|gastropub|supper\s*club|tasting\s*menu|omakase|chef.s\s*table|prix\s*fixe|rooftop\s*dining|sky\s*dining|penthouse|grille|fine\s*dining|upscale|gourmet|signature\s*kitchen|prime\s*steak|prime\s*chop|tavern\s*\d|oyster\s*bar|raw\s*bar|seafood\s*bar|izakaya|kaiseki|fondue|raclette|wine\s*bar|cocktail\s*lounge|members?\s*club/i;
+
+// Known upscale chain keywords (always pass for upscale searches)
+export const UPSCALE_CHAIN_NAMES = /mastro|ruth.?s\s*chris|capital\s*grille|morton.?s|fleming.?s|eddie\s*v|del\s*frisco|boa\s*steakhouse|nobu|spago|craft|melisse|providence|republique|n\/naka|vespertine|hayato|jordon|the\s*palm|smith\s*&\s*wollensky|fogo\s*de\s*chao|las\s*brisas|water\s*grill|the\s*ivy|bottega\s*louie|perino|perino.?s|peppone|four\s*seasons\s*restaurant|hotel\s*restaurant/i;
+
+// Signals that a venue is clearly NOT upscale (instant fail for upscale searches)
+export const NON_UPSCALE_SIGNALS = /boba|bubble\s*tea|milk\s*tea|tapioca|tea\s*shop|tea\s*house|teahouse|pearl\s*tea|catering|caterers|food\s*truck|buffet|all.?you.?can.?eat|smorgasbord|hot\s*dog|hot\s*dogs|deli\s*mart|deli\s*shop|fast\s*food|quick\s*bites|drive.?thru|drive.?through|wing\s*stop|wingstop|taco\s*bell|mcdonald|burger\s*king|subway\s*sandwich|pizza\s*hut|domino.?s|kfc|chipotle|panda\s*express|in.?n.?out|five\s*guys|shake\s*shack|chick.?fil|popeye|el\s*pollo|peet.?s\s*coffee|dunkin|starbucks|grocery|convenience|gas\s*station|market|bodega/i;
+
+/**
+ * Determines if a venue qualifies as "upscale" when it lacks Google price_level data.
+ * Returns true = keep it (passes quality gate), false = reject it.
+ *
+ * Logic: A venue without price data must have POSITIVE upscale signals to be included
+ * in upscale/fine_dining searches. If there's no signal, we reject — don't guess.
+ */
+export function passesUpscaleQualityGate(name: string, priceLevel: number | null | undefined): boolean {
+  const nameLower = name.toLowerCase();
+  
+  // If Google confirmed price level is present: apply strict minimum
+  // upscale = 3+, fine_dining = 4 (but we allow 3+ for fine_dining to not miss venues)
+  if (priceLevel !== null && priceLevel !== undefined) {
+    return priceLevel >= 3;
+  }
+  
+  // No price data: require positive upscale name signals
+  // First: immediately reject clear non-upscale venues
+  if (NON_UPSCALE_SIGNALS.test(name)) {
+    return false;
+  }
+  
+  // Allow known upscale chains
+  if (UPSCALE_CHAIN_NAMES.test(name)) {
+    return true;
+  }
+  
+  // Allow venues with strong upscale signals in name
+  if (UPSCALE_NAME_SIGNALS.test(name)) {
+    return true;
+  }
+  
+  // No price data, no upscale signals → reject. Don't guess.
+  return false;
+}
+
 // ===== ITALIAN vs PIZZA FILTERING =====
 // When searching for "Italian", exclude pizza places unless user explicitly says "pizza"
 export const PIZZA_KEYWORDS: string[] = [
