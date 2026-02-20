@@ -25,6 +25,21 @@ export interface VoicePreferences {
   mustHaves?: string[];
   avoidances?: string[];
   mode?: "both" | "restaurant_only" | "activity_only";
+  restaurantSubtype?: string;
+  activitySubtype?: string;
+  restaurantQueryBundles?: string[];
+  activityQueryBundles?: string[];
+  negativeKeywords?: string[];
+  needsClarification?: boolean;
+  clarificationOptions?: string[];
+  occasion?: string;
+  groupContext?: string;
+  weatherWarning?: string;
+  searchDate?: string;
+  searchTime?: string;
+  searchDateAmbiguous?: boolean;
+  searchDateOptions?: any[];
+  venueType?: string;
 }
 
 interface CurrentWeather {
@@ -237,15 +252,32 @@ async function interpretVoiceInput(
       noveltyLevel: data.noveltyLevel || 'safe',
       mustHaves: data.mustHaves || [],
       avoidances: data.avoidances || [],
-      mode: data.mode || 'both'
+      mode: data.mode || 'both',
+      restaurantSubtype: data.restaurantSubtype,
+      activitySubtype: data.activitySubtype,
+      restaurantQueryBundles: data.restaurantQueryBundles || [],
+      activityQueryBundles: data.activityQueryBundles || [],
+      negativeKeywords: data.negativeKeywords || [],
+      needsClarification: data.needsClarification || false,
+      clarificationOptions: data.clarificationOptions || [],
+      occasion: data.occasion,
+      groupContext: data.groupContext,
+      weatherWarning: data.weatherWarning,
+      searchDate: data.searchDate,
+      searchTime: data.searchTime,
+      searchDateAmbiguous: data.searchDateAmbiguous,
+      searchDateOptions: data.searchDateOptions || [],
+      venueType: data.venueType,
     };
 
     onPreferencesExtracted(preferences);
     
-    toast({
-      title: "Perfect! ✨",
-      description: `Looking for ${preferences.cuisinePreferences[0] || 'great'} food and ${preferences.activityPreferences[0] || 'fun'} activities!`,
-    });
+    if (!data.needsClarification) {
+      toast({
+        title: "Perfect! ✨",
+        description: `Looking for ${preferences.cuisinePreferences[0] || 'great'} food and ${preferences.activityPreferences[0] || 'fun'} activities!`,
+      });
+    }
 
   } catch (error) {
     console.error('Error interpreting voice input:', error);
