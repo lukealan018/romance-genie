@@ -61,6 +61,9 @@ export const EXCLUDED_ACTIVITY_TYPES: string[] = [
   'grocery_store', 'supermarket', 'convenience_store', 'gas_station',
   'gym', 'laundry', 'parking', 'atm', 'bank', 'liquor_store',
   'beauty_salon', 'hair_care', 'spa', 'nail_salon', 'barber_shop',
+  // Parks / nature (not date-night venues)
+  'park', 'state_park', 'national_park', 'dog_park', 'playground',
+  'campground', 'nature_reserve', 'hiking_area', 'trail',
 ];
 
 // ===== GOLF ENTERTAINMENT FILTERING =====

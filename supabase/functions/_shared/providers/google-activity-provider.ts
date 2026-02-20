@@ -155,7 +155,16 @@ function shouldExcludeActivity(placeTypes: string[], searchKeyword: string, plac
     return true;
   }
   
-  // === PASS 0b: Check centralized type exclusions ===
+  // === PASS 0b: Exclude parks by name (not date-night venues) ===
+  const PARK_NAME_PATTERNS = ['park', 'nature reserve', 'nature preserve', 'wildlife refuge', 'state beach'];
+  const isPark = PARK_NAME_PATTERNS.some(p => name.endsWith(` ${p}`) || name === p) && 
+    !name.includes('theme park') && !name.includes('amusement');
+  if (isPark) {
+    console.log(`🚫 Google Activity: Excluding "${placeName}" - park/nature area`);
+    return true;
+  }
+  
+  // === PASS 0c: Check centralized type exclusions ===
   const allExcludedTypes = [...EXCLUDED_ALWAYS_TYPES, ...EXCLUDED_ACTIVITY_TYPES];
   if (hasExcludedType(placeTypes, allExcludedTypes)) {
     console.log(`🚫 Google Activity: Excluding "${placeName}" - has excluded type`);
