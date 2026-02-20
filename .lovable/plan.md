@@ -1,103 +1,99 @@
 
 
-# Fix: Vague Voice Prompts Should Always Return Results
+# Smarter Result Rotation -- Stop Seeing the Same Places
 
-## Problem
+## The Problem
 
-When a user says something vague like "find me something interesting to do" or "plan a fun night," the system returns nothing because:
+When you search multiple times with similar prompts, the same 2-3 venues keep appearing at the top. This happens because:
 
-1. The `interpret-voice` AI sets `needsClarification: true` with `mode: null` for vague prompts, which halts the search entirely and shows clarification chips
-2. Even if clarification is bypassed, `searchActivity` ends up empty/undefined, causing `activities-search` to return a 400 error (keyword is required)
-3. Similarly, `searchCuisine` being empty means restaurant search has no direction
+1. The backend always sorts results by rating first, so the highest-rated places always float to the top
+2. The frontend scoring is completely deterministic -- same inputs always produce the same ranking
+3. Only the single displayed venue gets excluded per search, so the runner-up just takes its place next time
 
-A blank screen is never acceptable. Vague prompts should behave like an intelligent "Surprise Me" -- just find something good nearby.
+## The Fix -- Three Targeted Changes
 
-## Solution
+### 1. Add randomness to surprise/voice scoring (frontend)
+**File: `src/lib/planner.ts`**
 
-Two-part fix: update the edge function prompt to never clarify on genuinely vague prompts, and add frontend fallback defaults so searches always have keywords.
+Inject a random jitter factor into the scoring formula for surprise and flexible (voice) intents. This means even with the same set of results, the ranking shuffles each time. The jitter is small enough that terrible venues won't suddenly rank first, but large enough that the top 5-8 quality venues rotate who appears at #1.
 
----
+- Surprise mode: add a random factor worth up to 20% of the score
+- Voice/flexible mode: add a random factor worth up to 10%
+- Specific/manual mode: no change (users expect consistent results)
 
-## Part 1: Update `interpret-voice` System Prompt
+### 2. Exclude top 3 displayed results, not just 1 (frontend)
+**File: `src/hooks/useVoiceSearch.ts`**
 
-Add a new rule section to the system prompt:
+Currently only the single displayed restaurant and activity get added to the exclusion list. Change this to exclude the top 3 from each category. This way, the next search genuinely cannot return those same venues, forcing deeper rotation into the result pool.
 
-**"VAGUE PROMPT HANDLING"** -- When the user's request is genuinely open-ended (e.g., "something fun," "plan a night," "find me something interesting," "what should we do"), do NOT set `needsClarification: true`. Instead:
-- Set `mode: "both"`
-- Set `intent: "surprise"`
-- Set `noveltyLevel: "adventurous"`
-- Set `restaurantQueryBundles` to a varied set like `["popular restaurant", "date night restaurant", "trendy restaurant"]`
-- Set `activityQueryBundles` to a varied set like `["fun things to do", "nightlife", "entertainment"]`
-- Set `mood` based on any contextual clues (default to `"fun"`)
+### 3. Backend shuffle for surprise mode (edge function)
+**File: `supabase/functions/places-search/index.ts`**
 
-Reserve `needsClarification` ONLY for genuinely ambiguous specific terms (e.g., "wings" where you truly cannot tell food vs. activity), not for open-ended requests.
-
-## Part 2: Frontend Fallback Defaults in `useVoiceSearch.ts`
-
-In the `executeSearch` function, add fallback keywords so searches never go out empty:
-
-- **Restaurant search**: If `searchCuisine` is empty and mode includes restaurants, default the cuisine to an empty string (which places-search already handles as "general restaurant search") -- this already works, no change needed
-- **Activity search**: If `searchActivity` is empty (line ~398) and mode includes activities, provide a sensible default keyword like `"fun things to do"` instead of `undefined`. This prevents the 400 error from activities-search.
-- **Query bundles fallback**: If both `searchActivity` and `activityQueryBundles` are empty, inject default bundles like `["fun things to do", "nightlife", "entertainment"]`
-
-## Part 3: Activities-Search Edge Function Tolerance
-
-Update `activities-search/index.ts` to accept empty/missing keyword when `queryBundles` are provided. Currently line ~149 returns 400 if `!keyword`, but if bundles exist, the keyword isn't needed since each bundle is its own search.
+Currently, surprise mode skips the seed-based shuffle and keeps results in strict score order. Change this to apply a weighted shuffle for surprise mode -- top-rated venues still have a higher chance of appearing first, but it's not guaranteed. This prevents the same venue from always being the #1 result from the API itself.
 
 ---
-
-## Files to Modify
-
-| File | Change |
-|------|--------|
-| `supabase/functions/interpret-voice/index.ts` | Add "VAGUE PROMPT HANDLING" section to system prompt |
-| `src/hooks/useVoiceSearch.ts` | Add fallback keyword defaults when searchActivity is empty (~line 398) |
-| `supabase/functions/activities-search/index.ts` | Allow empty keyword when queryBundles are provided |
 
 ## Technical Details
 
-### interpret-voice prompt addition (abbreviated):
-```
-VAGUE PROMPT HANDLING:
-When the user gives a broad, open-ended request with no specific venue type,
-cuisine, or activity (e.g., "something fun", "plan a night out", "find me
-something interesting", "what should we do tonight"), do NOT set
-needsClarification to true. Instead treat it as a surprise/discovery request:
-- mode: "both"
-- intent: "surprise"  
-- noveltyLevel: "adventurous"
-- restaurantQueryBundles: ["popular restaurant", "date night restaurant", "trendy restaurant"]
-- activityQueryBundles: ["fun things to do", "nightlife", "entertainment"]
-Only use needsClarification for genuinely ambiguous SPECIFIC terms.
-```
+### Change 1 -- `src/lib/planner.ts` (scoring randomness)
 
-### useVoiceSearch.ts change (~line 393-408):
+In the `scorePlaces` function, add a random jitter to the score calculation:
+
 ```typescript
-// Fallback: ensure activity search always has a keyword
-const activityKeyword = searchActivity || 'fun things to do';
-const activityBundles = preferences.activityQueryBundles?.length > 0 
-  ? preferences.activityQueryBundles 
-  : (!searchActivity ? ['fun things to do', 'nightlife', 'entertainment'] : []);
+// After calculating all score components (~line 250)
+const randomJitter = (Math.random() - 0.5); // range: -0.5 to 0.5
 
-// In the activities-search invoke:
-keyword: activityKeyword,
-queryBundles: activityBundles,
+if (intent === 'surprise') {
+  score = 
+    0.30 * noveltyBoost +
+    0.25 * ratingNorm +
+    0.15 * learnedBoost +
+    0.10 * contextualBoost +
+    0.10 * personalFit +
+    0.05 * proximityNorm +
+    0.20 * randomJitter +  // NEW: rotation jitter
+    qualityPenalty;
+} else if (intent !== 'specific') {
+  // flexible/voice mode gets smaller jitter
+  score += 0.10 * randomJitter;
+}
 ```
 
-### activities-search/index.ts change (~line 149):
+The novelty weight drops slightly (0.35 to 0.30) to make room for the jitter. Rating weight stays the same so quality is still prioritized.
+
+### Change 2 -- `src/hooks/useVoiceSearch.ts` (exclude top 3)
+
+Replace lines 536-539 to exclude the top 3 results instead of just the first:
+
 ```typescript
-// Allow empty keyword when queryBundles are provided
-if (isNaN(lat) || isNaN(lng) || isNaN(radiusMiles) || (!keyword && queryBundles.length === 0)) {
-  return new Response(
-    JSON.stringify({ error: 'Missing required parameters: lat, lng, radiusMiles, and either keyword or queryBundles' }),
-    { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
+const displayedRestaurantIds = sortedRestaurants.slice(0, 3).map(r => r.id);
+const displayedActivityIds = sortedActivities.slice(0, 3).map(a => a.id);
+addToExcludePlaceIds(displayedRestaurantIds);
+addToExcludeActivityIds(displayedActivityIds);
+```
+
+### Change 3 -- `supabase/functions/places-search/index.ts` (weighted shuffle for surprise)
+
+Replace the current surprise mode logic (which just truncates to top 15) with a weighted shuffle that uses rating as probability weight:
+
+```typescript
+} else if (surpriseMe) {
+  // Weighted shuffle: higher-rated venues are more likely to appear first,
+  // but not guaranteed -- ensures rotation across searches
+  const weighted = items.map(item => ({
+    item,
+    weight: Math.pow(item.rating, 2) * Math.random()
+  }));
+  weighted.sort((a, b) => b.weight - a.weight);
+  items.length = 0;
+  items.push(...weighted.slice(0, 15).map(w => w.item));
 }
 ```
 
 ## Implementation Order
 
-1. Update `interpret-voice` system prompt with vague prompt handling rules
-2. Update `activities-search` to accept empty keyword when bundles exist
-3. Add frontend fallback defaults in `useVoiceSearch.ts`
-4. Deploy edge functions and test with vague prompts
+1. Frontend scoring jitter (planner.ts) -- immediate rotation improvement
+2. Exclude top 3 (useVoiceSearch.ts) -- deeper pool rotation
+3. Backend weighted shuffle (places-search) -- variety from the API layer
+
+All three changes are small and surgical. No new files, no new dependencies.
