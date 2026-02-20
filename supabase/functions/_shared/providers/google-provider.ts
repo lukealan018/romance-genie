@@ -196,14 +196,15 @@ export const googlePlacesProvider: PlacesProvider = {
       searchType = 'restaurant';
     }
     
-    // Add city name for precision — include in text search for New API
+    // Add city name for precision — include in text search
     const textQuery = options.targetCity
       ? `${enhancedKeyword} in ${options.targetCity}`
       : enhancedKeyword;
 
-    // === Google Places New API (v1) — places:searchNearby ===
-    // POST request with JSON body + X-Goog-FieldMask header
+    // === Google Places New API (v1) — places:searchText ===
+    // searchText supports textQuery + locationBias + includedType + priceLevels
     // Returns richer data: editorialSummary, reservable, primaryTypeDisplayName, priceLevel (more consistent)
+    // NOTE: searchNearby does NOT support textQuery — searchText does and is the correct endpoint
     const fieldMask = [
       'places.id',
       'places.displayName',
@@ -224,7 +225,7 @@ export const googlePlacesProvider: PlacesProvider = {
       'places.regularOpeningHours',
     ].join(',');
 
-    // Map price tiers to New API priceLevels array
+    // Map price tiers to New API priceLevels array (supported by searchText)
     const includedPriceLevels: string[] = [];
     if (options.priceLevel === 'budget') {
       includedPriceLevels.push('PRICE_LEVEL_INEXPENSIVE');
@@ -234,30 +235,32 @@ export const googlePlacesProvider: PlacesProvider = {
       includedPriceLevels.push('PRICE_LEVEL_VERY_EXPENSIVE', 'PRICE_LEVEL_EXPENSIVE', 'PRICE_LEVEL_MODERATE');
     }
 
-    // Build included types for New API
-    const includedTypes = isCoffeeSearch
-      ? ['cafe', 'coffee_shop']
-      : ['restaurant', 'meal_delivery', 'meal_takeaway'];
-
+    // searchText request body
     const requestBody: Record<string, any> = {
-      locationRestriction: {
+      textQuery,
+      locationBias: {
         circle: {
           center: { latitude: options.lat, longitude: options.lng },
           radius: options.radiusMeters,
         },
       },
-      includedTypes,
       maxResultCount: 20,
-      textQuery,
       languageCode: 'en',
     };
+
+    // Add included type (searchText uses includedType singular, not array)
+    if (isCoffeeSearch) {
+      requestBody.includedType = 'cafe';
+    } else {
+      requestBody.includedType = 'restaurant';
+    }
 
     if (includedPriceLevels.length > 0) {
       requestBody.priceLevels = includedPriceLevels;
     }
 
     const response = await fetch(
-      'https://places.googleapis.com/v1/places:searchNearby',
+      'https://places.googleapis.com/v1/places:searchText',
       {
         method: 'POST',
         headers: {
