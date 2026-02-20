@@ -1,160 +1,90 @@
 
-# Root Cause Analysis & Fix Plan: Vague Voice Prompts Not Returning Full Night Out
 
-## What I Found — The 4 Actual Bugs
+# Fix: Lock Voice Search to the UI-Selected Mode
 
-### Bug #1: The AI's Vague Prompt Mode Detection Is Wrong (CRITICAL)
-**File:** `supabase/functions/interpret-voice/index.ts`
+## The Problem
 
-The AI system prompt has an instruction that directly causes the failure. Under `VAGUE PROMPT HANDLING`, for "something fun", "find me something interesting to do", "plan a night out" — the AI is told to set:
-```
-mode: infer from context ("nice dinner" → "restaurant_only", "something fun" → "both")
-```
-But look at `CRITICAL EXAMPLES for MODE DETECTION` further down the same prompt:
-```
-"casual place to eat" → mode: "restaurant_only"
-"I'm looking for something casual to eat" → mode: "restaurant_only"
-```
-The AI is confusing "something fun" with "looking for something" — which it maps to `restaurant_only`. The word "something" or "looking for" in the transcript causes the AI to strip the mode to restaurant-only, even when "fun" and "interesting" clearly signal a full night out.
+When you select "Full Night Out" (dinner + activity), "Just Dinner", or "Just Activity" in the mode picker, voice search ignores that choice. The AI interprets your words and picks its own mode -- so saying "find me something fun" in Full Night Out mode might only return a restaurant, and saying "fun place" in Just Dinner mode might return an activity too.
 
-Additionally, the vague prompt section tells the AI to use:
-```
-activityQueryBundles: ["fun things to do", "nightlife", "entertainment", "popular attractions"]
-```
-These are **terrible** generic keywords — "entertainment" maps to businesses in the Google activity provider (no recognized mapping), and "nightlife" is so broad it returns restaurant-bars.
+The mode you pick on the home screen should be the law. Voice, Surprise Me, and manual search should all respect it.
 
-### Bug #2: The `activityBundles` Logic Has a Bypass Hole (CRITICAL)
-**File:** `src/hooks/useVoiceSearch.ts` lines 414–418
+## Root Cause
+
+In `useVoiceSearch.ts` line 352, the mode that controls which API calls fire is:
+```
+let voiceMode = preferences.mode || 'both';
+```
+
+This uses the AI's detected mode from the transcript and only falls back to `'both'` -- it **never** checks the UI-selected `searchMode`. So the mode picker is cosmetic during voice search.
+
+There was a partial fix (Fix 4) at lines 104-109 that sets a variable called `currentMode`, but that variable is only used for coordinate fallback logic and logging -- it doesn't control the actual API gating.
+
+## The Fix
+
+### Change 1: UI mode always wins (useVoiceSearch.ts)
+
+Replace the mode resolution at line 352 from:
+```
+let voiceMode = preferences.mode || 'both';
+```
+
+To a simple rule: **the UI-selected mode is authoritative**. The AI mode is only used when no UI mode was selected (shouldn't happen in normal flow):
 
 ```typescript
-const activityBundles = (preferences.activityQueryBundles?.length > 0)
-  ? preferences.activityQueryBundles      // ← Uses AI-returned bundles
-  : (!searchActivity 
-      ? DEFAULT_ACTIVITY_BUNDLES_BOTH_MODE  // ← Good fallback
-      : []);
+// UI-selected mode is the authority. The user picked their mode on the home screen.
+// Voice/AI can detect specific vs vague intent, price, cuisine, etc. -- but NOT override the mode.
+let voiceMode = searchMode || preferences.mode || 'both';
 ```
 
-When the AI returns `activityQueryBundles: ["fun things to do", "nightlife", "entertainment", "popular attractions"]` (which it does for vague prompts per the system prompt), the first condition is true — the AI bundles ARE populated (length > 0) — so the code skips the good `DEFAULT_ACTIVITY_BUNDLES_BOTH_MODE` fallback and sends bad generic keywords to the backend instead. The good fallback bundles are **never used** when the AI sends any bundles at all.
+This one line change means:
+- Pick "Full Night Out" and say "something fun" --> searches for BOTH dinner + activity (always)
+- Pick "Just Dinner" and say "something fun" --> searches for ONLY a dinner (always)  
+- Pick "Just Activity" and say "something fun" --> searches for ONLY an activity (always)
+- Pick "Full Night Out" and say "upscale steakhouse" --> searches for a steakhouse dinner + an activity
+- Pick "Just Dinner" and say "upscale steakhouse" --> searches for ONLY a steakhouse dinner
 
-### Bug #3: "entertainment" Keyword Has No Mapping in the Activity Provider
-**File:** `supabase/functions/_shared/providers/google-activity-provider.ts`
+### Change 2: Remove the now-redundant Fix 4 guard (useVoiceSearch.ts)
 
-The `activityMappings` dictionary has no entry for `"entertainment"`, `"fun things to do"`, `"nightlife"`, or `"popular attractions"`. When these keywords arrive via `queryBundles`, the `getActivityMapping()` function returns `null`, so the text query becomes the raw keyword string with no type filtering. Google then returns a mix of generic businesses, entertainment companies (non-venues), and restaurant chains.
+Lines 104-109 had a partial guard that tried to protect "both" mode from being downgraded. Since the UI mode now always wins, this guard is unnecessary. Simplify `currentMode` to just use the resolved `voiceMode` for coordinate fallback logic.
 
-### Bug #4: Mode Not Being Forced to `"both"` For the Full Night Out UI Context
-**File:** `src/hooks/useVoiceSearch.ts` line 102
+### Change 3: Update the AI system prompt to stop setting mode for vague prompts (interpret-voice/index.ts)
 
-```typescript
-const aiMode = preferences.mode;
-const currentMode = aiMode || searchMode || 'both';
-```
+The AI prompt currently has extensive rules telling it when to set `mode: "both"` vs `mode: "restaurant_only"`. Since the UI mode is now authoritative, simplify the AI's job:
 
-When the AI incorrectly returns `mode: "restaurant_only"` for a vague prompt said while the UI is in "Full Night Out" mode, the AI mode wins over the UI selection. There is no guard that says: "if the UI is in 'both' mode and the user gave a vague/surprise prompt, respect the UI mode."
+- Keep mode detection for **informational purposes** (logging, analytics) but add a note that it won't override the UI selection
+- For vague prompts, the AI should focus on returning good query bundles and intent detection -- not mode gating
+- The AI should still detect intent ("surprise" vs "specific"), price level, cuisine, activity type, etc. -- all of that stays the same
 
----
+### Change 4: Ensure Surprise Me button also respects the UI mode
 
-## The Fix — 4 Targeted Changes
+Verify that the `handleSurpriseMe` function in the Index page passes `searchMode` the same way. (Based on the architecture memories, this should already work since mode-aware search gating is in place for Surprise Me, but worth confirming.)
 
-### Fix 1: Update the Voice AI System Prompt (Vague Prompt Section)
-**File:** `supabase/functions/interpret-voice/index.ts`
+## What Stays the Same
 
-Replace the vague activityQueryBundles with concrete, date-night-worthy bundles. Also add explicit mode logic for vague prompts to respect "both":
+- All the good work on concrete activity bundles (comedy club, escape room, bowling, etc.) stays
+- The vague bundle guard (`areVagueActivityBundles`) stays
+- Price level detection from voice stays (say "upscale" and you get upscale)
+- Cuisine/activity type detection stays (say "steakhouse" and you get a steakhouse)
+- Location detection stays
+- Negative keywords and chain filtering stays
 
-**Current (broken):**
-```
-activityQueryBundles: ["fun things to do", "nightlife", "entertainment", "popular attractions"]
-```
+## Expected Behavior After Fix
 
-**Fixed:**
-```
-activityQueryBundles: ["comedy club", "cocktail bar", "escape room", "bowling", "speakeasy", "rooftop bar", "arcade", "karaoke", "jazz lounge", "axe throwing"]
-restaurantQueryBundles: ["trendy restaurant", "popular restaurant", "highly rated restaurant", "lively restaurant"]
-mode: "both" (NEVER "restaurant_only" for vague/fun/interesting/exciting prompts — these always imply a full night out)
-```
+| UI Mode | Voice Prompt | Result |
+|---------|-------------|--------|
+| Full Night Out | "something fun" | Cool restaurant + real activity |
+| Full Night Out | "upscale steakhouse" | Upscale steakhouse + activity |
+| Full Night Out | "find me something under $100" | Budget-friendly dinner + activity |
+| Just Dinner | "something fun" | Fun/trendy restaurant only |
+| Just Dinner | "upscale place" | Upscale restaurant only |
+| Just Activity | "something fun" | Real activity only (no restaurant) |
+| Just Activity | "comedy club" | Comedy club only |
 
-Also add concrete MODE DETECTION rules:
-```
-"something fun" → mode: "both" (not restaurant_only — fun implies an activity)
-"something interesting" → mode: "both"
-"find me something to do" → mode: "both"
-"plan a night out" → mode: "both"
-"what should we do tonight" → mode: "both"
-"entertain me" → mode: "both"
-```
+## Technical Summary
 
-### Fix 2: Upgrade the Activity Bundle Logic — Bad AI Bundles Get Replaced
-**File:** `src/hooks/useVoiceSearch.ts`
+| File | Change |
+|------|--------|
+| `src/hooks/useVoiceSearch.ts` | Line 352: `searchMode \|\| preferences.mode \|\| 'both'` -- UI mode wins |
+| `src/hooks/useVoiceSearch.ts` | Lines 104-109: Remove redundant Fix 4 guard, simplify to use resolved mode |
+| `supabase/functions/interpret-voice/index.ts` | Simplify MODE instructions -- AI provides mode as suggestion, not authority |
 
-Add a detection function `areVagueActivityBundles()` that identifies when the AI returned worthless generic keywords, and replaces them with the concrete date-night bundle list:
-
-```typescript
-const VAGUE_ACTIVITY_KEYWORDS = new Set([
-  'fun things to do', 'nightlife', 'entertainment', 'popular attractions',
-  'things to do', 'activities', 'fun', 'something fun', 'entertainment venues'
-]);
-
-function areVagueActivityBundles(bundles: string[]): boolean {
-  if (!bundles || bundles.length === 0) return true;
-  // If every bundle in the AI-returned list is a vague term, treat as if empty
-  return bundles.every(b => VAGUE_ACTIVITY_KEYWORDS.has(b.toLowerCase().trim()));
-}
-```
-
-Then update the bundle selection logic:
-```typescript
-const activityBundles = 
-  (preferences.activityQueryBundles?.length > 0 && !areVagueActivityBundles(preferences.activityQueryBundles))
-    ? preferences.activityQueryBundles           // Specific AI bundles → use them
-    : (!searchActivity 
-        ? DEFAULT_ACTIVITY_BUNDLES_BOTH_MODE     // Vague/no activity → use good defaults
-        : []);
-```
-
-### Fix 3: Add Missing Activity Keyword Mappings to the Provider
-**File:** `supabase/functions/_shared/providers/google-activity-provider.ts`
-
-Add entries to `activityMappings` for the keywords that currently produce zero/bad results:
-```typescript
-'entertainment': { googleType: 'amusement_center', keywords: ['entertainment venue', 'comedy club', 'escape room', 'bowling', 'arcade', 'game venue'] },
-'nightlife': { googleType: 'night_club', keywords: ['cocktail bar', 'lounge', 'speakeasy', 'jazz bar', 'rooftop bar', 'cocktail lounge'] },
-'fun things to do': { googleType: 'amusement_center', keywords: ['escape room', 'bowling', 'arcade', 'axe throwing', 'comedy club'] },
-'popular attractions': { googleType: 'tourist_attraction', keywords: ['cocktail bar', 'rooftop bar', 'comedy club', 'escape room', 'bowling'] },
-```
-
-### Fix 4: Protect Mode — UI "Both" Mode Wins Over Vague AI Detection
-**File:** `src/hooks/useVoiceSearch.ts`
-
-Add a guard that prevents the AI from silently downgrading a "full night out" session to `restaurant_only`:
-```typescript
-const aiMode = preferences.mode;
-const isVagueIntent = preferences.intent === 'surprise' || preferences.intent === 'flexible';
-const uiModeIsBoth = searchMode === 'both' || !searchMode;
-
-// If UI is in Full Night Out (both) mode AND the prompt is vague/flexible,
-// NEVER downgrade to restaurant_only — keep 'both' to deliver the full experience.
-const currentMode = (isVagueIntent && uiModeIsBoth && aiMode === 'restaurant_only')
-  ? 'both'
-  : (aiMode || searchMode || 'both');
-```
-
----
-
-## Summary of What Changes
-
-| Fix | File | What Changes |
-|-----|------|-------------|
-| 1 | `interpret-voice/index.ts` | Vague prompt section: replace generic bundles with concrete date-night ones; add MODE rules for "something fun/interesting" → "both" |
-| 2 | `src/hooks/useVoiceSearch.ts` | Add `areVagueActivityBundles()` guard — bad AI bundles get swapped for the good default list |
-| 3 | `google-activity-provider.ts` | Add mappings for `entertainment`, `nightlife`, `fun things to do`, `popular attractions` |
-| 4 | `src/hooks/useVoiceSearch.ts` | Protect UI "both" mode from being silently downgraded by vague AI intent |
-
----
-
-## Expected Outcome
-
-When you say **"find me something fun to do this evening"** or **"plan a night out"** with Full Night Out selected:
-1. AI sets `mode: "both"`, `intent: "surprise"`, and returns concrete activity bundles like `["comedy club", "cocktail bar", "escape room", "bowling"]`
-2. Fix 4 ensures mode stays `"both"` even if AI guesses wrong
-3. Fix 2 ensures even if AI returns vague bundles, the real bundles are used
-4. Fix 3 ensures every bundle keyword maps to a real Google Places search
-5. Result: a restaurant card + a genuine activity card (bowling, comedy club, speakeasy, etc.) every time
