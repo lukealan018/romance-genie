@@ -15,6 +15,7 @@ import { FloatingPlanAheadButton } from "@/components/FloatingPlanAheadButton";
 import { PlanAheadDialog } from "@/components/PlanAheadDialog";
 import { DateChoiceDialog } from "@/components/DateChoiceDialog";
 import { NextAvailableDateDialog } from "@/components/NextAvailableDateDialog";
+import { ClarificationChips } from "@/components/ClarificationChips";
 
 import { toast } from "@/hooks/use-toast";
 import { usePlanStore } from "@/store/planStore";
@@ -52,6 +53,10 @@ const Index = () => {
     dateChoiceOptions,
     handleDateChoice,
     closeDateChoice,
+    showClarification,
+    clarificationOptions,
+    handleClarificationSelect,
+    closeClarification,
   } = useVoiceSearch({
     userId: auth.userId,
     searchMode,
@@ -214,6 +219,15 @@ const Index = () => {
                 />
               )}
             </HeroSection>
+
+            {/* Clarification chips - shown when voice intent is ambiguous */}
+            {showClarification && (
+              <ClarificationChips
+                options={clarificationOptions}
+                onSelect={handleClarificationSelect}
+                onDismiss={closeClarification}
+              />
+            )}
           </>
         )}
 
