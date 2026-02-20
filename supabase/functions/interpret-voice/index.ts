@@ -66,6 +66,7 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const transcript = body?.transcript;
     const userProfile = body?.userProfile;
+    const currentWeather = body?.currentWeather; // { temperature, description, isRaining }
 
     if (!transcript) {
       throw new Error('No transcript provided');
@@ -353,6 +354,127 @@ RULES:
 9. For "comedy" → activityQueryBundles: ["comedy club","comedy show","improv","stand up comedy"]
 10. For "live music" → activityQueryBundles: ["live music venue","concert venue","jazz club","music bar"]
 
+---
+
+SYNONYM COLLISION RULES:
+Some words have multiple meanings. Use surrounding context to disambiguate:
+
+| Word | Context A (Food/Dining cues: "eat", "dinner", "hungry", "food") | Context B (Activity/Fun cues: "try", "fun", "adventure", "do") |
+|------|------|------|
+| "wings" | Restaurant: chicken wings → restaurantQueryBundles: ["chicken wings","wing bar","wings restaurant"] | Activity: indoor skydiving → activityQueryBundles: ["indoor skydiving","skydiving experience"] |
+| "club" | Default (nightlife) → nightclub/dance club | Near "golf" → route to TopGolf/driving range, NOT golf course |
+| "pool" | Near "bar","play","game" → pool hall/billiards → activityQueryBundles: ["pool hall","billiards","bar with pool tables"] | Near "swim","water","day" → swimming pool (exclude from date-night results) |
+| "bar" | Default → cocktail bar/lounge | Near "monkey bars","pull-up bar","workout" → EXCLUDE (gym context, not a venue) |
+| "garden" | Social context → beer garden or botanical garden | Near "home","plant","grow" → EXCLUDE (home gardening, not a venue) |
+| "spot" | Generic filler word → IGNORE, use surrounding context for venue type |
+| "joint" | Food context (near "burger","pizza","taco") → restaurant (burger joint) | Otherwise → IGNORE as slang filler |
+
+Examples:
+- "Let's get wings" → restaurant, chicken wings
+- "I want to try wings" (no food context) → activity, indoor skydiving experience
+- "Pool and drinks" → pool hall/billiards bar
+- "Pool day" → swimming pool (likely exclude or suggest pool party venue)
+- "Hit the club" → nightclub
+- "Golf club" → TopGolf/driving range
+
+---
+
+COMPOUND PHRASE RECOGNITION:
+Recognize these idiomatic compound phrases and route them as complete units — do NOT split them into individual words:
+
+| Phrase | Interpretation |
+|--------|---------------|
+| "dinner and a show" | mode: "both", restaurant (general), activityQueryBundles: ["live music venue","theater","comedy club","dinner theater"] |
+| "dinner and a movie" | mode: "both", restaurant (general), activityQueryBundles: ["movie theater","cinema","dine-in theater"] |
+| "surf and turf" | mode: "restaurant_only", restaurantQueryBundles: ["surf and turf","seafood steakhouse","steak and lobster","steak and seafood"] |
+| "wine and dine" | mode: "restaurant_only", priceLevel: "upscale", restaurantQueryBundles: ["wine bar restaurant","fine dining","wine pairing dinner"] |
+| "Netflix and chill" | mode: "restaurant_only", mood: "chill", restaurantQueryBundles: ["takeout","delivery","casual restaurant","comfort food"] |
+| "paint the town" / "paint the town red" | mode: "both", energyLevel: "high", intent: "surprise" |
+| "pub crawl" | mode: "activity_only", activityQueryBundles: ["pub","bar","brewery","tavern","beer garden"] |
+| "brunch and mimosas" | mode: "restaurant_only", restaurantQueryBundles: ["brunch","brunch spot","bottomless mimosas","breakfast restaurant"] |
+
+---
+
+SLANG & CULTURAL PHRASES:
+Map subjective/slang terms to concrete search parameters:
+
+| Slang | Maps To |
+|-------|---------|
+| "bougie" / "boujee" | priceLevel: "upscale", mood: "romantic" |
+| "hole in the wall" | noveltyLevel: "adventurous", priceLevel: "budget", intent: "surprise" |
+| "lowkey" / "low key" | energyLevel: "low", mood: "chill" |
+| "turn up" / "go hard" / "lit" | energyLevel: "high", activityQueryBundles: ["nightclub","dance club","party venue","late night bar"] |
+| "vibes" / "good vibes" | mood: "chill", intent: "flexible" |
+| "fire" / "slaps" (as in "this place slaps") | noveltyLevel: "safe" (popular/well-reviewed places) |
+| "extra" | priceLevel: "upscale", mood: "celebratory" |
+| "chill spot" | energyLevel: "low", activityQueryBundles: ["lounge","wine bar","jazz bar","cafe"] |
+| "pregame" / "pre-game" | activityQueryBundles: ["happy hour","bar","cocktail bar"], searchTime bias toward "17:00"-"19:00" |
+| "afterparty" / "after party" | activityQueryBundles: ["late night bar","nightclub","after hours","late night lounge"], searchTime: "22:00"+ |
+| "brunch vibes" | mode: "restaurant_only", restaurantQueryBundles: ["brunch","brunch spot","breakfast cafe"], searchTime: "11:00" |
+| "sleeper" / "underrated" | noveltyLevel: "adventurous", intent: "surprise" |
+| "no cap" (emphasis) | Treat as emphasis on the request, increase confidence in detected intent |
+
+Examples:
+- "bougie Italian place" → italian, priceLevel: "upscale", mood: "romantic"
+- "lowkey spot for drinks" → energyLevel: "low", activityQueryBundles: ["lounge","wine bar","jazz bar"]
+- "let's turn up tonight" → energyLevel: "high", activityQueryBundles: ["nightclub","dance club","party venue"]
+- "find me a hole in the wall taco joint" → priceLevel: "budget", noveltyLevel: "adventurous", restaurantQueryBundles: ["taqueria","taco stand","street tacos"]
+
+---
+
+SPOKEN NEGATION PARSING:
+Detect negation patterns in natural speech and extract them into negativeKeywords and avoidances.
+
+Negation trigger phrases: "but not", "no", "without", "except", "nothing like", "not into", "just not", "anything but", "skip the", "hold the", "none of that"
+
+Patterns:
+- "[cuisine] but not [thing]" → negativeKeywords: [thing]
+  Example: "Italian but not pizza" → cuisine: italian, negativeKeywords: ["pizza","pizzeria"]
+- "[venue] but nothing too [adjective]" → interpret adjective as exclusion
+  Example: "bar but nothing too loud" → type: bar, negativeKeywords: ["nightclub","dance club","rave"]
+- "[type], no chains" → negativeKeywords: common chain names for that type
+  Example: "steak, no chains" → negativeKeywords: ["outback","ruth's chris","longhorn","texas roadhouse","applebee's","chili's"]
+- "[type], not all-you-can-eat" → negativeKeywords: ["buffet","all you can eat","ayce","unlimited"]
+- "[cuisine], not [specific chain]" → negativeKeywords: [chain name] + similar chains
+  Example: "Mexican, not Taco Bell" → negativeKeywords: ["taco bell","del taco","chipotle"] (fast food mexican)
+- "outdoors, just not hiking" → outdoor bundles, negativeKeywords: ["hiking trail","trailhead","nature hike"]
+- "something fun, not too expensive" → exclude priceLevel "upscale", set priceLevel: "moderate"
+- "no [dietary item]" in food context → add to avoidances, NOT negativeKeywords
+  Example: "Italian, no gluten" → avoidances: ["gluten"]
+
+---
+
+GROUP & OCCASION CONTEXT:
+Detect social context and adjust search parameters accordingly. Also set the "occasion" and "groupContext" fields.
+
+| Trigger Phrase | occasion | groupContext | Effect |
+|----------------|----------|-------------|--------|
+| "date night" / "romantic evening" / "anniversary" / "Valentine's" | "date_night" | "couple" | mood: "romantic", priceLevel: "upscale", restaurantQueryBundles biased toward: ["intimate restaurant","candlelit dining","romantic restaurant"] |
+| "with the boys" / "guys night" / "boys night" | "guys_night" | "group" | mood: "fun", energyLevel: "high", activityQueryBundles: ["sports bar","bowling","arcade","beer garden","pool hall","barcade"] |
+| "girls night" / "ladies night" / "with my girls" | "girls_night" | "group" | mood: "fun", activityQueryBundles: ["cocktail bar","wine bar","karaoke","paint and sip","rooftop bar"] |
+| "family dinner" / "with the kids" / "family friendly" | "family" | "family" | mood: "chill", avoidances: ["bar","nightclub","hookah","21+"], restaurantQueryBundles biased toward: ["family restaurant","kid-friendly restaurant"] |
+| "birthday" / "celebration" / "special occasion" | "celebration" | "group" | mood: "celebratory", priceLevel: "upscale", intent: "specific" |
+| "first date" | "first_date" | "couple" | mood: "romantic", energyLevel: "medium", restaurantQueryBundles biased toward cozy/intimate but NOT overly formal |
+| "double date" | "double_date" | "group" | mood: "fun", mode: "both" (dinner + activity) |
+| "solo" / "just me" / "by myself" / "alone" | "solo" | "solo" | mood: "chill", activityQueryBundles: ["bar","movie theater","museum","cafe","bookstore cafe"] |
+| "work event" / "corporate" / "team dinner" | "corporate" | "group" | mood: "chill", priceLevel: "moderate" to "upscale", avoidances: ["dive bar","nightclub"] |
+
+---
+
+WEATHER-AWARE OUTDOOR FALLBACKS:
+${currentWeather ? `
+CURRENT WEATHER DATA PROVIDED:
+- Temperature: ${currentWeather.temperature}°F
+- Conditions: ${currentWeather.description}
+- Raining: ${currentWeather.isRaining ? 'YES' : 'NO'}
+
+If the user requests outdoor activities or venues:
+- If raining/storming (isRaining=true): Set weatherWarning: "It's currently raining — suggesting covered options", adjust activityQueryBundles to include "covered patio","indoor rooftop","enclosed beer garden","indoor entertainment" and add negativeKeywords: ["outdoor patio","open air","uncovered"]
+- If very hot (temperature > 95°F): Set weatherWarning: "It's very hot outside — suggesting indoor or evening options", bias toward indoor venues or add searchTime bias toward evening (after 19:00)
+- If very cold (temperature < 40°F): Set weatherWarning: "It's cold outside — suggesting cozy indoor options", bias toward indoor venues, add restaurantQueryBundles: ["cozy restaurant","fireside dining"] if applicable
+- If weather is fine: Set weatherWarning: null, proceed normally
+` : 'No weather data provided. Set weatherWarning: null.'}
+
 AMBIGUITY / CLARIFICATION:
 If the request is truly vague with no clear venue type (e.g., "something fun", "let's go out", "nice evening", "chill night"):
 - Set needsClarification: true
@@ -379,6 +501,9 @@ Return JSON with this structure:
   "useCurrentLocation": false,
   "energyLevel": "low|medium|high",
   "mood": "string",
+  "occasion": "date_night|guys_night|girls_night|family|celebration|first_date|double_date|solo|corporate|null",
+  "groupContext": "couple|group|family|solo|null",
+  "weatherWarning": "string or null",
   "constraints": ["dietary or preference constraints"],
   "transcript": "original transcript",
   "intent": "surprise|specific|flexible",
@@ -393,12 +518,18 @@ Return JSON with this structure:
 
 QUERY BUNDLE EXAMPLES:
 - "steak dinner" → restaurantQueryBundles: ["steakhouse","prime steakhouse","chophouse","dry aged steak","grill"], negativeKeywords: ["churrascaria","rodizio"]
-- "sushi date" → restaurantQueryBundles: ["sushi restaurant","sushi bar","omakase"]
+- "sushi date" → restaurantQueryBundles: ["sushi restaurant","sushi bar","omakase"], occasion: "date_night", mood: "romantic"
 - "something outside tonight" → activityQueryBundles: ["rooftop bar","patio cocktails","beer garden","outdoor live music"], negativeKeywords: ["hiking trail","campground"]
 - "comedy club" → activityQueryBundles: ["comedy club","comedy show","improv","stand up comedy"]
 - "something fun" → needsClarification: true, clarificationOptions: ["Cocktail bar","Comedy club","Arcade","Live music","Surprise me"]
 - "nice dinner" → needsClarification: true, clarificationOptions: ["Italian","Steakhouse","Sushi","Seafood","Surprise me"]
 - "whiskey bar" → activityQueryBundles: ["whiskey bar","bourbon bar","scotch bar","craft cocktail bar"]
+- "bougie sushi date night" → restaurantQueryBundles: ["sushi restaurant","omakase","high-end sushi"], priceLevel: "upscale", mood: "romantic", occasion: "date_night"
+- "lowkey bar with the boys" → activityQueryBundles: ["sports bar","dive bar","pub","beer garden"], energyLevel: "low", occasion: "guys_night", groupContext: "group"
+- "Italian but not pizza, no chains" → restaurantQueryBundles: ["italian restaurant","trattoria"], negativeKeywords: ["pizza","pizzeria","olive garden","carrabba's","maggiano's"]
+- "dinner and a show for our anniversary" → mode: "both", occasion: "date_night", mood: "romantic", priceLevel: "upscale", activityQueryBundles: ["live music venue","theater","comedy club"]
+- "hole in the wall tacos" → restaurantQueryBundles: ["taqueria","taco stand","street tacos"], priceLevel: "budget", noveltyLevel: "adventurous"
+- "pregame drinks before the concert" → activityQueryBundles: ["happy hour","cocktail bar","bar"], searchTime: "17:00"
 
 CRITICAL EXAMPLES for MODE DETECTION:
 - "sushi and karaoke" → mode: "both"
@@ -411,7 +542,9 @@ CRITICAL EXAMPLES for MODE DETECTION:
 - "comedy club tonight" → mode: "activity_only"
 - "find a lounge" → mode: "activity_only"
 - "coffee shop near me" → mode: "restaurant_only", venueType: "coffee"
-- "good espresso in downtown" → mode: "restaurant_only", venueType: "coffee"`;
+- "good espresso in downtown" → mode: "restaurant_only", venueType: "coffee"
+- "dinner and a movie" → mode: "both" (compound phrase)
+- "pub crawl" → mode: "activity_only" (compound phrase)`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -453,6 +586,9 @@ CRITICAL EXAMPLES for MODE DETECTION:
     if (!result.clarificationOptions) result.clarificationOptions = [];
     if (!result.restaurantSubtype) result.restaurantSubtype = null;
     if (!result.activitySubtype) result.activitySubtype = null;
+    if (!result.occasion) result.occasion = null;
+    if (!result.groupContext) result.groupContext = null;
+    if (result.weatherWarning === undefined) result.weatherWarning = null;
     
     console.log('=== VOICE INTERPRETATION ===');
     console.log('Original transcript:', transcript);
@@ -479,6 +615,9 @@ CRITICAL EXAMPLES for MODE DETECTION:
       restaurant: result.restaurantRequest?.priceLevel,
       activity: result.activityRequest?.priceLevel
     });
+    console.log('Occasion:', result.occasion);
+    console.log('Group context:', result.groupContext);
+    console.log('Weather warning:', result.weatherWarning);
     console.log('===========================');
 
     return new Response(JSON.stringify(result), {

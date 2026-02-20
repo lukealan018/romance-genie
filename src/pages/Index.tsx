@@ -65,6 +65,13 @@ const Index = () => {
     setPlan,
     onSearchSuccess: markFirstRecommendationSeen,
     navigate,
+    currentWeather: weather.profileWeatherData ? {
+      temperature: weather.profileWeatherData.temperature,
+      description: weather.profileWeatherData.description,
+      isRaining: weather.profileWeatherData.description?.toLowerCase().includes('rain') ||
+        weather.profileWeatherData.description?.toLowerCase().includes('storm') ||
+        weather.profileWeatherData.description?.toLowerCase().includes('drizzle'),
+    } : null,
   });
 
   if (auth.isCheckingOnboarding) {

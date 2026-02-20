@@ -21,6 +21,12 @@ const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * c;
 };
 
+interface CurrentWeatherData {
+  temperature?: number;
+  description?: string;
+  isRaining?: boolean;
+}
+
 interface UseVoiceSearchProps {
   userId: string | null;
   searchMode: string | null;
@@ -29,6 +35,7 @@ interface UseVoiceSearchProps {
   setPlan: (plan: any) => void;
   onSearchSuccess?: () => void;
   navigate: (path: string, options?: { replace?: boolean }) => void;
+  currentWeather?: CurrentWeatherData | null;
 }
 
 export const useVoiceSearch = ({
@@ -39,6 +46,7 @@ export const useVoiceSearch = ({
   setPlan,
   onSearchSuccess,
   navigate,
+  currentWeather,
 }: UseVoiceSearchProps) => {
   const {
     setLocation,
@@ -462,8 +470,17 @@ export const useVoiceSearch = ({
       
       const contextual = getContextualSuggestions({ 
         weather: weatherData,
-        occasion: preferences.occasion,
+        occasion: preferences.occasion || preferences.mood,
       });
+
+      // Show weather warning toast if present from voice interpretation
+      if (preferences.weatherWarning) {
+        toast({
+          title: "🌦️ Weather heads-up",
+          description: preferences.weatherWarning,
+          duration: 6000,
+        });
+      }
       
       // VOICE SEARCH: Do NOT pass profile preferences to scoring
       // Learned preferences are used for scoring boost only, not hard filtering
@@ -762,8 +779,19 @@ export const useVoiceSearch = ({
     setPendingClarificationData(null);
   }, []);
 
+  // Build weather data for voice interpretation from the prop
+  const weatherForVoice = currentWeather?.temperature != null ? {
+    temperature: currentWeather.temperature,
+    description: currentWeather.description || 'unknown',
+    isRaining: currentWeather.isRaining || 
+      (currentWeather.description?.toLowerCase().includes('rain') || 
+       currentWeather.description?.toLowerCase().includes('storm') || 
+       currentWeather.description?.toLowerCase().includes('drizzle') || false),
+  } : null;
+
   const { isListening, isProcessing, transcript, startListening } = useVoiceInput({
     onPreferencesExtracted: handlePreferencesExtracted,
+    currentWeather: weatherForVoice,
   });
 
   return {
