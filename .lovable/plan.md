@@ -1,99 +1,125 @@
 
 
-# Smarter Result Rotation -- Stop Seeing the Same Places
+# Elevate Result Quality: Kill Cafes, Prioritize Date-Worthy Venues
 
-## The Problem
+## The Core Problem
 
-When you search multiple times with similar prompts, the same 2-3 venues keep appearing at the top. This happens because:
+Romance Genie is a **curated experience concierge**, not a search engine. Right now, cafes and low-effort venues leak into results because the system treats them as valid restaurants. A cafe is only appropriate when someone explicitly asks for coffee (which we already handle with the Coffee Shops toggle). In every other context, suggesting a cafe for an outing is like a concierge recommending a gas station.
 
-1. The backend always sorts results by rating first, so the highest-rated places always float to the top
-2. The frontend scoring is completely deterministic -- same inputs always produce the same ranking
-3. Only the single displayed venue gets excluded per search, so the runner-up just takes its place next time
+## What Changes
 
-## The Fix -- Three Targeted Changes
+### 1. Block cafes from general restaurant results (backend)
+**File: `supabase/functions/_shared/providers/google-provider.ts`**
 
-### 1. Add randomness to surprise/voice scoring (frontend)
-**File: `src/lib/planner.ts`**
+- Remove `'cafe'` from the restaurant name allowlist (line 57) so cafe-named venues no longer bypass filtering
+- Add cafe/coffee-related names to the **exclusion** list when `venueType !== 'coffee'`
+- This means "Blue Bottle Coffee", "The Daily Cafe", "Sunrise Cafe" will be filtered out of dinner/outing searches but still appear when someone uses the Coffee Shops toggle
 
-Inject a random jitter factor into the scoring formula for surprise and flexible (voice) intents. This means even with the same set of results, the ranking shuffles each time. The jitter is small enough that terrible venues won't suddenly rank first, but large enough that the top 5-8 quality venues rotate who appears at #1.
+### 2. Remove `'cafe'` from RESTAURANT_TYPES (backend)
+**File: `supabase/functions/_shared/place-filters.ts`**
 
-- Surprise mode: add a random factor worth up to 20% of the score
-- Voice/flexible mode: add a random factor worth up to 10%
-- Specific/manual mode: no change (users expect consistent results)
+- Remove `'cafe'` from the `RESTAURANT_TYPES` array (line 86) so venues typed as `cafe` by Google don't get classified as "primarily a restaurant" and slip through activity filters either
+- Add a new `CAFE_EXCLUSION_KEYWORDS` list for name-based filtering: `cafe, café, coffee, espresso, roasters, coffeehouse`
 
-### 2. Exclude top 3 displayed results, not just 1 (frontend)
-**File: `src/hooks/useVoiceSearch.ts`**
-
-Currently only the single displayed restaurant and activity get added to the exclusion list. Change this to exclude the top 3 from each category. This way, the next search genuinely cannot return those same venues, forcing deeper rotation into the result pool.
-
-### 3. Backend shuffle for surprise mode (edge function)
+### 3. Add a "date-night quality floor" to restaurant scoring (backend)
 **File: `supabase/functions/places-search/index.ts`**
 
-Currently, surprise mode skips the seed-based shuffle and keeps results in strict score order. Change this to apply a weighted shuffle for surprise mode -- top-rated venues still have a higher chance of appearing first, but it's not guaranteed. This prevents the same venue from always being the #1 result from the API itself.
+- In the final sort, add a penalty for venues with very low review counts (under 30) unless they're in hidden_gems mode
+- This prevents obscure, untested venues from ranking alongside proven options
+- Keeps the hidden gems path open for adventurous users while filtering noise for everyone else
+
+### 4. Exclude low-effort venue types from activity results (backend)  
+**File: `supabase/functions/_shared/place-filters.ts`**
+
+- Add to `EXCLUDED_ACTIVITY_TYPES`: `'cafe'`, `'bakery'`
+- These should never appear as "activities" — they're not outings
+
+### 5. Foursquare cafe filtering (backend)
+**File: `supabase/functions/_shared/providers/foursquare-provider.ts`**
+
+- When `venueType !== 'coffee'`, exclude Foursquare category IDs `13034` (Coffee Shop) and `13035` (Cafe) from restaurant results
+- This mirrors the Google-side fix for the other provider
 
 ---
 
 ## Technical Details
 
-### Change 1 -- `src/lib/planner.ts` (scoring randomness)
-
-In the `scorePlaces` function, add a random jitter to the score calculation:
+### Change 1 -- `google-provider.ts` (lines 56-66)
+Remove `'cafe'` from the allowlist and add cafe exclusion for non-coffee searches:
 
 ```typescript
-// After calculating all score components (~line 250)
-const randomJitter = (Math.random() - 0.5); // range: -0.5 to 0.5
+const restaurantKeywords = [
+  'restaurant', 'bistro', 'steakhouse', 'trattoria', 
+  'brasserie', 'eatery', 'dining', 'grill', 'kitchen', 
+  'tavern', 'pub', 'diner', 'bar & grill', 'ristorante', 'osteria'
+  // 'cafe' REMOVED -- only valid when venueType === 'coffee'
+];
 
-if (intent === 'surprise') {
-  score = 
-    0.30 * noveltyBoost +
-    0.25 * ratingNorm +
-    0.15 * learnedBoost +
-    0.10 * contextualBoost +
-    0.10 * personalFit +
-    0.05 * proximityNorm +
-    0.20 * randomJitter +  // NEW: rotation jitter
-    qualityPenalty;
-} else if (intent !== 'specific') {
-  // flexible/voice mode gets smaller jitter
-  score += 0.10 * randomJitter;
+// NEW: Exclude cafe/coffee venues from non-coffee searches
+if (!isCoffeeSearch) {
+  const cafePatterns = /\bcafe\b|\bcafé\b|\bcoffee\b|\bespresso\b|\broasters?\b|\bcoffeehouse\b/i;
+  if (cafePatterns.test(name) && !name.includes('bistro') && !name.includes('kitchen') && !name.includes('grill')) {
+    console.log(`☕🚫 Google: Filtering out "${placeName}" - cafe/coffee venue in non-coffee search`);
+    return true;
+  }
 }
 ```
 
-The novelty weight drops slightly (0.35 to 0.30) to make room for the jitter. Rating weight stays the same so quality is still prioritized.
-
-### Change 2 -- `src/hooks/useVoiceSearch.ts` (exclude top 3)
-
-Replace lines 536-539 to exclude the top 3 results instead of just the first:
-
+### Change 2 -- `place-filters.ts` (line 86)
 ```typescript
-const displayedRestaurantIds = sortedRestaurants.slice(0, 3).map(r => r.id);
-const displayedActivityIds = sortedActivities.slice(0, 3).map(a => a.id);
-addToExcludePlaceIds(displayedRestaurantIds);
-addToExcludeActivityIds(displayedActivityIds);
+export const RESTAURANT_TYPES: string[] = [
+  'restaurant', 'food', 'meal_takeaway', 'meal_delivery', 'bakery',
+  // 'cafe' REMOVED - cafes are only valid for coffee-specific searches
+];
 ```
 
-### Change 3 -- `supabase/functions/places-search/index.ts` (weighted shuffle for surprise)
+### Change 3 -- `place-filters.ts` (EXCLUDED_ACTIVITY_TYPES, line 57-67)
+Add `'cafe'` and `'bakery'` to the excluded activity types list.
 
-Replace the current surprise mode logic (which just truncates to top 15) with a weighted shuffle that uses rating as probability weight:
+### Change 4 -- `foursquare-provider.ts`
+When `venueType !== 'coffee'`, filter results whose primary category is Coffee Shop (13034) or Cafe (13035):
 
 ```typescript
-} else if (surpriseMe) {
-  // Weighted shuffle: higher-rated venues are more likely to appear first,
-  // but not guaranteed -- ensures rotation across searches
-  const weighted = items.map(item => ({
-    item,
-    weight: Math.pow(item.rating, 2) * Math.random()
-  }));
-  weighted.sort((a, b) => b.weight - a.weight);
-  items.length = 0;
-  items.push(...weighted.slice(0, 15).map(w => w.item));
+// After building results, exclude cafe/coffee venues for non-coffee searches
+if (venueType !== 'coffee') {
+  results = results.filter(r => {
+    const isCafeCategory = r.categories.some(c => 
+      ['13034', '13035'].includes(c) || 
+      c.toLowerCase().includes('coffee') || c.toLowerCase().includes('café')
+    );
+    if (isCafeCategory) {
+      console.log(`☕🚫 Foursquare: Filtering "${r.name}" - cafe in non-coffee search`);
+      return false;
+    }
+    return true;
+  });
 }
 ```
 
-## Implementation Order
+### Change 5 -- `places-search/index.ts` (quality floor in sort)
+Add review count awareness to the sort to prevent untested venues from surfacing:
 
-1. Frontend scoring jitter (planner.ts) -- immediate rotation improvement
-2. Exclude top 3 (useVoiceSearch.ts) -- deeper pool rotation
-3. Backend weighted shuffle (places-search) -- variety from the API layer
+```typescript
+.sort((a, b) => {
+  // Quality floor: penalize venues with very few reviews (except hidden_gems mode)
+  const aHasEnoughReviews = a.totalRatings >= 30 || noveltyMode === 'hidden_gems';
+  const bHasEnoughReviews = b.totalRatings >= 30 || noveltyMode === 'hidden_gems';
+  if (aHasEnoughReviews !== bHasEnoughReviews) {
+    return aHasEnoughReviews ? -1 : 1; // Prefer venues with enough reviews
+  }
+  
+  // ... existing rating/price/uniqueness sort
+})
+```
 
-All three changes are small and surgical. No new files, no new dependencies.
+## Deployment
+
+All changes are in edge functions, so `places-search` needs redeployment. No frontend changes needed -- the filtering happens entirely server-side.
+
+## What This Does NOT Change
+
+- Coffee Shops toggle still works exactly as before (venueType='coffee' bypasses all cafe filters)
+- Brunch search still works (cafes that serve brunch have separate handling)
+- Hidden gems mode still surfaces unique low-review spots
+- Fine dining chains (Mastro's, Ruth's Chris, etc.) remain allowed
+
