@@ -73,6 +73,21 @@ function shouldExcludeRestaurant(placeTypes: string[], placeName: string = '', c
     }
   }
   
+  // Block boba/bubble tea/milk tea venues from all restaurant searches
+  // These are NOT dinner venues and should never appear in date night recommendations
+  const bobaPatterns = /\bboba\b|\bbubble\s?tea\b|\bmilk\s?tea\b|\btapioca\b|\btea\s?shop\b|\btea\s?house\b|\bteahouse\b|\bpearl\s?tea\b/i;
+  if (bobaPatterns.test(name)) {
+    console.log(`🧋🚫 Google: Filtering out "${placeName}" - boba/bubble tea venue not suitable for dinner`);
+    return true;
+  }
+  
+  // Block catering companies and non-restaurant businesses
+  const cateringPatterns = /\bcatering\b|\bcaterer\b/i;
+  if (cateringPatterns.test(name) && !name.match(/\brestaurant\b|\bbistro\b|\bkitchen\b/i)) {
+    console.log(`🚫 Google: Filtering out "${placeName}" - catering company not a dine-in venue`);
+    return true;
+  }
+  
   // PASS 2: Check centralized type exclusions
   const allExcludedTypes = [...EXCLUDED_ALWAYS_TYPES, ...EXCLUDED_RESTAURANT_TYPES];
   if (hasExcludedType(placeTypes, allExcludedTypes)) {

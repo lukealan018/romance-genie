@@ -93,12 +93,21 @@ export const BAR_TYPES: string[] = [
   'bar', 'night_club', 'lounge',
 ];
 
+// Boba/bubble tea shops — not dinner venues
+export const BOBA_EXCLUSION_PATTERNS = /\bboba\b|\bbubble\s?tea\b|\bmilk\s?tea\b|\btapioca\b|\btea\s?shop\b|\btea\s?house\b|\bteahouse\b|\bpearl\s?tea\b/i;
+
+export function isBobaVenue(name: string): boolean {
+  return BOBA_EXCLUSION_PATTERNS.test(name);
+}
+
 // Production/management companies (not real venues)
 export const NON_VENUE_KEYWORDS: string[] = [
   'production', 'productions', 'entertainment inc', 'entertainment llc',
   'entertainment group', 'event management', 'event planning', 'promotions',
   'booking agency', 'talent agency', 'media group', 'studios llc',
   'consulting', 'marketing agency', 'management company', 'staffing',
+  // Catering-only businesses
+  'catering', 'caterers',
 ];
 
 // Restaurant keywords for activity exclusion
