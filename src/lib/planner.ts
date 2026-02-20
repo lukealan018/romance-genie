@@ -246,45 +246,43 @@ function scorePlaces(
       }
     }
     
+    // Random jitter for rotation (prevents same venues always ranking #1)
+    const randomJitter = (Math.random() - 0.5); // range: -0.5 to 0.5
+    
     // Adjust scoring weights based on intent (TIERED LEARNING)
     let score = 0;
     if (intent === 'surprise') {
       // Surprise mode: HIGH randomness, LIGHT learning
       // - Quality floor applied (penalty above)
-      // - Novelty prioritized
+      // - Novelty + random jitter for rotation
       // - Minimal learned preference influence (15%)
-      // - NO skip penalties (handled in learning.ts with context-aware decay)
       score = 
-        0.35 * noveltyBoost +
+        0.30 * noveltyBoost +
         0.25 * ratingNorm +
-        0.15 * learnedBoost +      // Light learning - just quality standards
+        0.15 * learnedBoost +
         0.10 * contextualBoost +
-        0.10 * personalFit +        // Reduced - don't over-personalize
+        0.10 * personalFit +
         0.05 * proximityNorm +
-        qualityPenalty;             // Apply quality floor
+        0.20 * randomJitter +       // Rotation jitter — shuffles top venues
+        qualityPenalty;
     } else if (intent === 'specific') {
-      // Manual Pick mode: LOW randomness, HEAVY learning
-      // - Full personalization
-      // - Sort by learned favorites
-      // - Strong learned preference influence (35%)
+      // Manual Pick mode: LOW randomness, HEAVY learning (no jitter)
       score = 
-        0.35 * learnedBoost +       // Heavy learning - sort by favorites
-        0.25 * personalFit +        // Profile preferences
+        0.35 * learnedBoost +
+        0.25 * personalFit +
         0.20 * ratingNorm +
         0.10 * proximityNorm +
         0.10 * contextualBoost;
     } else {
       // Flexible mode (Voice): MEDIUM randomness, MEDIUM learning
-      // - User's request + light personalization boost
-      // - Quality floor consideration
-      // - Moderate learned preference influence (25%)
       score = 
-        0.25 * personalFit +        // What they asked for
-        0.25 * learnedBoost +       // Medium learning boost
+        0.25 * personalFit +
+        0.25 * learnedBoost +
         0.20 * ratingNorm +
         0.15 * contextualBoost +
         0.10 * proximityNorm +
-        0.05 * noveltyBoost;
+        0.05 * noveltyBoost +
+        0.10 * randomJitter;        // Smaller rotation jitter for voice
     }
     
     return { place, score, distance };
