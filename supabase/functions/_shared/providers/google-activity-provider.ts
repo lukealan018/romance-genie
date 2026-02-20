@@ -8,6 +8,8 @@ import {
   shouldExcludeAsTraditionalGolf,
   isEntertainmentGolf,
   isNonVenueBusiness,
+  isCasualChain,
+  isFastFoodChain,
 } from '../place-filters.ts';
 
 const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
@@ -171,16 +173,38 @@ function shouldExcludeActivity(placeTypes: string[], searchKeyword: string, plac
     return true;
   }
   
+  // === PASS 0d: Exclude known casual dining and fast food chains — even if they have a "bar" type ===
+  // Places like Yard House, BJ's, Applebee's are restaurant chains NOT activities.
+  if (isCasualChain(placeName) || isFastFoodChain(placeName)) {
+    console.log(`🚫 Google Activity: Excluding "${placeName}" - casual/fast food chain restaurant`);
+    return true;
+  }
+  
   // === PASS 1: Exclude pure restaurants from activities (unless they're bars) ===
   if (isPrimarilyRestaurant(placeTypes)) {
     console.log(`🚫 Google Activity: Excluding "${placeName}" - primarily a restaurant`);
     return true;
   }
   
-  // Also check by name for restaurants
-  if (isRestaurantByKeyword(name) && !placeTypes.some(t => ['bar', 'night_club', 'lounge'].includes(t.toLowerCase()))) {
+  // Also check by name for restaurants — but allow genuine bar-primary venues through
+  // A bar that also serves food is still an "activity" venue. A restaurant with a bar is not.
+  const isBarPrimary = placeTypes.some(t => t.toLowerCase() === 'bar' || t.toLowerCase() === 'night_club');
+  const hasRestaurantType = placeTypes.some(t => t.toLowerCase() === 'restaurant');
+  
+  if (isRestaurantByKeyword(name) && !isBarPrimary) {
     console.log(`🚫 Google Activity: Excluding "${placeName}" - restaurant by name`);
     return true;
+  }
+  
+  // If it has BOTH restaurant AND bar types, only allow through if bar is the dominant identity
+  // (i.e., it's in bar keyword mappings, not just a restaurant-chain that happens to have a bar)
+  if (hasRestaurantType && isBarPrimary) {
+    const barKeywords = ['bar', 'pub', 'lounge', 'tavern', 'speakeasy', 'brewery', 'brewpub', 'taproom', 'cocktail', 'whiskey', 'wine', 'jazz'];
+    const nameHasBarKeyword = barKeywords.some(kw => name.includes(kw));
+    if (!nameHasBarKeyword) {
+      console.log(`🚫 Google Activity: Excluding "${placeName}" - restaurant+bar hybrid (no bar identity in name)`);
+      return true;
+    }
   }
   
   // === PASS 2: Golf filtering using centralized logic ===
@@ -332,7 +356,7 @@ export const googleActivityProvider: ActivityProvider = {
       'places.addressComponents',
     ].join(',');
 
-    // Types that are purely restaurants — hard-exclude from activities
+  // Types that are purely restaurants — hard-exclude from activities
     const EXCLUDED_RESTAURANT_PRIMARY_TYPES = [
       'restaurant',
       'fast_food_restaurant',
@@ -359,6 +383,8 @@ export const googleActivityProvider: ActivityProvider = {
       'bakery',
       'meal_takeaway',
       'meal_delivery',
+      // Bar & grill hybrids — primarily restaurants despite having bar type
+      'bar_and_grill',
     ];
 
     const requestBody: Record<string, any> = {
