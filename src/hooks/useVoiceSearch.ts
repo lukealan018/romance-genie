@@ -98,16 +98,9 @@ export const useVoiceSearch = ({
     // Voice mode logic: If the AI explicitly detected a specific mode from the transcript
     // (e.g., "dinner and a movie" → both, "just find me tacos" → restaurant_only),
     // use that. Otherwise, respect the UI-selected mode from ModeSelection.
-    // FIX 4: Protect UI "both" mode from being silently downgraded by vague AI intent.
-    // If UI is in Full Night Out (both) mode AND the prompt is vague/flexible,
-    // NEVER downgrade to restaurant_only — keep 'both' to deliver the full experience.
-    const aiMode = preferences.mode;
-    const isVagueIntent = preferences.intent === 'surprise' || preferences.intent === 'flexible';
-    const uiModeIsBoth = searchMode === 'both' || !searchMode;
-    const currentMode = (isVagueIntent && uiModeIsBoth && aiMode === 'restaurant_only')
-      ? 'both'
-      : (aiMode || searchMode || 'both');
-    console.log('Mode resolution:', { aiMode, uiMode: searchMode, isVagueIntent, resolved: currentMode });
+    // UI-selected mode is authoritative for coordinate fallback logic too.
+    const currentMode = searchMode || preferences.mode || 'both';
+    console.log('Mode resolution:', { aiMode: preferences.mode, uiMode: searchMode, resolved: currentMode });
     
     const geocodeLocation = async (location: string): Promise<{ lat: number; lng: number; city?: string } | null> => {
       try {
@@ -348,8 +341,10 @@ export const useVoiceSearch = ({
       // VenueType from voice (e.g., coffee detection)
       const venueType = preferences.venueType || 'any';
       
-      // CRITICAL: Coffee search forces restaurant_only mode (no activities search)
-      let voiceMode = preferences.mode || 'both';
+      // CRITICAL: UI-selected mode is the authority. The user picked their mode on the home screen.
+      // Voice/AI can detect intent, price, cuisine, etc. — but NOT override the mode.
+      // AI-detected mode is only used as fallback when no UI mode was selected.
+      let voiceMode = searchMode || preferences.mode || 'both';
       if (venueType === 'coffee') {
         console.log('☕ Coffee detected - forcing restaurant_only mode');
         voiceMode = 'restaurant_only';
