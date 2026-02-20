@@ -4,7 +4,7 @@
 import type { ProviderActivity, ActivitySearchOptions, ActivityProvider } from '../activities-types.ts';
 import { isFeatureEnabled } from '../feature-flags.ts';
 
-// Ticketmaster classification mappings for Romance Genie activity keywords
+// Ticketmaster classification mappings for Andate activity keywords
 const KEYWORD_TO_CLASSIFICATION: Record<string, string> = {
   'comedy': 'Comedy',
   'comedy show': 'Comedy',
