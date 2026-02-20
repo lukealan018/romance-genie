@@ -304,70 +304,154 @@ export const googleActivityProvider: ActivityProvider = {
       return [];
     }
     
-    console.log('🌍 Google provider: Searching activities');
+    console.log('🌍 Google provider: Searching activities (New Places API v1)');
     
     // Get mapped Google Place type and enhanced keywords
     const mapping = getActivityMapping(options.keyword);
-    const googlePlaceType = mapping?.googleType || null;
-    let enhancedKeywords = mapping?.keywords.join(' ') || options.keyword;
+    let textQuery = mapping?.keywords.join(' ') || options.keyword;
     
     // Add city name to search query for precision
     if (options.targetCity) {
-      enhancedKeywords = `${enhancedKeywords} in ${options.targetCity}`;
+      textQuery = `${textQuery} in ${options.targetCity}`;
     }
-    
-    // Build Google Places API request
-    const url = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json');
-    url.searchParams.set('location', `${options.lat},${options.lng}`);
-    url.searchParams.set('radius', options.radiusMeters.toString());
-    url.searchParams.set('keyword', enhancedKeywords);
-    if (googlePlaceType) {
-      url.searchParams.set('type', googlePlaceType);
+
+    // === Google Places New API (v1) — places:searchText ===
+    // Using searchText for activity search so we can:
+    // 1. Use keyword-based textQuery (not supported by searchNearby)
+    // 2. Use excludedPrimaryTypes to hard-block restaurants from activity results
+    const fieldMask = [
+      'places.id',
+      'places.displayName',
+      'places.formattedAddress',
+      'places.rating',
+      'places.userRatingCount',
+      'places.location',
+      'places.types',
+      'places.primaryType',
+      'places.photos',
+      'places.addressComponents',
+    ].join(',');
+
+    // Types that are purely restaurants — hard-exclude from activities
+    const EXCLUDED_RESTAURANT_PRIMARY_TYPES = [
+      'restaurant',
+      'fast_food_restaurant',
+      'pizza_restaurant',
+      'hamburger_restaurant',
+      'sushi_restaurant',
+      'seafood_restaurant',
+      'chinese_restaurant',
+      'japanese_restaurant',
+      'korean_restaurant',
+      'thai_restaurant',
+      'vietnamese_restaurant',
+      'mexican_restaurant',
+      'indian_restaurant',
+      'mediterranean_restaurant',
+      'greek_restaurant',
+      'italian_restaurant',
+      'french_restaurant',
+      'american_restaurant',
+      'brunch_restaurant',
+      'breakfast_restaurant',
+      'cafe',
+      'coffee_shop',
+      'bakery',
+      'meal_takeaway',
+      'meal_delivery',
+    ];
+
+    const requestBody: Record<string, any> = {
+      textQuery,
+      locationBias: {
+        circle: {
+          center: { latitude: options.lat, longitude: options.lng },
+          radius: options.radiusMeters,
+        },
+      },
+      maxResultCount: 20,
+      languageCode: 'en',
+      // Hard-exclude restaurant primary types from activity results
+      excludedPrimaryTypes: EXCLUDED_RESTAURANT_PRIMARY_TYPES,
+    };
+
+    // Add the mapped type as includedType if it's not 'restaurant'
+    const googlePlaceType = mapping?.googleType || null;
+    if (googlePlaceType && googlePlaceType !== 'restaurant') {
+      requestBody.includedType = googlePlaceType;
     }
-    url.searchParams.set('key', GOOGLE_MAPS_API_KEY);
-    
-    const response = await fetch(url.toString());
+
+    const response = await fetch(
+      'https://places.googleapis.com/v1/places:searchText',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
+          'X-Goog-FieldMask': fieldMask,
+        },
+        body: JSON.stringify(requestBody),
+      }
+    );
+
     const data = await response.json();
-    
-    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      console.error('Google Places API error:', data.status);
-      throw new Error(`Google Places API error: ${data.status}`);
+
+    if (data.error) {
+      console.error('Google Places New API (activity) error:', data.error);
+      throw new Error(`Google Places API error: ${data.error.message}`);
     }
-    
+
     const radiusMiles = options.radiusMeters / 1609.34;
     
-    const results = (data.results || [])
-      .filter((place: any) => !shouldExcludeActivity(place.types || [], options.keyword, place.name || ''))
+    const results = (data.places || [])
+      .filter((place: any) => {
+        const types = place.types || [];
+        const name = place.displayName?.text || '';
+        const primaryType = place.primaryType || '';
+
+        // Hard-block restaurants by primaryType (belt-and-suspenders with API-level filter)
+        if (EXCLUDED_RESTAURANT_PRIMARY_TYPES.includes(primaryType)) {
+          console.log(`🚫 Google Activity: Excluding "${name}" — primaryType=${primaryType}`);
+          return false;
+        }
+
+        // Apply existing shouldExcludeActivity logic
+        if (shouldExcludeActivity(types, options.keyword, name)) {
+          return false;
+        }
+
+        return true;
+      })
       .map((place: any): ProviderActivity => {
-        const placeLat = place.geometry?.location?.lat || 0;
-        const placeLng = place.geometry?.location?.lng || 0;
+        const placeLat = place.location?.latitude || 0;
+        const placeLng = place.location?.longitude || 0;
         const distance = calculateDistance(options.lat, options.lng, placeLat, placeLng);
         
         return {
-          id: place.place_id,
-          name: place.name,
+          id: place.id,
+          name: place.displayName?.text || '',
           rating: place.rating || 0,
-          totalRatings: place.user_ratings_total || 0,
-          address: place.vicinity || place.formatted_address || '',
+          totalRatings: place.userRatingCount || 0,
+          address: place.formattedAddress || '',
           lat: placeLat,
           lng: placeLng,
           source: "google",
-          city: extractCity(place.address_components),
+          city: extractCity(place.addressComponents || []),
           category: determineCategory(place.types || []),
-          distance: distance,
+          distance,
           types: place.types || [],
-          addressComponents: place.address_components || [],
-          geometry: place.geometry
+          addressComponents: place.addressComponents || [],
+          geometry: { location: { lat: placeLat, lng: placeLng } },
         };
       })
       .filter((item: ProviderActivity) => {
         // Distance is the PRIMARY filter
-        const maxDistance = radiusMiles * 1.5; // Allow 50% buffer beyond search radius
+        const maxDistance = radiusMiles * 1.5;
         if (item.distance && item.distance > maxDistance) {
           return false;
         }
         
-        // City filter is a SOFT preference, not a hard boundary
+        // City filter is a SOFT preference
         if (options.targetCity && item.addressComponents) {
           const inTargetCity = isInTargetCity(item.addressComponents, options.targetCity);
           if (!inTargetCity && item.distance && item.distance > 5) {
@@ -378,7 +462,7 @@ export const googleActivityProvider: ActivityProvider = {
         return true;
       });
     
-    console.log(`✅ Google provider: Found ${results.length} activities`);
+    console.log(`✅ Google Activity provider (New API): Found ${results.length} activities`);
     return results;
   }
 };
