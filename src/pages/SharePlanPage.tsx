@@ -219,7 +219,7 @@ export default function SharePlanPage() {
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-primary text-sm font-medium mb-4"
           >
             <Sparkles className="w-4 h-4" />
-            Romance Genie
+            Andate
           </motion.div>
           <h1 className="text-2xl font-bold text-foreground mb-3">
             {getContextTitle(planData.shareContext, planData.senderName)}
@@ -479,7 +479,7 @@ export default function SharePlanPage() {
               className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <Sparkles className="w-4 h-4 text-primary" />
-              Plan your own date with Romance Genie
+              Plan your own night with Andate
             </a>
           </div>
         </motion.div>

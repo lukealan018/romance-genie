@@ -12,7 +12,7 @@ export function ExportCalendarButton({ plan, variant = "outline" }: ExportCalend
   const handleExport = () => {
     try {
       const icsContent = generateICSFile(plan);
-      const filename = `date-night-${plan.scheduled_date}.ics`;
+      const filename = `andate-plan-${plan.scheduled_date}.ics`;
       downloadICS(icsContent, filename);
       toast.success("Calendar event exported!");
     } catch (error) {

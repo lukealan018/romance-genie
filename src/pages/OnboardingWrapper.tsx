@@ -51,7 +51,7 @@ export default function OnboardingWrapper() {
 
       toast({
         title: "Profile created! 🎉",
-        description: "Welcome to your personalized date night planner",
+        description: "Your night, figured out",
       });
 
       navigate('/');

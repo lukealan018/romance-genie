@@ -70,7 +70,7 @@ export const SharePlanDialog = ({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Date Night Plan',
+          title: 'Tonight\'s Plan',
           text: `Check out our plan!`,
           url: url,
         });
@@ -85,12 +85,12 @@ export const SharePlanDialog = ({
   };
 
   const handleSMS = (url: string) => {
-    const text = encodeURIComponent(`Check out our date night plan! ${url}`);
+    const text = encodeURIComponent(`Check out our plan for tonight! ${url}`);
     window.open(`sms:?body=${text}`, '_blank');
   };
 
   const handleWhatsApp = (url: string) => {
-    const text = encodeURIComponent(`Check out our date night plan! ${url}`);
+    const text = encodeURIComponent(`Check out our plan for tonight! ${url}`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
@@ -115,7 +115,7 @@ export const SharePlanDialog = ({
       if (navigator.share) {
         try {
           await navigator.share({
-            title: 'Date Night Plan',
+            title: 'Tonight\'s Plan',
             text: 'Check out our plan!',
             url: url,
           });
@@ -154,7 +154,7 @@ export const SharePlanDialog = ({
   };
 
   const contextOptions = [
-    { value: 'date' as ShareContext, label: 'Date Night', icon: Heart, emoji: '💕' },
+    { value: 'date' as ShareContext, label: 'Date', icon: Heart, emoji: '💕' },
     { value: 'friends' as ShareContext, label: 'Friends Night', icon: Sparkles, emoji: '🎉' },
     { value: 'group' as ShareContext, label: 'Group Outing', icon: Users, emoji: '👥' },
   ];

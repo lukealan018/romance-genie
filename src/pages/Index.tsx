@@ -145,7 +145,7 @@ const Index = () => {
                 {searchMode === 'both' && (
                   <>
                     <Utensils className="w-4 h-4" style={{ color: 'var(--header-icon-color)' }} strokeWidth={2} />
-                    <span>Full Date Night</span>
+                    <span>Full Night Out</span>
                   </>
                 )}
                 {searchMode === 'restaurant_only' && (

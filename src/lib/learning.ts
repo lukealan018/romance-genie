@@ -261,7 +261,7 @@ export function getContextualSuggestions(input: ContextualSuggestionsInput = {})
     } else if (occasionLower.includes('date')) {
       suggestions.cuisine = 'Italian,Tapas,Sushi';
       suggestions.activityCategory = 'Comedy Club,Mini Golf,Wine Bar';
-      suggestions.message = `Date night! 💫 Let's find the perfect vibe.`;
+      suggestions.message = `A night out! 💫 Let's find the perfect vibe.`;
       return suggestions;
     }
   }
