@@ -5,6 +5,7 @@ import {
   hasExcludedType,
   isPizzaPlace,
   isAuthenticItalian,
+  passesUpscaleQualityGate,
 } from '../place-filters.ts';
 
 const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
@@ -140,33 +141,20 @@ export const googlePlacesProvider: PlacesProvider = {
     const isBrunchSearch = options.venueType === 'brunch';
     console.log(`🌍 Google provider: Searching ${isCoffeeSearch ? 'coffee shops' : isBrunchSearch ? 'brunch spots' : 'restaurants'}`);
     
-    // Map price level to Google's scale (1-4)
-    // For strict filtering (when we have price data) - but DON'T exclude missing data
-    const priceLevelStrictMin: Record<string, number> = {
-      'budget': 1,      // Only $ acceptable with strict filter
-      'moderate': 2,    // $$ strict minimum
-      'upscale': 3,     // $$$ strict minimum
-      'fine_dining': 4  // $$$$ strict minimum
-    };
-    
-    // For relaxed filtering - keeps more results when data is sparse
-    // But still enforces a meaningful floor to avoid casual/budget venues
-    const priceLevelRelaxedMin: Record<string, number> = {
+    // Price level maps (Google scale 1–4)
+    const relaxedMinPrice: Record<string, number> = {
       'budget': 1,
       'moderate': 2,
-      'upscale': 3,     // Enforce $$$ minimum - don't show $ or $$ for upscale requests
-      'fine_dining': 3  // Enforce $$$ minimum, boost $$$$ in sorting
+      // upscale/fine_dining handled by passesUpscaleQualityGate() — not here
     };
+    const relaxedMin = options.priceLevel && relaxedMinPrice[options.priceLevel] != null
+      ? relaxedMinPrice[options.priceLevel]
+      : null;
     
-    // Get minimum acceptable prices for filtering
-    const strictMinPrice = options.priceLevel ? priceLevelStrictMin[options.priceLevel] : null;
-    const relaxedMinPrice = options.priceLevel ? priceLevelRelaxedMin[options.priceLevel] : null;
-    
-    // Only apply API-level price filter for budget (to limit results)
-    // For upscale/fine_dining, use keywords instead - more reliable
+    // Only apply API-level price filter for budget (to limit results from Google)
     const priceRange = (options.priceLevel === 'budget') 
       ? { min: 1, max: 2 } 
-      : null; // Don't use API price filter for upscale - it misses too many venues
+      : null;
     
     // Build keyword based on venue type
     let enhancedKeyword: string;
@@ -281,18 +269,24 @@ export const googlePlacesProvider: PlacesProvider = {
             return false;
           }
           
-          // === RELAXED PRICE LEVEL FILTERING ===
-          // For upscale/fine_dining: DON'T exclude venues without price data
-          // Many high-end restaurants don't have price_level set in Google
+          // === UPSCALE / FINE DINING QUALITY GATE ===
+          // For upscale/fine_dining: require POSITIVE signals, not just absence of bad signals.
+          // A venue with no price data and no upscale name indicators gets rejected.
+          // This is the systemic fix — we don't need per-venue blacklisting.
           const placePrice = place.price_level;
+          const isUpscaleSearch = options.priceLevel === 'upscale' || options.priceLevel === 'fine_dining';
           
-          if (relaxedMinPrice !== null) {
-            // ONLY filter out venues that HAVE price data and are too cheap
-            if (placePrice !== undefined && placePrice !== null && placePrice < relaxedMinPrice) {
-              console.log(`💰 Google: Filtering out "${name}" - price level ${placePrice} < relaxed min ${relaxedMinPrice} for ${options.priceLevel}`);
+          if (isUpscaleSearch) {
+            if (!passesUpscaleQualityGate(name, placePrice)) {
+              console.log(`💎🚫 Google: Rejecting "${name}" (price_level=${placePrice ?? 'none'}) - failed upscale quality gate`);
               return false;
             }
-            // Venues without price data are KEPT - they'll be sorted later
+          } else if (relaxedMin !== null) {
+            // For other price levels: only filter if we HAVE data and it's too cheap
+            if (placePrice !== undefined && placePrice !== null && placePrice < relaxedMin) {
+              console.log(`💰 Google: Filtering out "${name}" - price level ${placePrice} < min ${relaxedMin}`);
+              return false;
+            }
           }
           
           return true;
