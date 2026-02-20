@@ -4,6 +4,7 @@ import {
   shouldExcludeAsTraditionalGolf,
   RESTAURANT_KEYWORDS,
   isRetailPlaceByFoursquare,
+  isNonVenueBusiness,
 } from '../place-filters.ts';
 
 const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY')?.trim();
@@ -191,6 +192,12 @@ export const foursquareActivityProvider: ActivityProvider = {
         const categoryIds = place.categories?.map((c: any) => c.id?.toString()) || [];
         const categoryNames = place.categories?.map((c: any) => c.name?.toLowerCase() || '') || [];
         const fsqCategories = place.categories || [];
+        
+        // === NON-VENUE BUSINESS FILTERING ===
+        if (isNonVenueBusiness(nameLower)) {
+          console.log(`🟦 Foursquare: Filtering out non-venue business "${place.name}"`);
+          return null;
+        }
         
         // === RETAIL/GROCERY FILTERING: Use centralized logic ===
         if (isRetailPlaceByFoursquare(fsqCategories, place.name)) {

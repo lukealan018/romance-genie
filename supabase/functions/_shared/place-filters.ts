@@ -87,6 +87,14 @@ export const BAR_TYPES: string[] = [
   'bar', 'night_club', 'lounge',
 ];
 
+// Production/management companies (not real venues)
+export const NON_VENUE_KEYWORDS: string[] = [
+  'production', 'productions', 'entertainment inc', 'entertainment llc',
+  'entertainment group', 'event management', 'event planning', 'promotions',
+  'booking agency', 'talent agency', 'media group', 'studios llc',
+  'consulting', 'marketing agency', 'management company', 'staffing',
+];
+
 // Restaurant keywords for activity exclusion
 export const RESTAURANT_KEYWORDS: string[] = [
   'burger', 'pizza', 'taco', 'sushi', 'restaurant', 'grill', 'diner',
@@ -185,6 +193,11 @@ export function isPrimarilyRestaurant(types: string[]): boolean {
 export function isRestaurantByKeyword(name: string): boolean {
   const nameLower = name.toLowerCase();
   return RESTAURANT_KEYWORDS.some(kw => nameLower.includes(kw));
+}
+
+export function isNonVenueBusiness(name: string): boolean {
+  const nameLower = name.toLowerCase();
+  return NON_VENUE_KEYWORDS.some(kw => nameLower.includes(kw));
 }
 
 // ===== FOURSQUARE RETAIL/GROCERY EXCLUSIONS =====

@@ -7,6 +7,7 @@ import {
   isRestaurantByKeyword,
   shouldExcludeAsTraditionalGolf,
   isEntertainmentGolf,
+  isNonVenueBusiness,
 } from '../place-filters.ts';
 
 const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
@@ -148,7 +149,13 @@ function shouldExcludeActivity(placeTypes: string[], searchKeyword: string, plac
   const keyword = searchKeyword.toLowerCase();
   const name = placeName.toLowerCase();
   
-  // === PASS 0: Check centralized type exclusions ===
+  // === PASS 0a: Exclude non-venue businesses (production companies, agencies, etc.) ===
+  if (isNonVenueBusiness(name)) {
+    console.log(`🚫 Google Activity: Excluding "${placeName}" - non-venue business (production/agency)`);
+    return true;
+  }
+  
+  // === PASS 0b: Check centralized type exclusions ===
   const allExcludedTypes = [...EXCLUDED_ALWAYS_TYPES, ...EXCLUDED_ACTIVITY_TYPES];
   if (hasExcludedType(placeTypes, allExcludedTypes)) {
     console.log(`🚫 Google Activity: Excluding "${placeName}" - has excluded type`);
