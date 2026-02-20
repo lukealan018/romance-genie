@@ -741,7 +741,7 @@ export const useVoiceSearch = ({
     }
     
     // Update tracking state after voice search
-    const voiceMode = preferences.mode || searchMode || 'both';
+    const voiceMode = searchMode || preferences.mode || 'both';
     usePlanStore.setState({ 
       lastSearchMode: voiceMode,
       lastSearchDate: preferences.searchDate ? parseISO(preferences.searchDate) : null
