@@ -101,14 +101,23 @@ export function isBobaVenue(name: string): boolean {
 }
 
 // Production/management companies (not real venues)
+// IMPORTANT: Do NOT add generic words here — use NON_VENUE_BUSINESS_REGEX for smarter matching
 export const NON_VENUE_KEYWORDS: string[] = [
-  'production', 'productions', 'entertainment inc', 'entertainment llc',
-  'entertainment group', 'event management', 'event planning', 'promotions',
-  'booking agency', 'talent agency', 'media group', 'studios llc',
+  'event management', 'event planning',
+  'booking agency', 'talent agency', 'talent management',
+  'media group', 'studios llc',
   'consulting', 'marketing agency', 'management company', 'staffing',
   // Catering-only businesses
   'catering', 'caterers',
 ];
+
+// Regex-based non-venue detection — catches company suffixes that keyword matching misses.
+// Examples caught:  "Obsidian Entertainment", "XYZ Productions", "ABC Events LLC"
+// NOT caught: "Entertainment Center", "Hollywood Entertainment District" (venue descriptors)
+const NON_VENUE_BUSINESS_REGEX = /\b(entertainment|productions?|promotions?|events?)\s*(inc\.?|llc\.?|ltd\.?|corp\.?|group|co\.?|agency|company)?$/i;
+
+// Words that indicate the "entertainment" word is part of a VENUE name, not a company name
+const VENUE_ENTERTAINMENT_CONTEXT = /\b(center|district|complex|park|plaza|venue|hall|arena|pavilion|zone|hub|world|land|kingdom)\b/i;
 
 // Restaurant keywords for activity exclusion
 export const RESTAURANT_KEYWORDS: string[] = [
@@ -302,7 +311,19 @@ export function isRestaurantByKeyword(name: string): boolean {
 
 export function isNonVenueBusiness(name: string): boolean {
   const nameLower = name.toLowerCase();
-  return NON_VENUE_KEYWORDS.some(kw => nameLower.includes(kw));
+
+  // Check keyword list first (explicit matches)
+  if (NON_VENUE_KEYWORDS.some(kw => nameLower.includes(kw))) {
+    return true;
+  }
+
+  // Regex: catches "Obsidian Entertainment", "XYZ Productions LLC", "ABC Events Inc."
+  // BUT skips "Entertainment Center", "Entertainment District", etc. (real venues)
+  if (NON_VENUE_BUSINESS_REGEX.test(name) && !VENUE_ENTERTAINMENT_CONTEXT.test(name)) {
+    return true;
+  }
+
+  return false;
 }
 
 // ===== FOURSQUARE RETAIL/GROCERY EXCLUSIONS =====
