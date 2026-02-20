@@ -1,141 +1,139 @@
 
+# Smarter Upscale Curation — Systemic Fix
 
-# Concierge Polish -- 6 UI Refinements
+## The Real Problem
 
-Transform the app from "search engine showing results" to "personal concierge presenting curated picks."
+The current `passesUpscaleQualityGate()` function works like this:
 
----
+- Has `price_level >= 3` from Google? → PASS
+- Name contains "steakhouse", "bistro", "omakase", etc.? → PASS
+- Name is a known chain like Mastro's? → PASS
+- None of the above? → REJECT
 
-## 1. Remove Source Badges (Google/Foursquare)
+The flaw: **Google's Nearby Search API returns `price_level` for only ~40–60% of venues.** A place called "Nobu" or "Matsuhisa" or "Carbone" fails all three checks and gets silently rejected — even though it's fine dining.
 
-Nobody cares which API found the venue. These technical badges break the premium illusion.
-
-**Files:**
-- `src/components/PlanCard.tsx` -- Remove the `restaurant.source` and `activity.source` badge blocks (lines 375-379 and 608-611) that show "Foursquare" / "Google"
-- `src/components/RestaurantCard.tsx` -- Remove source badge block (lines 112-116)
-- `src/components/ActivityCard.tsx` -- Remove source badge block that shows "Foursquare" / "Google" (keep the Ticketmaster "Live Event" badge since that's useful context, not a technical detail)
-
-The Hidden Gem, New Discovery, Local Favorite, and Personal Match badges all stay -- those are concierge-style curation signals.
+We're missing great restaurants not because of bad logic, but because we're using the wrong API endpoint.
 
 ---
 
-## 2. Replace Raw Ratings with Concierge Language
+## The Real Fix: Switch to Google Places Details (New API v1)
 
-Instead of "4.7 (342)" which feels like a search engine, show warm descriptors.
+Google's **Places API (New)** — the `places:searchNearby` endpoint — returns **significantly richer data per venue** in a single call, including:
 
-**File: `src/components/PlanCard.tsx`**
+- `priceLevel` → More consistently populated than Nearby Search
+- `editorialSummary` → e.g. "Upscale Japanese restaurant with celebrity following"
+- `primaryTypeDisplayName` → e.g. "Fine Dining Restaurant", "Japanese Restaurant"
+- `takeout`, `reservable`, `servesCocktails`, `servesWine` → Attribute signals
+- `regularOpeningHours` → Whether they have limited/dinner-only hours (upscale signal)
+- `websiteUri` → Domain-based signals
 
-Create a helper function `getConciergeRatingLabel`:
+With this data, the quality gate becomes multi-dimensional:
+
+```text
+PASS if ANY of:
+  1. priceLevel >= 3 (confirmed $$$ or $$$$)
+  2. editorialSummary contains upscale keywords
+  3. primaryTypeDisplayName contains "Fine Dining"
+  4. reservable = true AND rating >= 4.3 AND reviewCount >= 50
+  5. Name matches UPSCALE_NAME_SIGNALS or UPSCALE_CHAIN_NAMES
+
+FAIL if ANY of:
+  1. NON_UPSCALE_SIGNALS match the name (fast food, boba, etc.)
+  2. priceLevel is confirmed <= 2 ($ or $$)
+```
+
+This means "Nobu" would PASS because `reservable = true`, `rating = 4.5+`, and its editorial summary says "Sophisticated Japanese restaurant" — even with no keyword in the name.
+
+---
+
+## Two-Phase Implementation
+
+### Phase 1 — Enrich the Google Provider (New Places API)
+
+Switch `google-provider.ts` from `nearbysearch` (legacy) to `places:searchNearby` (New API v1).
+
+The new endpoint:
+- Returns `editorialSummary`, `reservable`, `priceLevel`, `primaryTypeDisplayName` in one call
+- Still uses lat/lng + radius
+- Field mask controls exactly what is returned (cost-efficient)
+- Same API key — no additional credentials needed
+
+**Field mask to request:**
+```
+places.id,places.displayName,places.formattedAddress,places.rating,
+places.userRatingCount,places.priceLevel,places.location,places.types,
+places.photos,places.editorialSummary,places.reservable,places.primaryTypeDisplayName,
+places.servesWine,places.servesCocktails,places.takeout
+```
+
+### Phase 2 — Upgrade `passesUpscaleQualityGate()`
+
+Update the function signature to accept the new rich fields:
+
 ```typescript
-const getConciergeRatingLabel = (rating: number, totalRatings: number): string => {
-  if (rating >= 4.7 && totalRatings >= 500) return "Exceptional";
-  if (rating >= 4.7) return "Highly Rated";
-  if (rating >= 4.3 && totalRatings >= 200) return "Local Favorite";
-  if (rating >= 4.3) return "Well Loved";
-  if (rating >= 4.0) return "Great Pick";
-  if (rating >= 3.5) return "Solid Choice";
-  return "Worth a Try";
-};
+passesUpscaleQualityGate(
+  name: string,
+  priceLevel: number | null | undefined,
+  editorialSummary?: string,
+  reservable?: boolean,
+  primaryTypeDisplayName?: string,
+  rating?: number,
+  reviewCount?: number
+): boolean
 ```
 
-Replace the Star + number display (lines 366-369 for restaurant, 597-601 for activity) with:
-```
-<Star icon filled /> "Highly Rated"
+New logic:
+
+```text
+1. INSTANT FAIL: NON_UPSCALE_SIGNALS in name
+2. INSTANT FAIL: confirmed price_level <= 2
+3. PASS: confirmed price_level >= 3
+4. PASS: primaryTypeDisplayName includes "Fine Dining"
+5. PASS: editorialSummary contains upscale keywords (elegant, upscale, refined, etc.)
+6. PASS: UPSCALE_CHAIN_NAMES match
+7. PASS: UPSCALE_NAME_SIGNALS match
+8. PASS: reservable=true AND rating>=4.3 AND reviewCount>=100
+   (reservable venues with great ratings are almost always proper sit-down restaurants)
+9. DEFAULT REJECT: no positive signals
 ```
 
-No raw numbers. The concierge doesn't say "4.7 out of 5 based on 342 reviews" -- they say "this place is exceptional."
-
-Apply the same treatment to `RestaurantCard.tsx` and `ActivityCard.tsx` (the list view cards).
+Rule 8 is the key new rule — **reservable + high rating is a proxy for "real restaurant"**. This catches Nobu, Carbone, Matsuhisa, and any other brand-name place with no descriptor in its name.
 
 ---
 
-## 3. Rename "Swap" to "Show Me Something Else"
+## What This Solves
 
-The word "Swap" is transactional. A concierge says "let me show you another option."
-
-**Files:**
-- `src/components/PlanCard.tsx` -- Change both Swap buttons (lines 416 and 648) from "Swap" to "Something Else"
-- `src/pages/PlanPage.tsx` -- Change "Swap Food" (lines 469, 493) to "Different Dinner" and "Swap Activity" (lines 478, 493) to "Different Activity"
-- Also change "Reroll" button text (line 336) to "Start Fresh"
-
----
-
-## 4. Add Venue Taglines
-
-Generate a one-line "why this place" descriptor using existing data (category, price level, rating). No AI call needed -- pure pattern matching.
-
-**File: `src/components/PlanCard.tsx`**
-
-Add a helper function:
-```typescript
-const getVenueTagline = (place: Place, type: 'restaurant' | 'activity'): string => {
-  const { rating, totalRatings, priceLevel, city, category } = place;
-  
-  if (place.isHiddenGem) return "A rare find most people don't know about";
-  if (place.isLocalFavorite) return "A neighborhood staple locals swear by";
-  
-  if (type === 'restaurant') {
-    if (priceLevel === '$$$$') return "Upscale dining for a special evening";
-    if (priceLevel === '$$$' && rating >= 4.5) return "Refined dining with outstanding reviews";
-    if (rating >= 4.7 && totalRatings >= 300) return "One of the highest-rated spots nearby";
-    if (rating >= 4.5) return "Consistently impressive dining experience";
-    return "A solid pick for tonight";
-  }
-  
-  // Activity
-  if (category === 'event') return "A live experience happening near you";
-  if (rating >= 4.7 && totalRatings >= 200) return "A top-rated experience in the area";
-  if (rating >= 4.5) return "Highly recommended by visitors";
-  return "Something fun to round out your evening";
-};
-```
-
-Display it as a subtle italic line below the venue name in the PlanCard, styled with `text-sm italic text-muted-foreground/80`.
+| Venue | Before | After |
+|---|---|---|
+| Nobu | REJECTED (no name signals, no price_level) | PASS (reservable, 4.5+ rating) |
+| Matsuhisa | REJECTED | PASS (reservable + rating) |
+| Carbone | REJECTED | PASS (editorial: "upscale Italian") |
+| Boba Tea Shop | REJECTED | Still REJECTED (NON_UPSCALE_SIGNALS) |
+| McDonald's | REJECTED | Still REJECTED (NON_UPSCALE_SIGNALS) |
+| Random Fried Rice Place | REJECTED | REJECTED (no reservable, low signals) |
 
 ---
 
-## 5. Time-Aware Greetings
+## Files to Change
 
-The hero section should feel contextual, not static.
+1. **`supabase/functions/_shared/providers/google-provider.ts`**
+   - Switch from legacy `nearbysearch` to New Places API `places:searchNearby`
+   - Parse new fields: `editorialSummary`, `reservable`, `primaryTypeDisplayName`, `servesWine`
+   - Pass these fields into `passesUpscaleQualityGate()`
 
-**File: `src/components/hero-section.tsx`**
+2. **`supabase/functions/_shared/place-filters.ts`**
+   - Update `passesUpscaleQualityGate()` to accept and use the new fields
+   - Add editorial summary keyword matching
+   - Add the `reservable + rating + reviewCount` heuristic as a positive signal
 
-Add a time-aware greeting helper:
-```typescript
-const getTimeGreeting = (): { greeting: string; subtitle: string } => {
-  const hour = new Date().getHours();
-  if (hour < 12) return { greeting: "Good morning", subtitle: "Planning a brunch or daytime date?" };
-  if (hour < 17) return { greeting: "Good afternoon", subtitle: "Getting ahead on tonight's plans?" };
-  if (hour < 21) return { greeting: "Good evening", subtitle: "Let's find something perfect for tonight" };
-  return { greeting: "Night owl?", subtitle: "Let's find a late-night spot" };
-};
-```
-
-Replace the static "Welcome back," (line 203) and "Ready for tonight's adventure?" (line 209) with the dynamic greeting. The non-logged-in state stays as-is since it's already good.
+3. **`supabase/functions/_shared/places-types.ts`**
+   - Add optional fields to `ProviderPlace`: `editorialSummary`, `reservable`, `primaryTypeDisplayName`
 
 ---
 
-## 6. Clean Up Plan Page Header
+## Important Notes
 
-The Plan page header currently has a "Profile" button that doesn't belong on a results page -- it breaks the concierge flow.
-
-**File: `src/pages/PlanPage.tsx`**
-
-- Remove the Profile button (line 406) -- users access Profile from the home screen
-- Keep the Share button and Back arrow
-- The "Curated for You" center text stays -- it reinforces the concierge positioning
-
----
-
-## Summary of Files Changed
-
-| File | Changes |
-|------|---------|
-| `src/components/PlanCard.tsx` | Remove source badges, replace raw ratings, rename Swap, add taglines |
-| `src/components/RestaurantCard.tsx` | Remove source badge, replace raw rating |
-| `src/components/ActivityCard.tsx` | Remove source badge (keep Live Event), replace raw rating |
-| `src/components/hero-section.tsx` | Time-aware greetings |
-| `src/pages/PlanPage.tsx` | Remove Profile button, rename swap buttons |
-
-No new files. No new dependencies. All changes are frontend-only.
-
+- The New Places API (v1) uses a different URL and request format (POST with JSON body and field mask header), but uses the **same API key** — no new credentials needed.
+- The field mask approach means we only pay for what we request — this is actually **more cost-efficient** than the legacy API.
+- All existing non-upscale filtering (boba, fast food, catering) is preserved and unaffected.
+- This change only affects upscale/fine_dining searches. Regular searches are unaffected.
