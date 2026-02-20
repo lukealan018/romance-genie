@@ -321,7 +321,6 @@ export function buildPlan({
         learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds, contextualHints
       )
     : [];
-  const restaurant = scoredRestaurants.length > 0 ? scoredRestaurants[0] : null;
 
   // Only score activities if mode includes them
   const scoredActivities = (searchMode === 'both' || searchMode === 'activity_only')
@@ -330,7 +329,29 @@ export function buildPlan({
         learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds, contextualHints
       )
     : [];
-  const activity = scoredActivities.length > 0 ? scoredActivities[0] : null;
+
+  // === PROXIMITY PAIRING: Pick the activity closest to the top restaurant ===
+  // This prevents the restaurant and activity from being 29+ minutes apart.
+  let restaurant: Place | null = scoredRestaurants.length > 0 ? scoredRestaurants[0] : null;
+  let activity: Place | null = null;
+
+  if (searchMode === 'both' && restaurant && scoredActivities.length > 0) {
+    // From the top-5 activities (by score), pick the one closest to the restaurant
+    const candidateActivities = scoredActivities.slice(0, Math.min(5, scoredActivities.length));
+    let bestActivity = candidateActivities[0];
+    let bestDistance = calculateDistance(restaurant.lat, restaurant.lng, bestActivity.lat, bestActivity.lng);
+
+    for (let i = 1; i < candidateActivities.length; i++) {
+      const d = calculateDistance(restaurant.lat, restaurant.lng, candidateActivities[i].lat, candidateActivities[i].lng);
+      if (d < bestDistance) {
+        bestDistance = d;
+        bestActivity = candidateActivities[i];
+      }
+    }
+    activity = bestActivity;
+  } else {
+    activity = scoredActivities.length > 0 ? scoredActivities[0] : null;
+  }
 
   // Calculate distances
   const distances = {

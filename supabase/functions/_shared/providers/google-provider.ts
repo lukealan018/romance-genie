@@ -232,7 +232,8 @@ export const googlePlacesProvider: PlacesProvider = {
     } else if (options.priceLevel === 'fine_dining') {
       includedPriceLevels.push('PRICE_LEVEL_VERY_EXPENSIVE', 'PRICE_LEVEL_EXPENSIVE');
     } else if (options.priceLevel === 'upscale') {
-      includedPriceLevels.push('PRICE_LEVEL_VERY_EXPENSIVE', 'PRICE_LEVEL_EXPENSIVE', 'PRICE_LEVEL_MODERATE');
+      // Upscale = expensive or very expensive only (not moderate)
+      includedPriceLevels.push('PRICE_LEVEL_VERY_EXPENSIVE', 'PRICE_LEVEL_EXPENSIVE');
     }
 
     // searchText request body
