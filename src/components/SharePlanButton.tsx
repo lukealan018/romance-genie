@@ -57,6 +57,7 @@ const contextOptions: ContextOption[] = [
     value: 'date', 
     label: 'Date Night', 
     emoji: '💕',
+
     icons: [
       { icon: HeartHandshake, label: 'Connection' },
       { icon: Heart, label: 'Love' },
@@ -110,7 +111,7 @@ export const SharePlanButton = ({
   const CurrentIcon = getCurrentIcon();
 
   const generateShareText = () => {
-    let text = `🌹 Date Night Plan via Romance Genie\n\n`;
+    let text = `✨ Tonight's Plan via Andate\n\n`;
     text += `🍽️ Dinner: ${restaurant.name}\n`;
     text += `📍 ${restaurant.address}\n\n`;
     text += `✨ Activity: ${activity.name}\n`;

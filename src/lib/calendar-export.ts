@@ -43,7 +43,7 @@ export function generateICSFile(plan: ScheduledPlan): string {
   const endTime = formatICSDateLocal(endDate);
 
   // Build description
-  let description = `Date Night Plan\\n\\n`;
+  let description = `Tonight's Plan\\n\\n`;
   description += `🍽️ Dinner: ${plan.restaurant_name}`;
   if (plan.restaurant_cuisine) description += ` (${plan.restaurant_cuisine})`;
   if (plan.restaurant_address) description += `\\n   ${plan.restaurant_address}`;
@@ -61,27 +61,27 @@ export function generateICSFile(plan: ScheduledPlan): string {
   const icsContent = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Date Night Planner//EN',
+    'PRODID:-//Andate//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    `UID:${plan.id}@datenightplanner.app`,
+    `UID:${plan.id}@andate.app`,
     `DTSTAMP:${formatICSDateUTC(new Date())}`,
     `DTSTART:${startTime}`,
     `DTEND:${endTime}`,
-    `SUMMARY:Date Night: ${plan.restaurant_name} + ${plan.activity_name}`,
+    `SUMMARY:${plan.restaurant_name} + ${plan.activity_name}`,
     `DESCRIPTION:${description}`,
     `LOCATION:${plan.restaurant_address || plan.restaurant_name}`,
     'STATUS:CONFIRMED',
     'BEGIN:VALARM',
     'TRIGGER:-P1D',
     'ACTION:DISPLAY',
-    'DESCRIPTION:Date night tomorrow!',
+    'DESCRIPTION:Plans tomorrow!',
     'END:VALARM',
     'BEGIN:VALARM',
     'TRIGGER:-PT2H',
     'ACTION:DISPLAY',
-    'DESCRIPTION:Date night in 2 hours!',
+    'DESCRIPTION:Plans in 2 hours!',
     'END:VALARM',
     'END:VEVENT',
     'END:VCALENDAR'

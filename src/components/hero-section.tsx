@@ -197,7 +197,7 @@ export const HeroSection = ({
               (() => {
                 const hour = new Date().getHours();
                 const timeGreeting = hour < 12 
-                  ? { greeting: "Good morning,", subtitle: "Planning a brunch or daytime date?" }
+                  ? { greeting: "Good morning,", subtitle: "Planning something fun today?" }
                   : hour < 17 
                     ? { greeting: "Good afternoon,", subtitle: "Getting ahead on tonight's plans?" }
                     : hour < 21 

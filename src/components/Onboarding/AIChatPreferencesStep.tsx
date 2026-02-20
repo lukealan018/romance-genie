@@ -52,7 +52,7 @@ const questions = [
   {
     id: 6,
     text: "Who are you usually out with?",
-    subtext: "(Date night? Just me, myself & I? Or friends that turn every night into a story?)",
+    subtext: "(Solo mission? With a date? Or friends that turn every night into a story?)",
     field: "party_size" as const
   },
   {

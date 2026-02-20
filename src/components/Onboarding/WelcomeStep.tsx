@@ -20,7 +20,7 @@ const WelcomeStep = ({ data, onUpdate, onNext }: WelcomeStepProps) => {
         </div>
         <CardTitle className="text-2xl">Welcome!</CardTitle>
         <CardDescription>
-          Let's personalize your date night picks
+          Let's personalize your experience
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -234,7 +234,7 @@ export default function History() {
                 Saved Plans
               </h1>
               <p className="text-muted-foreground mt-1">
-                Your date night history and favorites
+                Your past plans and favorites
               </p>
             </div>
           </div>
