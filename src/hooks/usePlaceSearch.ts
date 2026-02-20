@@ -158,7 +158,8 @@ export const usePlaceSearch = (
     overrideCuisine?: string, 
     overrideActivity?: string, 
     forceFresh: boolean = false,
-    userTriggered: boolean = false  // Bypass cache on explicit user action
+    userTriggered: boolean = false,  // Bypass cache on explicit user action
+    navigateOnSuccess: boolean = false  // Navigate to /plan after storing results
   ) => {
     const searchCuisine = overrideCuisine ?? cuisine;
     const searchActivity = overrideActivity ?? activityCategory;
@@ -488,14 +489,15 @@ export const usePlaceSearch = (
       
       await saveLocationSettings(radius, zipCode, true);
       
-      toast({ 
-        title: "Success", 
-        description: `Found ${restaurants.length} restaurants and ${activities.length} activities for your date night!`,
-        duration: 4000,
-      });
-      
       // Trigger first search completion
       onSearchSuccess?.();
+
+      // Navigate to plan page NOW — after store is fully populated
+      if (navigateOnSuccess) {
+        setTimeout(() => {
+          navigate("/plan", { replace: true });
+        }, 50);
+      }
     } catch (error) {
       console.error('Error fetching places:', error);
       toast({ title: "Error", description: "Failed to find places. Please try again.", variant: "destructive" });
@@ -954,13 +956,16 @@ export const usePlaceSearch = (
     });
 
     if (needsFreshSearch) {
-      // New search parameters - fetch fresh
-      await handleFindPlaces(undefined, undefined, false, true);
+      // New search parameters - fetch fresh, navigate inside after store is populated
+      await handleFindPlaces(undefined, undefined, false, true, true);
     } else if (hasResults) {
       // Same parameters but user clicked again - re-fetch for variety
       // userTriggered=true forces new shuffle even with same signature
       console.log('🔀 Same search params but user wants new results - forcing fresh shuffle');
-      await handleFindPlaces(undefined, undefined, false, true);
+      await handleFindPlaces(undefined, undefined, false, true, true);
+    } else {
+      // No results and no new signature — navigate anyway (cached path)
+      navigate("/plan", { replace: true });
     }
     
     // Update tracking state after successful search
@@ -968,8 +973,6 @@ export const usePlaceSearch = (
       lastSearchMode: currentMode,
       lastSearchDate: searchDate 
     });
-    
-    navigate("/plan", { replace: true });
   };
 
   // SURPRISE ME: Completely ignores profile preferences - pure random discovery

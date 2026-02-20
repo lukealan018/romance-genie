@@ -96,7 +96,7 @@ const PlanPage = () => {
 
   // Redirect to home if no data available (mode-aware) - DELAYED to allow store to populate
   useEffect(() => {
-    // Add delay to allow store data to populate after navigation
+    // Give store enough time to fully hydrate before checking
     const timer = setTimeout(() => {
       const currentMode = searchMode || 'both';
       const needsRestaurants = currentMode === 'both' || currentMode === 'restaurant_only';
@@ -110,9 +110,20 @@ const PlanPage = () => {
         needsActivities
       });
       
-      const missingData = 
-        (needsRestaurants && restaurantResults.length === 0) ||
-        (needsActivities && activityResults.length === 0);
+      // Only redirect if the data we actually NEED for this mode is missing
+      // In 'both' mode, at least one type must be present (API may return 0 for one type)
+      const hasRestaurants = restaurantResults.length > 0;
+      const hasActivities = activityResults.length > 0;
+
+      let missingData = false;
+      if (currentMode === 'restaurant_only') {
+        missingData = !hasRestaurants;
+      } else if (currentMode === 'activity_only') {
+        missingData = !hasActivities;
+      } else {
+        // 'both': need at least one type to show something
+        missingData = !hasRestaurants && !hasActivities;
+      }
       
       if (missingData) {
         console.log('❌ [PlanPage] No plan data available for current mode, redirecting to home');
@@ -120,7 +131,7 @@ const PlanPage = () => {
       } else {
         console.log('✅ [PlanPage] Data available, staying on page');
       }
-    }, 50); // 50ms delay to allow store to populate
+    }, 300); // Increased to 300ms — enough for Zustand store to hydrate after navigation
     
     return () => clearTimeout(timer);
   }, [restaurantResults, activityResults, searchMode, navigate]);
@@ -131,11 +142,16 @@ const PlanPage = () => {
     const hasRestaurants = restaurantResults.length > 0;
     const hasActivities = activityResults.length > 0;
     
-    // Check if we have the data needed for the current mode
-    const hasRequiredData = 
-      (currentMode === 'both' && hasRestaurants && hasActivities) ||
-      (currentMode === 'restaurant_only' && hasRestaurants) ||
-      (currentMode === 'activity_only' && hasActivities);
+    // Determine if we have enough data to build a plan for the current mode
+    let hasRequiredData = false;
+    if (currentMode === 'restaurant_only') {
+      hasRequiredData = hasRestaurants;
+    } else if (currentMode === 'activity_only') {
+      hasRequiredData = hasActivities;
+    } else {
+      // 'both' mode: build with whatever we have (at least one type)
+      hasRequiredData = hasRestaurants || hasActivities;
+    }
     
     if (hasRequiredData && lat !== null && lng !== null) {
       console.log('🏗️ [PlanPage] Building plan with:', { 
