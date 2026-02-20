@@ -135,11 +135,12 @@ export const googlePlacesProvider: PlacesProvider = {
     };
     
     // For relaxed filtering - keeps more results when data is sparse
+    // But still enforces a meaningful floor to avoid casual/budget venues
     const priceLevelRelaxedMin: Record<string, number> = {
       'budget': 1,
       'moderate': 2,
-      'upscale': 2,     // Relax to $$ as minimum, boost $$$ in sorting
-      'fine_dining': 3  // Relax to $$$ as minimum, boost $$$$ in sorting
+      'upscale': 3,     // Enforce $$$ minimum - don't show $ or $$ for upscale requests
+      'fine_dining': 3  // Enforce $$$ minimum, boost $$$$ in sorting
     };
     
     // Get minimum acceptable prices for filtering
