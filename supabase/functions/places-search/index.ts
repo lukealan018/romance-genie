@@ -391,6 +391,13 @@ serve(async (req) => {
       })
       // DATE NIGHT QUALITY BIAS: Prioritize quality for a concierge experience
       .sort((a, b) => {
+        // Quality floor: penalize venues with very few reviews (except hidden_gems mode)
+        const aHasEnoughReviews = a.totalRatings >= 30 || noveltyMode === 'hidden_gems';
+        const bHasEnoughReviews = b.totalRatings >= 30 || noveltyMode === 'hidden_gems';
+        if (aHasEnoughReviews !== bHasEnoughReviews) {
+          return aHasEnoughReviews ? -1 : 1;
+        }
+        
         // Primary: Rating (higher is better) - quality comes first
         const ratingDiff = b.rating - a.rating;
         if (Math.abs(ratingDiff) > 0.3) {

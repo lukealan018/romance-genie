@@ -295,8 +295,24 @@ export const foursquarePlacesProvider: PlacesProvider = {
           return true;
         });
       
+      // Block cafe/coffee venues from non-coffee searches
+      let filteredPlaces = places;
+      if (!isCoffeeSearch && !isBrunchSearch) {
+        filteredPlaces = filteredPlaces.filter(r => {
+          const isCafeCategory = r.categories.some((c: string) => 
+            ['13034', '13035'].includes(c) || 
+            c.includes('coffee') || c.includes('café') || c.includes('cafe')
+          );
+          if (isCafeCategory) {
+            console.log(`☕🚫 Foursquare: Filtering "${r.name}" - cafe in non-coffee search`);
+            return false;
+          }
+          return true;
+        });
+      }
+      
       // Filter by target city if specified
-      let filtered = places;
+      let filtered = filteredPlaces;
       if (options.targetCity) {
         filtered = places.filter(place => {
           const addressLower = place.address.toLowerCase();
