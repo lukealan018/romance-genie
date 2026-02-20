@@ -398,10 +398,32 @@ export const useVoiceSearch = ({
         : Promise.resolve({ data: { items: [] }, error: null });
 
       // Fallback: ensure activity search always has a keyword or bundles
-      const activityKeyword = searchActivity || 'fun things to do';
+      // IMPORTANT: For vague "both" mode, use SPECIFIC activity-type bundles (not generic "nightlife")
+      // to avoid bar-restaurant hybrids like Yard House appearing as activities.
+      const activityKeyword = searchActivity || 'entertainment';
+      const DEFAULT_ACTIVITY_BUNDLES_BOTH_MODE = [
+        'cocktail bar', 'speakeasy', 'jazz lounge', 'rooftop bar',
+        'comedy club', 'bowling', 'escape room', 'arcade',
+        'karaoke', 'wine tasting', 'axe throwing', 'art gallery',
+      ];
+      const DEFAULT_ACTIVITY_BUNDLES_ACTIVITY_ONLY = [
+        'cocktail lounge', 'speakeasy', 'jazz bar', 'rooftop bar',
+        'comedy club', 'bowling alley', 'escape room', 'arcade bar',
+        'karaoke bar', 'live music venue', 'wine bar', 'brewery',
+      ];
       const activityBundles = (preferences.activityQueryBundles?.length > 0)
         ? preferences.activityQueryBundles
-        : (!searchActivity ? ['fun things to do', 'nightlife', 'entertainment'] : []);
+        : (!searchActivity 
+            ? (voiceMode === 'both' ? DEFAULT_ACTIVITY_BUNDLES_BOTH_MODE : DEFAULT_ACTIVITY_BUNDLES_ACTIVITY_ONLY)
+            : []);
+      
+      // Always add negative keywords to keep restaurant chains out of activity results
+      const activityNegativeKeywords = [
+        ...(preferences.negativeKeywords || []),
+        'yard house', 'bj\'s restaurant', 'buffalo wild wings', 'applebee\'s',
+        'chili\'s', 'red lobster', 'olive garden', 'outback steakhouse',
+        'cheesecake factory', 'california pizza kitchen',
+      ];
 
       // Search activities only if mode allows
       const activitiesPromise = (voiceMode === 'both' || voiceMode === 'activity_only')
@@ -418,7 +440,7 @@ export const useVoiceSearch = ({
               excludePlaceIds: excludeActivityIds,
               // Intent routing: pass bundles and negatives from voice interpretation
               queryBundles: activityBundles,
-              negativeKeywords: preferences.negativeKeywords || [],
+              negativeKeywords: activityNegativeKeywords,
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
