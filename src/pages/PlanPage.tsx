@@ -403,7 +403,7 @@ const PlanPage = () => {
               }}
             />
           )}
-          <Button variant="secondary" size="sm" onClick={() => navigate('/profile')}>Profile</Button>
+          
         </div>
       </header>
 
@@ -466,7 +466,7 @@ const PlanPage = () => {
                 onClick={handleSwapRestaurant}
                 disabled={loading || (!restaurantResults[restaurantIndex + 1] && !nextRestaurantsToken)}
               >
-                {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Swap Food"}
+                {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Different Dinner"}
               </CustomButton>
             )}
             {(searchMode !== 'restaurant_only') && (
@@ -475,7 +475,7 @@ const PlanPage = () => {
                 onClick={handleSwapActivity}
                 disabled={loading || (!activityResults[activityIndex + 1] && !nextActivitiesToken)}
               >
-                {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Swap Activity"}
+                {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Different Activity"}
               </CustomButton>
             )}
           </div>
@@ -490,7 +490,7 @@ const PlanPage = () => {
             full
           >
             {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 
-              searchMode === 'restaurant_only' ? "Swap Food" : "Swap Activity"}
+              searchMode === 'restaurant_only' ? "Different Dinner" : "Different Activity"}
           </CustomButton>
         )}
 

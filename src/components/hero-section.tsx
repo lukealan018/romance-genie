@@ -194,21 +194,32 @@ export const HeroSection = ({
           {/* Welcome Message */}
           <div className="space-y-2">
             {isLoggedIn && userName ? (
+              (() => {
+                const hour = new Date().getHours();
+                const timeGreeting = hour < 12 
+                  ? { greeting: "Good morning,", subtitle: "Planning a brunch or daytime date?" }
+                  : hour < 17 
+                    ? { greeting: "Good afternoon,", subtitle: "Getting ahead on tonight's plans?" }
+                    : hour < 21 
+                      ? { greeting: "Good evening,", subtitle: "Let's find something perfect for tonight" }
+                      : { greeting: "Night owl?", subtitle: "Let's find a late-night spot" };
+                return (
               <>
                 <motion.div
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <p style={{ color: 'var(--supporting-text-color)', transition: 'var(--theme-transition)' }} className="text-base">Welcome back,</p>
+                  <p style={{ color: 'var(--supporting-text-color)', transition: 'var(--theme-transition)' }} className="text-base">{timeGreeting.greeting}</p>
                   <h1 className="text-[34px] font-bold" style={{ color: 'var(--username-color)', textShadow: 'var(--username-glow)', transition: 'var(--theme-transition)' }}>
                     {userName}
                   </h1>
                 </motion.div>
                 <p style={{ color: 'var(--supporting-text-color)', transition: 'var(--theme-transition)' }} className="text-sm mt-2">
-                  Ready for tonight's adventure?
+                  {timeGreeting.subtitle}
                 </p>
-              </>
+            </>);
+              })()
             ) : (
               <>
                 <motion.div
