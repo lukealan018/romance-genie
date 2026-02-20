@@ -64,6 +64,8 @@ export const EXCLUDED_ACTIVITY_TYPES: string[] = [
   // Parks / nature (not date-night venues)
   'park', 'state_park', 'national_park', 'dog_park', 'playground',
   'campground', 'nature_reserve', 'hiking_area', 'trail',
+  // Low-effort venues (not outings)
+  'cafe', 'bakery',
 ];
 
 // ===== GOLF ENTERTAINMENT FILTERING =====
@@ -83,7 +85,8 @@ export const TRADITIONAL_GOLF_EXCLUSIONS: string[] = [
 // ===== RESTAURANT VS ACTIVITY SEPARATION =====
 
 export const RESTAURANT_TYPES: string[] = [
-  'restaurant', 'food', 'meal_takeaway', 'meal_delivery', 'bakery', 'cafe',
+  'restaurant', 'food', 'meal_takeaway', 'meal_delivery', 'bakery',
+  // 'cafe' REMOVED - cafes only valid for coffee-specific searches
 ];
 
 export const BAR_TYPES: string[] = [

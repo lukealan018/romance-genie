@@ -36,7 +36,7 @@ function isDinnerTime(searchTime?: string): boolean {
 }
 
 // Restaurant filtering using centralized exclusion lists
-function shouldExcludeRestaurant(placeTypes: string[], placeName: string = '', cuisine?: string): boolean {
+function shouldExcludeRestaurant(placeTypes: string[], placeName: string = '', cuisine?: string, isCoffeeSearch: boolean = false): boolean {
   const name = placeName.toLowerCase();
   
   // PASS 0: Italian cuisine filter - exclude pizza places unless searching for pizza
@@ -54,15 +54,23 @@ function shouldExcludeRestaurant(placeTypes: string[], placeName: string = '', c
   
   // PASS 1: Allowlist legitimate restaurants
   const restaurantKeywords = [
-    'restaurant', 'bistro', 'cafe', 'steakhouse', 'trattoria', 
+    'restaurant', 'bistro', 'steakhouse', 'trattoria', 
     'brasserie', 'eatery', 'dining', 'grill', 'kitchen', 
     'tavern', 'pub', 'diner', 'bar & grill', 'ristorante', 'osteria'
+    // 'cafe' REMOVED -- only valid when venueType === 'coffee'
   ];
-  
-  // Note: removed 'pizzeria' from allowlist - it should be filtered for Italian searches
   
   if (restaurantKeywords.some(keyword => name.includes(keyword))) {
     return false;
+  }
+  
+  // Block cafe/coffee venues from non-coffee searches
+  if (!isCoffeeSearch) {
+    const cafePatterns = /\bcafe\b|\bcafé\b|\bcoffee\b|\bespresso\b|\broasters?\b|\bcoffeehouse\b/i;
+    if (cafePatterns.test(name) && !name.includes('bistro') && !name.includes('kitchen') && !name.includes('grill')) {
+      console.log(`☕🚫 Google: Filtering out "${placeName}" - cafe/coffee venue in non-coffee search`);
+      return true;
+    }
   }
   
   // PASS 2: Check centralized type exclusions
@@ -246,7 +254,7 @@ export const googlePlacesProvider: PlacesProvider = {
           // === REGULAR RESTAURANT FILTERING ===
           // Exclude non-restaurants using centralized filtering
           // Pass cuisine to enable Italian vs Pizza filtering
-          if (shouldExcludeRestaurant(types, name, options.cuisine)) {
+          if (shouldExcludeRestaurant(types, name, options.cuisine, isCoffeeSearch)) {
             console.log(`🚫 Google: Filtering out "${name}" - excluded type/name`);
             return false;
           }
