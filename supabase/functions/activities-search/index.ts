@@ -162,9 +162,9 @@ serve(async (req) => {
     const searchDate = validateString(body.searchDate, 10) || undefined;
     const findNextAvailable = body.findNextAvailable === true;
 
-    if (isNaN(lat) || isNaN(lng) || isNaN(radiusMiles) || !keyword) {
+    if (isNaN(lat) || isNaN(lng) || isNaN(radiusMiles) || (!keyword && queryBundles.length === 0)) {
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters: lat, lng, radiusMiles, keyword' }),
+        JSON.stringify({ error: 'Missing required parameters: lat, lng, radiusMiles, and either keyword or queryBundles' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

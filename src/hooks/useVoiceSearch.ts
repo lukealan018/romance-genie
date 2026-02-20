@@ -388,6 +388,12 @@ export const useVoiceSearch = ({
           })
         : Promise.resolve({ data: { items: [] }, error: null });
 
+      // Fallback: ensure activity search always has a keyword or bundles
+      const activityKeyword = searchActivity || 'fun things to do';
+      const activityBundles = (preferences.activityQueryBundles?.length > 0)
+        ? preferences.activityQueryBundles
+        : (!searchActivity ? ['fun things to do', 'nightlife', 'entertainment'] : []);
+
       // Search activities only if mode allows
       const activitiesPromise = (voiceMode === 'both' || voiceMode === 'activity_only')
         ? supabase.functions.invoke('activities-search', {
@@ -395,14 +401,14 @@ export const useVoiceSearch = ({
               lat: activityLat, 
               lng: activityLng, 
               radiusMiles: searchRadius, 
-              keyword: searchActivity || undefined,
+              keyword: activityKeyword,
               targetCity: activityCity,
               seed: randomSeed,
               forceFresh: true,
               voiceTriggered: true,
               excludePlaceIds: excludeActivityIds,
               // Intent routing: pass bundles and negatives from voice interpretation
-              queryBundles: preferences.activityQueryBundles || [],
+              queryBundles: activityBundles,
               negativeKeywords: preferences.negativeKeywords || [],
             }
           })

@@ -475,12 +475,30 @@ If the user requests outdoor activities or venues:
 - If weather is fine: Set weatherWarning: null, proceed normally
 ` : 'No weather data provided. Set weatherWarning: null.'}
 
+VAGUE PROMPT HANDLING (CRITICAL):
+When the user gives a broad, open-ended request with no specific venue type, cuisine, or activity
+(e.g., "something fun", "plan a night out", "find me something interesting", "what should we do tonight",
+"let's go out", "nice evening", "chill night", "surprise me", "I'm bored", "entertain me"),
+do NOT set needsClarification to true. Instead treat it as a surprise/discovery request:
+- mode: "both"
+- intent: "surprise"
+- noveltyLevel: "adventurous"
+- restaurantQueryBundles: ["popular restaurant", "date night restaurant", "trendy restaurant", "highly rated restaurant"]
+- activityQueryBundles: ["fun things to do", "nightlife", "entertainment", "popular attractions"]
+- mood: infer from context clues, default to "fun"
+- needsClarification: false
+
 AMBIGUITY / CLARIFICATION:
-If the request is truly vague with no clear venue type (e.g., "something fun", "let's go out", "nice evening", "chill night"):
-- Set needsClarification: true
+Reserve needsClarification ONLY for genuinely ambiguous SPECIFIC terms where you truly cannot determine
+the venue type. For example:
+- "wings" (food vs. indoor skydiving) → needsClarification: true
+- "pool" (billiards vs. swimming) → needsClarification: true
+
+Do NOT set needsClarification for open-ended or vague requests. Those should always trigger a surprise search.
+
+When needsClarification IS true:
 - Provide 3-5 clarificationOptions as short chip labels
-- Example: "something fun outside" → needsClarification: true, clarificationOptions: ["Rooftop bar","Patio dining","Outdoor concert","Scenic walk","Surprise me"]
-- Example: "nice evening" → needsClarification: true, clarificationOptions: ["Fine dining","Cocktail lounge","Live music","Surprise me"]
+- Example: "wings" → needsClarification: true, clarificationOptions: ["Chicken wings restaurant","Indoor skydiving","Surprise me"]
 
 Do NOT set needsClarification for specific requests like "steak dinner", "sushi", "comedy club" etc.
 
