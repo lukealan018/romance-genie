@@ -63,6 +63,11 @@ export const useVoiceSearch = ({
   const [showDateChoice, setShowDateChoice] = useState(false);
   const [dateChoiceOptions, setDateChoiceOptions] = useState<DateOption[]>([]);
   const [pendingSearchData, setPendingSearchData] = useState<any>(null);
+  
+  // State for clarification chips
+  const [showClarification, setShowClarification] = useState(false);
+  const [clarificationOptions, setClarificationOptions] = useState<string[]>([]);
+  const [pendingClarificationData, setPendingClarificationData] = useState<any>(null);
 
   // Core search logic - extracted for reuse
   // VOICE SEARCH COMPLETELY OVERRIDES PROFILE - builds params ONLY from voice intent
@@ -364,10 +369,13 @@ export const useVoiceSearch = ({
               priceLevel: restaurantPriceLevel,
               targetCity: restaurantCity,
               venueType: venueType,
-              seed: randomSeed,         // Fresh seed for variety
-              forceFresh: true,         // Always force fresh results
-              voiceTriggered: true,     // Signal this is a voice search
-              excludePlaceIds           // Exclude previously shown places
+              seed: randomSeed,
+              forceFresh: true,
+              voiceTriggered: true,
+              excludePlaceIds,
+              // Intent routing: pass bundles and negatives from voice interpretation
+              queryBundles: preferences.restaurantQueryBundles || [],
+              negativeKeywords: preferences.negativeKeywords || [],
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -379,12 +387,15 @@ export const useVoiceSearch = ({
               lat: activityLat, 
               lng: activityLng, 
               radiusMiles: searchRadius, 
-              keyword: searchActivity || undefined,  // Leave undefined if not specified (not 'fun activity')
+              keyword: searchActivity || undefined,
               targetCity: activityCity,
-              seed: randomSeed,         // Fresh seed for variety
-              forceFresh: true,         // Always force fresh results
-              voiceTriggered: true,     // Signal this is a voice search
-              excludePlaceIds: excludeActivityIds  // Exclude previously shown activities
+              seed: randomSeed,
+              forceFresh: true,
+              voiceTriggered: true,
+              excludePlaceIds: excludeActivityIds,
+              // Intent routing: pass bundles and negatives from voice interpretation
+              queryBundles: preferences.activityQueryBundles || [],
+              negativeKeywords: preferences.negativeKeywords || [],
             }
           })
         : Promise.resolve({ data: { items: [] }, error: null });
@@ -583,8 +594,17 @@ export const useVoiceSearch = ({
     console.log('=== VOICE PREFERENCES EXTRACTION START (PROFILE OVERRIDE MODE) ===');
     console.log('Raw preferences:', preferences);
     
+    // === CLARIFICATION CHECK ===
+    // If voice AI says intent is ambiguous, show clarification chips instead of searching
+    if (preferences.needsClarification && preferences.clarificationOptions?.length > 0) {
+      console.log('🤔 Clarification needed, showing chips:', preferences.clarificationOptions);
+      setClarificationOptions(preferences.clarificationOptions);
+      setPendingClarificationData(preferences);
+      setShowClarification(true);
+      return; // Don't search yet - wait for chip selection
+    }
+    
     // Smart exclusion clearing: Only clear when location changes SIGNIFICANTLY (>5 miles)
-    // This preserves exclusions for repeated searches in the same area
     const storeState = usePlanStore.getState();
     const currentExclusions = storeState.excludePlaceIds.length + storeState.excludeActivityIds.length;
     console.log('📊 Current exclusion count:', currentExclusions);
@@ -693,6 +713,55 @@ export const useVoiceSearch = ({
     setPendingSearchData(null);
   }, []);
 
+  // Handler for clarification chip selection
+  const handleClarificationSelect = useCallback(async (selectedOption: string) => {
+    setShowClarification(false);
+    
+    if (!pendingClarificationData) return;
+    
+    console.log(`✅ Clarification selected: "${selectedOption}"`);
+    
+    // Build refined preferences based on the selected chip
+    const refinedPreferences = { ...pendingClarificationData };
+    refinedPreferences.needsClarification = false;
+    refinedPreferences.clarificationOptions = [];
+    
+    // Map the chip selection to specific search terms
+    const lowerOption = selectedOption.toLowerCase();
+    
+    // Determine if this is a restaurant or activity clarification
+    const restaurantChips = ['italian', 'steakhouse', 'sushi', 'seafood', 'mexican', 'thai', 'french', 'fine dining', 'casual dining'];
+    const isRestaurantChoice = restaurantChips.some(c => lowerOption.includes(c));
+    
+    if (selectedOption.toLowerCase() === 'surprise me') {
+      refinedPreferences.intent = 'surprise';
+      refinedPreferences.noveltyLevel = 'adventurous';
+    } else if (isRestaurantChoice) {
+      refinedPreferences.restaurantRequest = { 
+        ...(refinedPreferences.restaurantRequest || {}),
+        type: selectedOption.toLowerCase()
+      };
+      refinedPreferences.restaurantQueryBundles = [selectedOption.toLowerCase()];
+    } else {
+      // Activity clarification
+      refinedPreferences.activityRequest = {
+        ...(refinedPreferences.activityRequest || {}),
+        type: selectedOption.toLowerCase()
+      };
+      refinedPreferences.activityQueryBundles = [selectedOption.toLowerCase()];
+    }
+    
+    setPendingClarificationData(null);
+    
+    // Re-run the full preferences extraction flow (which will now skip clarification)
+    await handlePreferencesExtracted(refinedPreferences);
+  }, [pendingClarificationData, handlePreferencesExtracted]);
+
+  const closeClarification = useCallback(() => {
+    setShowClarification(false);
+    setPendingClarificationData(null);
+  }, []);
+
   const { isListening, isProcessing, transcript, startListening } = useVoiceInput({
     onPreferencesExtracted: handlePreferencesExtracted,
   });
@@ -707,5 +776,10 @@ export const useVoiceSearch = ({
     dateChoiceOptions,
     handleDateChoice,
     closeDateChoice,
+    // Clarification chips state
+    showClarification,
+    clarificationOptions,
+    handleClarificationSelect,
+    closeClarification,
   };
 };

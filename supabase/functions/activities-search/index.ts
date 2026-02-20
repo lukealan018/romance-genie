@@ -140,7 +140,7 @@ serve(async (req) => {
     const lat = validateNumber(body.lat);
     const lng = validateNumber(body.lng);
     const radiusMiles = validateNumber(body.radiusMiles);
-    const keyword = validateString(body.keyword, 200); // Limit keyword to 200 chars
+    const keyword = validateString(body.keyword, 200);
     const targetCity = validateString(body.targetCity, 100) || undefined;
     const noveltyMode = validateNoveltyMode(body.noveltyMode);
     const seed = body.seed !== undefined ? validateNumber(body.seed) : undefined;
@@ -151,11 +151,15 @@ serve(async (req) => {
     const excludePlaceIds = Array.isArray(body.excludePlaceIds) 
       ? body.excludePlaceIds.filter((id: unknown) => typeof id === 'string').slice(0, 100)
       : [];
+    const queryBundles: string[] = Array.isArray(body.queryBundles)
+      ? body.queryBundles.filter((s: unknown) => typeof s === 'string').slice(0, 10)
+      : [];
+    const negativeKeywords: string[] = Array.isArray(body.negativeKeywords)
+      ? body.negativeKeywords.filter((s: unknown) => typeof s === 'string').slice(0, 20)
+      : [];
     
     // === DATE PARAMETERS FOR EVENT FILTERING ===
-    // searchDate: YYYY-MM-DD format for specific date search
     const searchDate = validateString(body.searchDate, 10) || undefined;
-    // findNextAvailable: when true and no results, search wider range and return next available date
     const findNextAvailable = body.findNextAvailable === true;
 
     if (isNaN(lat) || isNaN(lng) || isNaN(radiusMiles) || !keyword) {
@@ -180,6 +184,8 @@ serve(async (req) => {
     console.log('Exclude IDs:', excludePlaceIds.length);
     console.log('Search Date:', searchDate || 'any');
     console.log('Find Next Available:', findNextAvailable);
+    console.log('Query Bundles:', queryBundles.length > 0 ? queryBundles : 'none');
+    console.log('Negative Keywords:', negativeKeywords.length > 0 ? negativeKeywords : 'none');
     console.log('======================================');
     
     // Detect search intent from keyword
@@ -200,20 +206,94 @@ serve(async (req) => {
                            keywordLower.includes('outside') ||
                            keywordLower.includes('activity');
 
-    // Use multi-provider service
-    const searchOptions: ActivitySearchOptions = {
-      lat,
-      lng,
-      radiusMeters,
-      keyword,
-      targetCity,
-      noveltyMode,
-      limit: 50,
-      searchDate,
-      findNextAvailable: false, // First search with specific date if provided
-    };
+    // === QUERY BUNDLE FAN-OUT ===
+    let activities: any[];
+    let providerStats: Record<string, number>;
     
-    let { items: activities, providerStats } = await getActivitySuggestions(searchOptions);
+    if (queryBundles.length > 0) {
+      console.log(`🔀 Activity bundle fan-out: running ${queryBundles.length} parallel searches`);
+      
+      const bundlePromises = queryBundles.map(bundle => {
+        const opts: ActivitySearchOptions = {
+          lat,
+          lng,
+          radiusMeters,
+          keyword: bundle,
+          targetCity,
+          noveltyMode,
+          limit: 20,
+          searchDate,
+          findNextAvailable: false,
+        };
+        return getActivitySuggestions(opts);
+      });
+      
+      const bundleResults = await Promise.allSettled(bundlePromises);
+      
+      const allItems: any[] = [];
+      providerStats = {};
+      
+      bundleResults.forEach((result, i) => {
+        if (result.status === 'fulfilled') {
+          console.log(`   ✅ Bundle "${queryBundles[i]}": ${result.value.items.length} results`);
+          allItems.push(...result.value.items);
+          for (const [key, val] of Object.entries(result.value.providerStats)) {
+            providerStats[key] = (providerStats[key] || 0) + val;
+          }
+        } else {
+          console.warn(`   ❌ Bundle "${queryBundles[i]}" failed:`, result.reason);
+        }
+      });
+      
+      // Deduplicate by ID
+      const seen = new Set<string>();
+      activities = allItems.filter(item => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      });
+      
+      console.log(`📊 Activity bundle fan-out: ${allItems.length} raw → ${activities.length} unique`);
+    } else {
+      // Standard single-query search
+      const searchOptions: ActivitySearchOptions = {
+        lat,
+        lng,
+        radiusMeters,
+        keyword,
+        targetCity,
+        noveltyMode,
+        limit: 50,
+        searchDate,
+        findNextAvailable: false,
+      };
+      
+      const result = await getActivitySuggestions(searchOptions);
+      activities = result.items;
+      providerStats = result.providerStats;
+    }
+    
+    // === NEGATIVE KEYWORD FILTERING ===
+    if (negativeKeywords.length > 0) {
+      const beforeCount = activities.length;
+      const lowerNegatives = negativeKeywords.map(n => n.toLowerCase());
+      
+      activities = activities.filter((item: any) => {
+        const nameLower = (item.name || '').toLowerCase();
+        const typesLower = (item.types || []).map((t: string) => t.toLowerCase()).join(' ');
+        const categoryLower = (item.category || '').toLowerCase();
+        
+        for (const neg of lowerNegatives) {
+          if (nameLower.includes(neg) || typesLower.includes(neg) || categoryLower.includes(neg)) {
+            console.log(`🚫 Negative filter: excluding "${item.name}" (matched "${neg}")`);
+            return false;
+          }
+        }
+        return true;
+      });
+      
+      console.log(`🚫 Activity negative filtering: ${beforeCount} → ${activities.length}`);
+    }
     
     // === NEXT AVAILABLE DATE LOGIC ===
     // If liveEventsOnly and no events found for target date, find when next events are available

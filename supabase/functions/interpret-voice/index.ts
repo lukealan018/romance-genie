@@ -323,10 +323,56 @@ MORE STANDARD EXAMPLES:
 49. "Cocktail lounge" → { activityRequest: { type: "cocktail lounge" }, intent: "specific" }
 50. "Movie theater" → { activityRequest: { type: "movie theater" }, intent: "specific" }
 
+INTENT ROUTING & QUERY BUNDLES (CRITICAL NEW FEATURE):
+Instead of just returning a venue "type", also return query bundles that control what searches run.
+This prevents "steak dinner" from returning churrascarias, and "something outside" from returning hiking trails.
+
+RULES:
+1. If user says "steak" but does NOT say "Brazilian/churrascaria/rodizio":
+   - restaurantSubtype: "classic_steakhouse"
+   - restaurantQueryBundles: ["steakhouse","prime steakhouse","chophouse","dry aged steak","grill"]
+   - negativeKeywords: ["churrascaria","rodizio","brazilian steakhouse"]
+
+2. If user says "Brazilian steakhouse" / "churrascaria" / "rodizio":
+   - restaurantSubtype: "brazilian_churrascaria"
+   - restaurantQueryBundles: ["churrascaria","rodizio","brazilian steakhouse"]
+
+3. If user says "outside" / "outdoors" / "open air" / "patio" and does NOT say "hike" / "trail" / "nature walk":
+   - activitySubtype: "outdoor_nightlife"
+   - activityQueryBundles: ["rooftop bar","patio cocktails","beer garden","outdoor live music","outdoor lounge","outdoor dining"]
+   - negativeKeywords: ["hiking trail","campground","trailhead","nature center"]
+
+4. If user says "hike" / "trail" / "nature walk" / "workout" / "adventure outdoors":
+   - activitySubtype: "hiking"
+   - activityQueryBundles: ["hiking trail","nature walk","scenic hike"]
+
+5. For "sushi" → restaurantQueryBundles: ["sushi restaurant","sushi bar","omakase"]
+6. For "Italian" → restaurantQueryBundles: ["italian restaurant","trattoria","italian bistro"]
+7. For "Mexican" → restaurantQueryBundles: ["mexican restaurant","taqueria","cantina"]
+8. For "bar" (generic) → activityQueryBundles: ["cocktail bar","lounge","bar","speakeasy"]
+9. For "comedy" → activityQueryBundles: ["comedy club","comedy show","improv","stand up comedy"]
+10. For "live music" → activityQueryBundles: ["live music venue","concert venue","jazz club","music bar"]
+
+AMBIGUITY / CLARIFICATION:
+If the request is truly vague with no clear venue type (e.g., "something fun", "let's go out", "nice evening", "chill night"):
+- Set needsClarification: true
+- Provide 3-5 clarificationOptions as short chip labels
+- Example: "something fun outside" → needsClarification: true, clarificationOptions: ["Rooftop bar","Patio dining","Outdoor concert","Scenic walk","Surprise me"]
+- Example: "nice evening" → needsClarification: true, clarificationOptions: ["Fine dining","Cocktail lounge","Live music","Surprise me"]
+
+Do NOT set needsClarification for specific requests like "steak dinner", "sushi", "comedy club" etc.
+
 Return JSON with this structure:
 {
   "restaurantRequest": { "type": "exact venue type from lists", "location": "city or null", "priceLevel": "budget|moderate|upscale|null" },
   "activityRequest": { "type": "exact venue type from lists", "location": "city or null", "priceLevel": "budget|moderate|upscale|null" },
+  "restaurantSubtype": "classic_steakhouse|brazilian_churrascaria|null",
+  "activitySubtype": "outdoor_nightlife|hiking|null",
+  "restaurantQueryBundles": ["array of specific search terms for restaurant"],
+  "activityQueryBundles": ["array of specific search terms for activity"],
+  "negativeKeywords": ["terms to exclude from results"],
+  "needsClarification": false,
+  "clarificationOptions": [],
   "generalLocation": "city or area name or null",
   "mode": "both|restaurant_only|activity_only",
   "venueType": "any|coffee",
@@ -344,6 +390,15 @@ Return JSON with this structure:
   "searchDateAmbiguous": false,
   "searchDateOptions": []
 }
+
+QUERY BUNDLE EXAMPLES:
+- "steak dinner" → restaurantQueryBundles: ["steakhouse","prime steakhouse","chophouse","dry aged steak","grill"], negativeKeywords: ["churrascaria","rodizio"]
+- "sushi date" → restaurantQueryBundles: ["sushi restaurant","sushi bar","omakase"]
+- "something outside tonight" → activityQueryBundles: ["rooftop bar","patio cocktails","beer garden","outdoor live music"], negativeKeywords: ["hiking trail","campground"]
+- "comedy club" → activityQueryBundles: ["comedy club","comedy show","improv","stand up comedy"]
+- "something fun" → needsClarification: true, clarificationOptions: ["Cocktail bar","Comedy club","Arcade","Live music","Surprise me"]
+- "nice dinner" → needsClarification: true, clarificationOptions: ["Italian","Steakhouse","Sushi","Seafood","Surprise me"]
+- "whiskey bar" → activityQueryBundles: ["whiskey bar","bourbon bar","scotch bar","craft cocktail bar"]
 
 CRITICAL EXAMPLES for MODE DETECTION:
 - "sushi and karaoke" → mode: "both"
@@ -390,11 +445,27 @@ CRITICAL EXAMPLES for MODE DETECTION:
     
     const result = JSON.parse(content);
     
+    // Ensure new fields have defaults for backward compatibility
+    if (!result.restaurantQueryBundles) result.restaurantQueryBundles = [];
+    if (!result.activityQueryBundles) result.activityQueryBundles = [];
+    if (!result.negativeKeywords) result.negativeKeywords = [];
+    if (result.needsClarification === undefined) result.needsClarification = false;
+    if (!result.clarificationOptions) result.clarificationOptions = [];
+    if (!result.restaurantSubtype) result.restaurantSubtype = null;
+    if (!result.activitySubtype) result.activitySubtype = null;
+    
     console.log('=== VOICE INTERPRETATION ===');
     console.log('Original transcript:', transcript);
     console.log('Mode:', result.mode);
     console.log('Extracted restaurant:', result.restaurantRequest);
     console.log('Extracted activity:', result.activityRequest);
+    console.log('Restaurant subtype:', result.restaurantSubtype);
+    console.log('Activity subtype:', result.activitySubtype);
+    console.log('Restaurant bundles:', result.restaurantQueryBundles);
+    console.log('Activity bundles:', result.activityQueryBundles);
+    console.log('Negative keywords:', result.negativeKeywords);
+    console.log('Needs clarification:', result.needsClarification);
+    console.log('Clarification options:', result.clarificationOptions);
     console.log('General location:', result.generalLocation);
     console.log('Intent:', result.intent);
     console.log('Novelty level:', result.noveltyLevel);

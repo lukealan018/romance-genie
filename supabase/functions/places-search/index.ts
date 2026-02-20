@@ -116,7 +116,7 @@ serve(async (req) => {
 
   try {
     // Parse request parameters
-    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean, venueType: 'any' | 'coffee' | 'brunch', searchTime: string | undefined, surpriseMe: boolean, excludePlaceIds: string[], debug: boolean;
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean, venueType: 'any' | 'coffee' | 'brunch', searchTime: string | undefined, surpriseMe: boolean, excludePlaceIds: string[], debug: boolean, queryBundles: string[], negativeKeywords: string[];
 
     if (req.method === 'POST') {
       const body = await req.json();
@@ -136,6 +136,12 @@ serve(async (req) => {
       excludePlaceIds = Array.isArray(body.excludePlaceIds) 
         ? body.excludePlaceIds.filter((id: unknown) => typeof id === 'string').slice(0, 100)
         : [];
+      queryBundles = Array.isArray(body.queryBundles)
+        ? body.queryBundles.filter((s: unknown) => typeof s === 'string').slice(0, 10)
+        : [];
+      negativeKeywords = Array.isArray(body.negativeKeywords)
+        ? body.negativeKeywords.filter((s: unknown) => typeof s === 'string').slice(0, 20)
+        : [];
     } else {
       const url = new URL(req.url);
       debug = url.searchParams.get('debug') === 'true';
@@ -152,6 +158,8 @@ serve(async (req) => {
       searchTime = validateString(url.searchParams.get('searchTime'), 20) || undefined;
       surpriseMe = url.searchParams.get('surpriseMe') === 'true';
       excludePlaceIds = [];
+      queryBundles = [];
+      negativeKeywords = [];
     }
 
     // Validate required parameters
@@ -180,6 +188,8 @@ serve(async (req) => {
       searchTime: searchTime || 'none',
       surpriseMe,
       excludePlaceIds: excludePlaceIds.length,
+      queryBundles: queryBundles.length > 0 ? queryBundles : 'none',
+      negativeKeywords: negativeKeywords.length > 0 ? negativeKeywords : 'none',
       bookingInsightsEnabled: FEATURE_FLAGS.ENABLE_BOOKING_INSIGHTS
     });
 
@@ -190,19 +200,95 @@ serve(async (req) => {
       console.log('🔄 Force fresh: generated random seed:', effectiveSeed);
     }
 
-    // Use multi-provider service to get restaurant suggestions
-    const { items: providerResults, providerStats } = await getRestaurantSuggestions({
-      lat,
-      lng,
-      radiusMeters,
-      cuisine: (venueType === 'coffee' || venueType === 'brunch') ? '' : cuisine, // Ignore cuisine for coffee/brunch search
-      priceLevel: (venueType === 'coffee' || venueType === 'brunch') ? undefined : priceLevel, // Ignore price for coffee/brunch
-      targetCity,
-      noveltyMode,
-      limit: 50,
-      venueType,
-      searchTime
-    });
+    // === QUERY BUNDLE FAN-OUT ===
+    // If queryBundles are provided, run parallel searches for each bundle term and merge
+    let providerResults: any[];
+    let providerStats: Record<string, number>;
+    
+    if (queryBundles.length > 0) {
+      console.log(`🔀 Bundle fan-out: running ${queryBundles.length} parallel searches`);
+      
+      const bundlePromises = queryBundles.map(bundle => 
+        getRestaurantSuggestions({
+          lat,
+          lng,
+          radiusMeters,
+          cuisine: bundle,
+          priceLevel: (venueType === 'coffee' || venueType === 'brunch') ? undefined : priceLevel,
+          targetCity,
+          noveltyMode,
+          limit: 20,
+          venueType,
+          searchTime
+        })
+      );
+      
+      const bundleResults = await Promise.allSettled(bundlePromises);
+      
+      // Merge all bundle results
+      const allItems: any[] = [];
+      providerStats = {};
+      
+      bundleResults.forEach((result, i) => {
+        if (result.status === 'fulfilled') {
+          console.log(`   ✅ Bundle "${queryBundles[i]}": ${result.value.items.length} results`);
+          allItems.push(...result.value.items);
+          // Merge provider stats
+          for (const [key, val] of Object.entries(result.value.providerStats)) {
+            providerStats[key] = (providerStats[key] || 0) + val;
+          }
+        } else {
+          console.warn(`   ❌ Bundle "${queryBundles[i]}" failed:`, result.reason);
+        }
+      });
+      
+      // Deduplicate by ID
+      const seen = new Set<string>();
+      providerResults = allItems.filter(item => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      });
+      
+      console.log(`📊 Bundle fan-out: ${allItems.length} raw → ${providerResults.length} unique`);
+    } else {
+      // Standard single-query search
+      const result = await getRestaurantSuggestions({
+        lat,
+        lng,
+        radiusMeters,
+        cuisine: (venueType === 'coffee' || venueType === 'brunch') ? '' : cuisine,
+        priceLevel: (venueType === 'coffee' || venueType === 'brunch') ? undefined : priceLevel,
+        targetCity,
+        noveltyMode,
+        limit: 50,
+        venueType,
+        searchTime
+      });
+      providerResults = result.items;
+      providerStats = result.providerStats;
+    }
+    
+    // === NEGATIVE KEYWORD FILTERING ===
+    if (negativeKeywords.length > 0) {
+      const beforeCount = providerResults.length;
+      const lowerNegatives = negativeKeywords.map(n => n.toLowerCase());
+      
+      providerResults = providerResults.filter(item => {
+        const nameLower = (item.name || '').toLowerCase();
+        const categoriesLower = (item.categories || []).map((c: string) => c.toLowerCase()).join(' ');
+        
+        for (const neg of lowerNegatives) {
+          if (nameLower.includes(neg) || categoriesLower.includes(neg)) {
+            console.log(`🚫 Negative filter: excluding "${item.name}" (matched "${neg}")`);
+            return false;
+          }
+        }
+        return true;
+      });
+      
+      console.log(`🚫 Negative filtering: ${beforeCount} → ${providerResults.length} (removed ${beforeCount - providerResults.length})`);
+    }
 
     console.log(`📊 Provider stats:`, providerStats);
 
