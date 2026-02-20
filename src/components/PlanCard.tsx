@@ -12,9 +12,7 @@ import { SharePlanButton } from './SharePlanButton';
 
 // Estimate travel time based on distance
 const estimateTravelTime = (miles: number) => {
-  // Rough estimate: 2 minutes per mile in city traffic
   const minutes = Math.round(miles * 2);
-  
   if (minutes < 60) {
     return `${minutes} min`;
   } else {
@@ -22,6 +20,36 @@ const estimateTravelTime = (miles: number) => {
     const remainingMins = minutes % 60;
     return remainingMins > 0 ? `${hours}h ${remainingMins}m` : `${hours}h`;
   }
+};
+
+// Concierge-style rating labels (no raw numbers)
+const getConciergeRatingLabel = (rating: number, totalRatings: number): string => {
+  if (rating >= 4.7 && totalRatings >= 500) return "Exceptional";
+  if (rating >= 4.7) return "Highly Rated";
+  if (rating >= 4.3 && totalRatings >= 200) return "Local Favorite";
+  if (rating >= 4.3) return "Well Loved";
+  if (rating >= 4.0) return "Great Pick";
+  if (rating >= 3.5) return "Solid Choice";
+  return "Worth a Try";
+};
+
+// Generate a one-line "why this place" tagline from existing data
+const getVenueTagline = (place: Place, type: 'restaurant' | 'activity'): string => {
+  if (place.isHiddenGem) return "A rare find most people don't know about";
+  if (place.isLocalFavorite) return "A neighborhood staple locals swear by";
+  
+  if (type === 'restaurant') {
+    if (place.priceLevel === '$$$$') return "Upscale dining for a special evening";
+    if (place.priceLevel === '$$$' && place.rating >= 4.5) return "Refined dining with outstanding reviews";
+    if (place.rating >= 4.7 && place.totalRatings >= 300) return "One of the highest-rated spots nearby";
+    if (place.rating >= 4.5) return "Consistently impressive dining experience";
+    return "A solid pick for tonight";
+  }
+  
+  if (place.category === 'event') return "A live experience happening near you";
+  if (place.rating >= 4.7 && place.totalRatings >= 200) return "A top-rated experience in the area";
+  if (place.rating >= 4.5) return "Highly recommended by visitors";
+  return "Something fun to round out your evening";
 };
 
 interface Place {
@@ -333,7 +361,7 @@ export const PlanCard = ({
               className="gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              Reroll
+              Start Fresh
             </Button>
           </div>
         </div>
@@ -361,22 +389,17 @@ export const PlanCard = ({
                 ) : (
                   <h3 className="font-semibold text-lg line-clamp-1">{restaurant.name}</h3>
                 )}
+                <p className="text-sm italic text-muted-foreground/80 mt-0.5">{getVenueTagline(restaurant, 'restaurant')}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 fill-accent text-accent" />
-                    <span className="text-sm font-medium">{restaurant.rating.toFixed(1)}</span>
-                    <span className="text-xs text-muted-foreground">({restaurant.totalRatings})</span>
+                    <span className="text-sm font-medium">{getConciergeRatingLabel(restaurant.rating, restaurant.totalRatings)}</span>
                   </div>
                   {restaurant.priceLevel && (
                     <span className="text-sm font-medium">{restaurant.priceLevel}</span>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {restaurant.source && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                      {restaurant.source === 'foursquare' ? '🟦 Foursquare' : '🌐 Google'}
-                    </span>
-                  )}
                   {restaurant.isHiddenGem && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">
                       💎 Hidden Gem
@@ -413,7 +436,7 @@ export const PlanCard = ({
         size="sm" 
         disabled={loading || !canSwapRestaurant}
       >
-        Swap
+        Something Else
       </Button>
             </div>
             
@@ -594,20 +617,16 @@ export const PlanCard = ({
                 ) : (
                   <h3 className="font-semibold text-lg line-clamp-1">{activity.name}</h3>
                 )}
+                <p className="text-sm italic text-muted-foreground/80 mt-0.5">{getVenueTagline(activity, 'activity')}</p>
                 <div className="flex items-center gap-1 mt-1">
                   <Star className="w-4 h-4 fill-accent text-accent" />
-                  <span className="text-sm font-medium">{activity.rating.toFixed(1)}</span>
-                  <span className="text-xs text-muted-foreground">({activity.totalRatings})</span>
+                  <span className="text-sm font-medium">{getConciergeRatingLabel(activity.rating, activity.totalRatings)}</span>
                 </div>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {activity.source === 'ticketmaster' || activity.id.startsWith('tm_') ? (
+                  {(activity.source === 'ticketmaster' || activity.id.startsWith('tm_')) && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 flex items-center gap-1">
                       <Ticket className="w-3 h-3" />
                       Live Event
-                    </span>
-                  ) : activity.source && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                      {activity.source === 'foursquare' ? '🟦 Foursquare' : '🌐 Google'}
                     </span>
                   )}
                   {activity.isHiddenGem && (
@@ -645,7 +664,7 @@ export const PlanCard = ({
         size="sm" 
         disabled={loading || !canSwapActivity}
       >
-        Swap
+        Something Else
       </Button>
             </div>
             

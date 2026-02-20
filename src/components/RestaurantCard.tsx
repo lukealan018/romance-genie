@@ -109,11 +109,6 @@ export const RestaurantCard = ({
                 💫 For You
               </span>
             )}
-            {source && !isPersonalMatch && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-500/20 text-slate-300 border border-slate-500/30">
-                {source === 'foursquare' ? '🟦 Foursquare' : '🌐 Google'}
-              </span>
-            )}
             {isHiddenGem && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500/20 text-orange-300 border border-orange-500/30">
                 💎 Hidden Gem
@@ -143,10 +138,15 @@ export const RestaurantCard = ({
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 fill-accent text-accent" />
-            <span className="font-medium">{rating.toFixed(1)}</span>
-            {totalRatings > 0 && (
-              <span className="text-xs text-muted-foreground">({totalRatings})</span>
-            )}
+            <span className="font-medium">{(() => {
+              if (rating >= 4.7 && totalRatings >= 500) return "Exceptional";
+              if (rating >= 4.7) return "Highly Rated";
+              if (rating >= 4.3 && totalRatings >= 200) return "Local Favorite";
+              if (rating >= 4.3) return "Well Loved";
+              if (rating >= 4.0) return "Great Pick";
+              if (rating >= 3.5) return "Solid Choice";
+              return "Worth a Try";
+            })()}</span>
           </div>
           <div className="flex items-center gap-2">
             {priceLevel && (
