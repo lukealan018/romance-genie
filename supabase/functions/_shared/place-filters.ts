@@ -132,39 +132,80 @@ export const UPSCALE_CHAIN_NAMES = /mastro|ruth.?s\s*chris|capital\s*grille|mort
 // Signals that a venue is clearly NOT upscale (instant fail for upscale searches)
 export const NON_UPSCALE_SIGNALS = /boba|bubble\s*tea|milk\s*tea|tapioca|tea\s*shop|tea\s*house|teahouse|pearl\s*tea|catering|caterers|food\s*truck|buffet|all.?you.?can.?eat|smorgasbord|hot\s*dog|hot\s*dogs|deli\s*mart|deli\s*shop|fast\s*food|quick\s*bites|drive.?thru|drive.?through|wing\s*stop|wingstop|taco\s*bell|mcdonald|burger\s*king|subway\s*sandwich|pizza\s*hut|domino.?s|kfc|chipotle|panda\s*express|in.?n.?out|five\s*guys|shake\s*shack|chick.?fil|popeye|el\s*pollo|peet.?s\s*coffee|dunkin|starbucks|grocery|convenience|gas\s*station|market|bodega/i;
 
+// Editorial summary keywords that signal an upscale venue
+const UPSCALE_EDITORIAL_KEYWORDS = /upscale|elegant|refined|fine.?dining|sophisticated|luxurious|luxury|high.?end|award.?winning|michelin|celebrity|exclusive|intimate|curated|artisanal|craft\s+cocktail|world.?class|acclaimed|renowned|premier|signature|tasting.?menu|prix.?fixe|omakase/i;
+
 /**
- * Determines if a venue qualifies as "upscale" when it lacks Google price_level data.
+ * Determines if a venue qualifies as "upscale" for upscale/fine_dining searches.
  * Returns true = keep it (passes quality gate), false = reject it.
  *
- * Logic: A venue without price data must have POSITIVE upscale signals to be included
- * in upscale/fine_dining searches. If there's no signal, we reject — don't guess.
+ * Multi-dimensional logic using Google Places New API (v1) rich fields:
+ * 1. INSTANT FAIL: NON_UPSCALE_SIGNALS in name
+ * 2. INSTANT FAIL: confirmed priceLevel <= 2
+ * 3. PASS: confirmed priceLevel >= 3
+ * 4. PASS: primaryTypeDisplayName includes "Fine Dining"
+ * 5. PASS: editorialSummary contains upscale keywords
+ * 6. PASS: UPSCALE_CHAIN_NAMES match
+ * 7. PASS: UPSCALE_NAME_SIGNALS match
+ * 8. PASS: reservable=true AND rating>=4.3 AND reviewCount>=100 (high-trust proxy for real restaurant)
+ * 9. DEFAULT REJECT: no positive signals
  */
-export function passesUpscaleQualityGate(name: string, priceLevel: number | null | undefined): boolean {
-  const nameLower = name.toLowerCase();
-  
-  // If Google confirmed price level is present: apply strict minimum
-  // upscale = 3+, fine_dining = 4 (but we allow 3+ for fine_dining to not miss venues)
-  if (priceLevel !== null && priceLevel !== undefined) {
-    return priceLevel >= 3;
-  }
-  
-  // No price data: require positive upscale name signals
-  // First: immediately reject clear non-upscale venues
+export function passesUpscaleQualityGate(
+  name: string,
+  priceLevel: number | null | undefined,
+  editorialSummary?: string,
+  reservable?: boolean,
+  primaryTypeDisplayName?: string,
+  rating?: number,
+  reviewCount?: number
+): boolean {
+  // RULE 1: Instant fail — clear non-upscale signals in name
   if (NON_UPSCALE_SIGNALS.test(name)) {
     return false;
   }
-  
-  // Allow known upscale chains
+
+  // RULE 2: Instant fail — confirmed cheap price level
+  if (priceLevel !== null && priceLevel !== undefined && priceLevel <= 2) {
+    return false;
+  }
+
+  // RULE 3: Confirmed expensive price level — pass
+  if (priceLevel !== null && priceLevel !== undefined && priceLevel >= 3) {
+    return true;
+  }
+
+  // RULE 4: primaryTypeDisplayName contains "Fine Dining" — pass
+  if (primaryTypeDisplayName && /fine.?dining/i.test(primaryTypeDisplayName)) {
+    return true;
+  }
+
+  // RULE 5: Editorial summary contains upscale keywords — pass
+  if (editorialSummary && UPSCALE_EDITORIAL_KEYWORDS.test(editorialSummary)) {
+    return true;
+  }
+
+  // RULE 6: Known upscale chain — pass
   if (UPSCALE_CHAIN_NAMES.test(name)) {
     return true;
   }
-  
-  // Allow venues with strong upscale signals in name
+
+  // RULE 7: Strong upscale signals in name — pass
   if (UPSCALE_NAME_SIGNALS.test(name)) {
     return true;
   }
-  
-  // No price data, no upscale signals → reject. Don't guess.
+
+  // RULE 8: Reservable + high rating + significant review count
+  // Reservable venues with excellent ratings are almost always proper sit-down restaurants.
+  // This catches "Nobu", "Carbone", "Matsuhisa" — brand-name places with no descriptor.
+  if (
+    reservable === true &&
+    rating !== undefined && rating >= 4.3 &&
+    reviewCount !== undefined && reviewCount >= 100
+  ) {
+    return true;
+  }
+
+  // DEFAULT: No positive signals — reject. Don't guess.
   return false;
 }
 

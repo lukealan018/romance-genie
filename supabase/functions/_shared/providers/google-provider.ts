@@ -196,128 +196,204 @@ export const googlePlacesProvider: PlacesProvider = {
       searchType = 'restaurant';
     }
     
-    // Add city name for precision
-    if (options.targetCity) {
-      enhancedKeyword = `${enhancedKeyword} in ${options.targetCity}`;
+    // Add city name for precision — include in text search for New API
+    const textQuery = options.targetCity
+      ? `${enhancedKeyword} in ${options.targetCity}`
+      : enhancedKeyword;
+
+    // === Google Places New API (v1) — places:searchNearby ===
+    // POST request with JSON body + X-Goog-FieldMask header
+    // Returns richer data: editorialSummary, reservable, primaryTypeDisplayName, priceLevel (more consistent)
+    const fieldMask = [
+      'places.id',
+      'places.displayName',
+      'places.formattedAddress',
+      'places.rating',
+      'places.userRatingCount',
+      'places.priceLevel',
+      'places.location',
+      'places.types',
+      'places.photos',
+      'places.editorialSummary',
+      'places.reservable',
+      'places.primaryTypeDisplayName',
+      'places.servesWine',
+      'places.servesCocktails',
+      'places.takeout',
+      'places.addressComponents',
+      'places.regularOpeningHours',
+    ].join(',');
+
+    // Map price tiers to New API priceLevels array
+    const includedPriceLevels: string[] = [];
+    if (options.priceLevel === 'budget') {
+      includedPriceLevels.push('PRICE_LEVEL_INEXPENSIVE');
+    } else if (options.priceLevel === 'fine_dining') {
+      includedPriceLevels.push('PRICE_LEVEL_VERY_EXPENSIVE', 'PRICE_LEVEL_EXPENSIVE');
+    } else if (options.priceLevel === 'upscale') {
+      includedPriceLevels.push('PRICE_LEVEL_VERY_EXPENSIVE', 'PRICE_LEVEL_EXPENSIVE', 'PRICE_LEVEL_MODERATE');
     }
-    
-    // Build Google Places API request
-    const placesUrl = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json');
-    placesUrl.searchParams.set('location', `${options.lat},${options.lng}`);
-    placesUrl.searchParams.set('radius', options.radiusMeters.toString());
-    placesUrl.searchParams.set('keyword', enhancedKeyword);
-    placesUrl.searchParams.set('type', searchType);
-    
-    if (priceRange && !isCoffeeSearch) {
-      placesUrl.searchParams.set('minprice', priceRange.min.toString());
-      placesUrl.searchParams.set('maxprice', priceRange.max.toString());
+
+    // Build included types for New API
+    const includedTypes = isCoffeeSearch
+      ? ['cafe', 'coffee_shop']
+      : ['restaurant', 'meal_delivery', 'meal_takeaway'];
+
+    const requestBody: Record<string, any> = {
+      locationRestriction: {
+        circle: {
+          center: { latitude: options.lat, longitude: options.lng },
+          radius: options.radiusMeters,
+        },
+      },
+      includedTypes,
+      maxResultCount: 20,
+      textQuery,
+      languageCode: 'en',
+    };
+
+    if (includedPriceLevels.length > 0) {
+      requestBody.priceLevels = includedPriceLevels;
     }
-    
-    placesUrl.searchParams.set('key', GOOGLE_MAPS_API_KEY);
-    
-    const response = await fetch(placesUrl.toString());
+
+    const response = await fetch(
+      'https://places.googleapis.com/v1/places:searchNearby',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
+          'X-Goog-FieldMask': fieldMask,
+        },
+        body: JSON.stringify(requestBody),
+      }
+    );
+
     const data = await response.json();
-    
-    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      console.error('Google Places API error:', data.status);
-      throw new Error(`Google Places API error: ${data.status}`);
+
+    if (data.error) {
+      console.error('Google Places New API error:', data.error);
+      throw new Error(`Google Places API error: ${data.error.message}`);
     }
-    
+
     const dinnerTimeExclusion = !isCoffeeSearch && isDinnerTime(options.searchTime);
-    
-    const results = (data.results || [])
+
+    // New API price level string → number mapping
+    const priceLevelMap: Record<string, number> = {
+      PRICE_LEVEL_FREE: 0,
+      PRICE_LEVEL_INEXPENSIVE: 1,
+      PRICE_LEVEL_MODERATE: 2,
+      PRICE_LEVEL_EXPENSIVE: 3,
+      PRICE_LEVEL_VERY_EXPENSIVE: 4,
+    };
+
+    const results = (data.places || [])
       .filter((place: any) => {
         const types = place.types || [];
-        const name = place.name || '';
-        
+        const name = place.displayName?.text || '';
+        const priceLevelStr: string | undefined = place.priceLevel;
+        const priceNum = priceLevelStr ? (priceLevelMap[priceLevelStr] ?? null) : null;
+        const editorialSummary: string | undefined = place.editorialSummary?.text;
+        const primaryTypeDisplayName: string | undefined = place.primaryTypeDisplayName?.text;
+        const reservable: boolean | undefined = place.reservable;
+        const rating: number | undefined = place.rating;
+        const reviewCount: number | undefined = place.userRatingCount;
+
         if (isCoffeeSearch) {
           // === STRICT COFFEE SHOP FILTERING ===
-          // KEEP: Must match coffee patterns (not just cafe type)
-          const matchesCoffeePattern = COFFEE_KEEP_PATTERNS.test(name);
-          
-          // EXCLUDE: Boba/tea shops and chains
           if (COFFEE_EXCLUDE_PATTERNS.test(name)) {
             console.log(`☕ Google: Filtering out "${name}" - boba/tea/chain excluded`);
             return false;
           }
-          
-          // EXCLUDE: Food-focused venues that happen to serve coffee
           if (COFFEE_EXCLUDE_FOOD_FOCUS.test(name)) {
             console.log(`☕ Google: Filtering out "${name}" - food-focused venue`);
             return false;
           }
-          
-          // MUST match coffee pattern (not just be a cafe)
-          if (!matchesCoffeePattern) {
+          if (!COFFEE_KEEP_PATTERNS.test(name)) {
             console.log(`☕ Google: Filtering out "${name}" - name doesn't indicate coffee shop`);
             return false;
           }
-          
           return true;
         } else {
           // === REGULAR RESTAURANT FILTERING ===
-          // Exclude non-restaurants using centralized filtering
-          // Pass cuisine to enable Italian vs Pizza filtering
           if (shouldExcludeRestaurant(types, name, options.cuisine, isCoffeeSearch)) {
             console.log(`🚫 Google: Filtering out "${name}" - excluded type/name`);
             return false;
           }
-          
-          // Dinner-time exclusion: remove pure coffee/cafe venues
+
           if (dinnerTimeExclusion && isPureCoffeeVenue(types, name)) {
             console.log(`🌙 Google: Filtering out "${name}" - pure coffee venue at dinner time`);
             return false;
           }
-          
-          // === UPSCALE / FINE DINING QUALITY GATE ===
-          // For upscale/fine_dining: require POSITIVE signals, not just absence of bad signals.
-          // A venue with no price data and no upscale name indicators gets rejected.
-          // This is the systemic fix — we don't need per-venue blacklisting.
-          const placePrice = place.price_level;
+
+          // === UPSCALE / FINE DINING QUALITY GATE (multi-dimensional) ===
           const isUpscaleSearch = options.priceLevel === 'upscale' || options.priceLevel === 'fine_dining';
-          
+
           if (isUpscaleSearch) {
-            if (!passesUpscaleQualityGate(name, placePrice)) {
-              console.log(`💎🚫 Google: Rejecting "${name}" (price_level=${placePrice ?? 'none'}) - failed upscale quality gate`);
+            const passes = passesUpscaleQualityGate(
+              name,
+              priceNum,
+              editorialSummary,
+              reservable,
+              primaryTypeDisplayName,
+              rating,
+              reviewCount
+            );
+            if (!passes) {
+              console.log(`💎🚫 Google: Rejecting "${name}" (price=${priceLevelStr ?? 'none'}, reservable=${reservable}, rating=${rating}) - failed upscale gate`);
               return false;
+            } else {
+              console.log(`💎✅ Google: Keeping "${name}" (price=${priceLevelStr ?? 'none'}, reservable=${reservable}, editorial="${editorialSummary?.slice(0, 50) ?? 'none'}")`);
             }
           } else if (relaxedMin !== null) {
-            // For other price levels: only filter if we HAVE data and it's too cheap
-            if (placePrice !== undefined && placePrice !== null && placePrice < relaxedMin) {
-              console.log(`💰 Google: Filtering out "${name}" - price level ${placePrice} < min ${relaxedMin}`);
+            if (priceNum !== null && priceNum < relaxedMin) {
+              console.log(`💰 Google: Filtering out "${name}" - price level ${priceNum} < min ${relaxedMin}`);
               return false;
             }
           }
-          
+
           return true;
         }
       })
       .map((place: any): ProviderPlace => {
-        const placeLat = place.geometry?.location?.lat || 0;
-        const placeLng = place.geometry?.location?.lng || 0;
+        const placeLat = place.location?.latitude || 0;
+        const placeLng = place.location?.longitude || 0;
         const distance = calculateDistance(options.lat, options.lng, placeLat, placeLng);
-        
+        const priceLevelStr: string | undefined = place.priceLevel;
+        const priceNum = priceLevelStr ? (priceLevelMap[priceLevelStr] ?? null) : null;
+
+        // Extract photo references (New API uses different format)
+        const photos = (place.photos || [])
+          .slice(0, 5)
+          .map((p: any) => p.name || '');
+
         return {
-          id: place.place_id,
-          name: place.name,
-          address: place.vicinity || '',
+          id: place.id,
+          name: place.displayName?.text || '',
+          address: place.formattedAddress || '',
           rating: place.rating || 0,
-          priceLevel: place.price_level || null,
+          priceLevel: priceNum,
           lat: placeLat,
           lng: placeLng,
           source: "google",
-          reviewCount: place.user_ratings_total || 0,
-          photos: [],
+          reviewCount: place.userRatingCount || 0,
+          photos,
           categories: place.types || [],
-          distance: distance,
-          // Keep these for compatibility with scoring functions
+          distance,
+          // Compatibility fields
           types: place.types || [],
-          addressComponents: place.address_components || [],
-          geometry: place.geometry
+          addressComponents: place.addressComponents || [],
+          geometry: { location: { lat: placeLat, lng: placeLng } },
+          // Rich fields from New API — feed into upscale quality gate
+          editorialSummary: place.editorialSummary?.text,
+          reservable: place.reservable,
+          primaryTypeDisplayName: place.primaryTypeDisplayName?.text,
+          servesWine: place.servesWine,
+          servesCocktails: place.servesCocktails,
         };
       });
-    
-    console.log(`✅ Google provider: Found ${results.length} ${isCoffeeSearch ? 'coffee shops' : 'restaurants'}`);
+
+    console.log(`✅ Google provider (New API): Found ${results.length} ${isCoffeeSearch ? 'coffee shops' : 'restaurants'}`);
     return results;
   }
 };

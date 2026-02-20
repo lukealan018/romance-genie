@@ -19,6 +19,12 @@ export interface ProviderPlace {
   // Foursquare-specific fields for scoring (FREE tier)
   chains?: { id: string; name: string }[]; // Chain detection array
   hasPremiumData?: boolean; // Flag indicating if rating/reviews are available
+  // Google Places New API (v1) rich fields for upscale quality gate
+  editorialSummary?: string; // e.g. "Upscale Japanese restaurant with celebrity following"
+  reservable?: boolean; // True = proper sit-down restaurant
+  primaryTypeDisplayName?: string; // e.g. "Fine Dining Restaurant"
+  servesWine?: boolean;
+  servesCocktails?: boolean;
 }
 
 export interface SearchOptions {
