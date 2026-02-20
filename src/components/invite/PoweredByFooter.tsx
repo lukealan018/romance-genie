@@ -17,7 +17,7 @@ const PoweredByFooter: React.FC = () => {
         className="inline-flex items-center gap-2 text-sm text-muted-foreground/60 hover:text-muted-foreground transition-colors"
       >
         <Sparkles className="w-3.5 h-3.5" />
-        <span>Powered by Romance Genie</span>
+        <span>Powered by Andate</span>
       </a>
     </motion.div>
   );
