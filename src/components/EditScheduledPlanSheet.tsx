@@ -234,6 +234,17 @@ export function EditScheduledPlanSheet({ open, onOpenChange, plan }: EditSchedul
             )}
           </div>
 
+          {/* Notes */}
+          <div className="space-y-2 pt-4 border-t border-border">
+            <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
+            <Textarea
+              placeholder="Add any notes for this date…"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="min-h-[80px] resize-none"
+            />
+          </div>
+
           {/* Save */}
           <div className="pt-4 space-y-3">
             <Button
