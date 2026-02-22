@@ -589,6 +589,7 @@ export const useVoiceSearch = ({
         preferences.intent,
         preferences.noveltyLevel,
         userInteractionPlaceIds,
+        undefined,  // contextualHints - not available in voice path
         preferences.planIntent,
         preferences.mood
       );
@@ -603,6 +604,7 @@ export const useVoiceSearch = ({
         preferences.intent,
         preferences.noveltyLevel,
         userInteractionPlaceIds,
+        undefined,  // contextualHints - not available in voice path
         preferences.planIntent,
         preferences.mood
       );
