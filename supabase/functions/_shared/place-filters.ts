@@ -66,6 +66,9 @@ export const EXCLUDED_ACTIVITY_TYPES: string[] = [
   'campground', 'nature_reserve', 'hiking_area', 'trail',
   // Low-effort venues (not outings)
   'cafe', 'bakery',
+  // Institutional / educational (not fun outings)
+  'school', 'university', 'secondary_school', 'primary_school',
+  'preschool', 'library', 'community_center',
 ];
 
 // ===== GOLF ENTERTAINMENT FILTERING =====
@@ -100,7 +103,11 @@ export function isBobaVenue(name: string): boolean {
   return BOBA_EXCLUSION_PATTERNS.test(name);
 }
 
-// Institutional / educational venues — NOT bookable fun activities
+// ===== INSTITUTIONAL / NON-BOOKABLE VENUE DETECTION =====
+// Catches training programs, schools, nonprofits, social services — NOT fun outings.
+// Uses BOTH keyword lists AND regex patterns for broad structural matching.
+
+// Explicit keyword matches (specific institutions)
 export const INSTITUTIONAL_KEYWORDS: string[] = [
   'training program', 'training center', 'training centre',
   'culinary training', 'culinary school', 'culinary institute', 'culinary academy',
@@ -115,9 +122,41 @@ export const INSTITUTIONAL_KEYWORDS: string[] = [
   'shelter', 'food bank', 'food pantry',
 ];
 
+// Regex: catches "<Anything> School", "<Anything> Academy", "<Anything> Institute", etc.
+// BUT protects real venues: "School of Rock" (bar/music venue), "Academy Museum" (attraction)
+const INSTITUTIONAL_REGEX = /\b(school|academy|institute|program)\b/i;
+
+// Words that indicate the "school/academy" word is part of a FUN VENUE, not an institution
+const FUN_VENUE_CONTEXT = /\b(museum|bar|pub|lounge|club|theater|theatre|arena|venue|stage|of\s+rock|of\s+comedy|of\s+magic|of\s+illusion|of\s+improv|experience|adventure|escape|entertainment)\b/i;
+
+// Words that CONFIRM institutional intent (strengthen weak regex matches)
+const INSTITUTIONAL_CONTEXT = /\b(training|certification|vocational|workforce|career|job|employment|program|continuing\s+ed|adult\s+ed|degree|diploma|enrollment|enroll|tuition|financial\s+aid|admissions?|curriculum|semester|campus|graduate|undergraduate)\b/i;
+
 export function isInstitutionalVenue(name: string): boolean {
   const nameLower = name.toLowerCase();
-  return INSTITUTIONAL_KEYWORDS.some(kw => nameLower.includes(kw));
+  
+  // Check explicit keyword list first (high confidence)
+  if (INSTITUTIONAL_KEYWORDS.some(kw => nameLower.includes(kw))) {
+    return true;
+  }
+  
+  // Regex: if name contains "school", "academy", "institute", or "program"...
+  if (INSTITUTIONAL_REGEX.test(name)) {
+    // ...but NOT if it's a fun venue context (e.g., "School of Rock", "Academy Museum")
+    if (FUN_VENUE_CONTEXT.test(name)) {
+      return false;
+    }
+    // If it also has institutional context words, it's definitely an institution
+    if (INSTITUTIONAL_CONTEXT.test(name)) {
+      return true;
+    }
+    // "Academy" or "Institute" alone (without fun context) is suspicious enough to block
+    if (/\b(academy|institute)\b/i.test(name) && !FUN_VENUE_CONTEXT.test(name)) {
+      return true;
+    }
+  }
+  
+  return false;
 }
 
 // Production/management companies (not real venues)
