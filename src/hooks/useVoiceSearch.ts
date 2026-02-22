@@ -588,7 +588,9 @@ export const useVoiceSearch = ({
         learnedPrefs,  // Learned prefs for scoring boost only
         preferences.intent,
         preferences.noveltyLevel,
-        userInteractionPlaceIds
+        userInteractionPlaceIds,
+        preferences.planIntent,
+        preferences.mood
       );
       const sortedActivities = scorePlaces(
         finalActivities, 
@@ -600,7 +602,9 @@ export const useVoiceSearch = ({
         learnedPrefs,  // Learned prefs for scoring boost only
         preferences.intent,
         preferences.noveltyLevel,
-        userInteractionPlaceIds
+        userInteractionPlaceIds,
+        preferences.planIntent,
+        preferences.mood
       );
       
       
@@ -702,7 +706,7 @@ export const useVoiceSearch = ({
       });
     }
   }, [
-    userId,
+    userId, searchMode,
     setLocation, setFilters, setRestaurants, setActivities,
     setRestaurantIdx, setActivityIdx, setLastSearched, setLastSearchLocation,
     setSearchMode, handleUseCurrentLocation, trackInteraction, setPlan,
@@ -723,10 +727,10 @@ export const useVoiceSearch = ({
     
     // Reset filters
     if (preferences.venueType === 'coffee') {
-      setFilters({ venueType: 'coffee', cuisine: undefined, activityCategory: undefined, priceLevel: null });
+      setFilters({ venueType: 'coffee', cuisine: undefined, activityCategory: undefined, priceLevel: '' });
       console.log('☕ Coffee shop mode detected from voice');
     } else {
-      setFilters({ venueType: 'any', cuisine: undefined, activityCategory: undefined, priceLevel: null });
+      setFilters({ venueType: 'any', cuisine: undefined, activityCategory: undefined, priceLevel: '' });
     }
     
     // Handle date extraction
