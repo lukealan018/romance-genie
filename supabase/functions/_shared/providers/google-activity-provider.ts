@@ -406,8 +406,8 @@ export const googleActivityProvider: ActivityProvider = {
       },
       maxResultCount: 20,
       languageCode: 'en',
-      // Hard-exclude restaurant primary types from activity results
-      excludedPrimaryTypes: EXCLUDED_RESTAURANT_PRIMARY_TYPES,
+      // NOTE: excludedPrimaryTypes is NOT supported by searchText API
+      // Restaurant filtering happens post-response via shouldExcludeActivity()
     };
 
     // Add the mapped type as includedType if it's not 'restaurant'
