@@ -65,11 +65,19 @@ function shouldExcludeRestaurant(placeTypes: string[], placeName: string = '', c
     return false;
   }
   
-  // Block cafe/coffee venues from non-coffee searches
+  // Block cafe/coffee venues from non-coffee searches (by name OR by Google types)
   if (!isCoffeeSearch) {
     const cafePatterns = /\bcafe\b|\bcafé\b|\bcoffee\b|\bespresso\b|\broasters?\b|\bcoffeehouse\b/i;
     if (cafePatterns.test(name) && !name.includes('bistro') && !name.includes('kitchen') && !name.includes('grill')) {
       console.log(`☕🚫 Google: Filtering out "${placeName}" - cafe/coffee venue in non-coffee search`);
+      return true;
+    }
+    // Also check Google types: places with 'cafe' or 'coffee_shop' type but NOT 'restaurant' type
+    // are pure coffee/cafe venues (e.g., "Annie's Table" = Coffee.Boba.Catering)
+    const hasCafeType = placeTypes.some(t => t === 'cafe' || t === 'coffee_shop');
+    const hasRestaurantType = placeTypes.includes('restaurant');
+    if (hasCafeType && !hasRestaurantType && !name.includes('bistro') && !name.includes('kitchen') && !name.includes('grill')) {
+      console.log(`☕🚫 Google: Filtering out "${placeName}" - cafe/coffee_shop type without restaurant type`);
       return true;
     }
   }

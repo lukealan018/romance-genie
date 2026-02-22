@@ -415,7 +415,7 @@ export const useVoiceSearch = ({
       // Fallback: ensure activity search always has a keyword or bundles
       // IMPORTANT: For vague "both" mode, use SPECIFIC activity-type bundles (not generic "nightlife")
       // to avoid bar-restaurant hybrids like Yard House appearing as activities.
-      const activityKeyword = searchActivity || 'entertainment';
+      let activityKeyword = searchActivity || 'entertainment';
       const DEFAULT_ACTIVITY_BUNDLES_BOTH_MODE = [
         'cocktail bar', 'speakeasy', 'jazz lounge', 'rooftop bar',
         'comedy club', 'bowling', 'escape room', 'arcade',
@@ -455,12 +455,34 @@ export const useVoiceSearch = ({
       ];
 
       // === PHASE 2: TICKETED EVENTS FIRST ROUTING ===
-      const SHOW_KEYWORDS = ['concert', 'comedy', 'theater', 'show', 'live music', 'musical', 'performance', 'stand up'];
+      const SHOW_KEYWORDS = ['concert', 'comedy', 'theater', 'theatre', 'show', 'live music', 'musical', 'performance', 'stand up', 'movie', 'movies', 'film', 'cinema'];
+      const MOVIE_KEYWORDS = ['movie', 'movies', 'film', 'cinema'];
       const isShowIntent = preferences.planIntent === 'dinner_and_show' || 
         (preferences.activityQueryBundles || []).some((b: string) => SHOW_KEYWORDS.some(kw => b.toLowerCase().includes(kw)));
       
+      // Detect movie-specific intent and inject movie theater bundles
+      const isMovieIntent = MOVIE_KEYWORDS.some(kw => 
+        (preferences.activityRequest?.type || '').toLowerCase().includes(kw) ||
+        (preferences.activityQueryBundles || []).some((b: string) => b.toLowerCase().includes(kw)) ||
+        (preferences.transcript || '').toLowerCase().includes(kw)
+      );
+      if (isMovieIntent && activityBundles.length === 0) {
+        activityBundles.push('movie theater', 'cinema', 'AMC', 'Regal');
+      } else if (isMovieIntent) {
+        // Ensure movie-specific terms are in bundles even if AI returned other activity bundles
+        const hasMovieBundles = activityBundles.some((b: string) => MOVIE_KEYWORDS.some(kw => b.toLowerCase().includes(kw)));
+        if (!hasMovieBundles) {
+          activityBundles.unshift('movie theater', 'cinema');
+        }
+      }
+      // Override activity keyword for movie searches
+      if (isMovieIntent && (!searchActivity || searchActivity === 'entertainment')) {
+        activityKeyword = 'movie theater';
+      }
       let activitiesPromise: Promise<any>;
-      if ((voiceMode === 'both' || voiceMode === 'activity_only') && isShowIntent) {
+      // Movies aren't ticketed events on Ticketmaster — skip liveEventsOnly for movie intent
+      const isLiveShowIntent = isShowIntent && !isMovieIntent;
+      if ((voiceMode === 'both' || voiceMode === 'activity_only') && isLiveShowIntent) {
         // Try live events first
         console.log('🎭 Show intent detected — trying live events first');
         activitiesPromise = supabase.functions.invoke('activities-search', {
