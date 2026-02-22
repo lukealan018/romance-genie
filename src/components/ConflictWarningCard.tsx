@@ -15,6 +15,8 @@ const conflictTypeLabels: Record<string, string> = {
   restaurant_closing: "Restaurant Hours",
   restaurant_closed: "Venue Closed",
   activity_timing: "Activity Timing",
+  activity_closed: "Activity Closed",
+  activity_closing: "Activity Hours",
   date_proximity: "Schedule Note"
 };
 

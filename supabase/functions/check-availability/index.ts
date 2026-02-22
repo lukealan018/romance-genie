@@ -98,7 +98,7 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { restaurantHours, activityHours, scheduledDate, scheduledTime } = body || {};
+    const { restaurantHours, activityHours, scheduledDate, scheduledTime, excludePlanId } = body || {};
 
     if (!scheduledDate || !scheduledTime) {
       return new Response(
@@ -228,13 +228,19 @@ serve(async (req) => {
       const dayAfter = new Date(targetDate);
       dayAfter.setDate(dayAfter.getDate() + 2);
 
-      const { data: nearbyPlans } = await supabase
+      let query = supabase
         .from('scheduled_plans')
         .select('scheduled_date')
         .eq('user_id', userId)
         .gte('scheduled_date', dayBefore.toISOString().split('T')[0])
         .lte('scheduled_date', dayAfter.toISOString().split('T')[0])
         .neq('scheduled_date', scheduledDate);
+
+      if (excludePlanId) {
+        query = query.neq('id', excludePlanId);
+      }
+
+      const { data: nearbyPlans } = await query;
 
       if (nearbyPlans && nearbyPlans.length > 0) {
         conflicts.push({
