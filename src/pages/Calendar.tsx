@@ -89,13 +89,14 @@ export default function Calendar() {
     fetchResponseCounts();
   }, [scheduledPlans]);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const PLAN_DURATION_HOURS = 4;
 
   const filteredPlans = scheduledPlans.filter(plan => {
-    const planDate = parseDateString(plan.scheduled_date);
-    planDate.setHours(0, 0, 0, 0);
-    return filter === 'upcoming' ? planDate >= today : planDate < today;
+    const [year, month, day] = plan.scheduled_date.split('-').map(Number);
+    const [h, m] = plan.scheduled_time.split(':').map(Number);
+    const planEnd = new Date(year, month - 1, day, h + PLAN_DURATION_HOURS, m);
+    const now = new Date();
+    return filter === 'upcoming' ? planEnd > now : planEnd <= now;
   });
 
   const handleDelete = async (id: string) => {
