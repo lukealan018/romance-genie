@@ -334,18 +334,32 @@ export const useVoiceSearch = ({
     
     try {
       // Price level ONLY from voice intent, not profile
-      // Price level from voice: check restaurantRequest.priceLevel, top-level priceLevel, AND budgetSignal
-      // budgetSignal is the AI's interpretation of "nice", "fancy", "cheap" etc.
       const budgetSignalToPrice: Record<string, string> = {
         'cheap': 'budget',
         'moderate': 'moderate',
         'upscale': 'upscale',
       };
+      
+      // Frontend fallback: detect budget keywords in transcript when AI misses them
+      let effectiveBudgetSignal = preferences.budgetSignal || null;
+      if (!effectiveBudgetSignal && preferences.transcript) {
+        const transcript = preferences.transcript.toLowerCase();
+        const UPSCALE_KEYWORDS = ['nice', 'fancy', 'upscale', 'fine dining', 'elegant', 'classy', 'high end', 'high-end', 'luxury', 'premium', 'bougie', 'boujee'];
+        const BUDGET_KEYWORDS = ['cheap', 'affordable', 'budget', 'inexpensive', 'dollar menu'];
+        if (UPSCALE_KEYWORDS.some(kw => transcript.includes(kw))) {
+          effectiveBudgetSignal = 'upscale';
+          console.log('🎯 Frontend detected upscale intent from transcript');
+        } else if (BUDGET_KEYWORDS.some(kw => transcript.includes(kw))) {
+          effectiveBudgetSignal = 'cheap';
+          console.log('🎯 Frontend detected budget intent from transcript');
+        }
+      }
+      
       const restaurantPriceLevel = preferences.restaurantRequest?.priceLevel 
         || preferences.priceLevel 
-        || (preferences.budgetSignal ? budgetSignalToPrice[preferences.budgetSignal] : null)
+        || (effectiveBudgetSignal ? budgetSignalToPrice[effectiveBudgetSignal] : null)
         || null;
-      console.log('💰 Voice price level:', restaurantPriceLevel, '(budgetSignal:', preferences.budgetSignal, ')');
+      console.log('💰 Voice price level:', restaurantPriceLevel, '(budgetSignal:', preferences.budgetSignal, ', detected:', effectiveBudgetSignal, ')');
       
       // VOICE SEARCH: Do NOT use profile preferences for filtering
       // Learned preferences are ONLY used for scoring/ranking, never as hard filters
