@@ -4,7 +4,7 @@ import { useScheduledPlansStore } from "@/store/scheduledPlansStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar as CalendarIcon, MapPin, Clock, Cloud, Trash2, Share2, MessageSquare } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon, MapPin, Clock, Cloud, Trash2, Share2, MessageSquare, Pencil } from "lucide-react";
 import { ExportCalendarButton } from "@/components/ExportCalendarButton";
 import { ConflictWarningCard } from "@/components/ConflictWarningCard";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
@@ -12,6 +12,7 @@ import { SharePlanDialog } from "@/components/SharePlanDialog";
 import { ViewResponsesDrawer } from "@/components/ViewResponsesDrawer";
 import { getMapUrl, yelpSearchUrl } from "@/lib/external-links";
 import { toast } from "sonner";
+import { EditScheduledPlanSheet } from "@/components/EditScheduledPlanSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 
@@ -36,6 +37,7 @@ export default function Calendar() {
   const [shareDialogPlan, setShareDialogPlan] = useState<typeof scheduledPlans[0] | null>(null);
   const [responsesDrawerPlan, setResponsesDrawerPlan] = useState<typeof scheduledPlans[0] | null>(null);
   const [responseCounts, setResponseCounts] = useState<Record<string, { in: number; maybe: number; cant: number }>>({});
+  const [editPlan, setEditPlan] = useState<typeof scheduledPlans[0] | null>(null);
 
   useEffect(() => {
     fetchScheduledPlans();
@@ -251,7 +253,17 @@ export default function Calendar() {
                             {formatTime12h(plan.scheduled_time)}
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
+                          {filter === 'upcoming' && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setEditPlan(plan)}
+                              title="Edit plan"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="icon"
@@ -389,6 +401,15 @@ export default function Calendar() {
           onOpenChange={(open) => !open && setResponsesDrawerPlan(null)}
           scheduledPlanId={responsesDrawerPlan.id}
           planName={`${responsesDrawerPlan.restaurant_name} + ${responsesDrawerPlan.activity_name}`}
+        />
+      )}
+
+      {/* Edit Plan Sheet */}
+      {editPlan && (
+        <EditScheduledPlanSheet
+          open={!!editPlan}
+          onOpenChange={(open) => !open && setEditPlan(null)}
+          plan={editPlan}
         />
       )}
     </div>
