@@ -16,6 +16,7 @@ import { PlanAheadDialog } from "@/components/PlanAheadDialog";
 import { DateChoiceDialog } from "@/components/DateChoiceDialog";
 import { NextAvailableDateDialog } from "@/components/NextAvailableDateDialog";
 import { ClarificationChips } from "@/components/ClarificationChips";
+import { VoiceConfirmationBar } from "@/components/VoiceConfirmationBar";
 
 import { toast } from "@/hooks/use-toast";
 import { usePlanStore } from "@/store/planStore";
@@ -57,6 +58,11 @@ const Index = () => {
     clarificationOptions,
     handleClarificationSelect,
     closeClarification,
+    showConfirmationBar,
+    pendingConfirmationPrefs,
+    handleConfirmSearch,
+    handleUpdateConfirmationField,
+    dismissConfirmationBar,
   } = useVoiceSearch({
     userId: auth.userId,
     searchMode,
@@ -234,6 +240,18 @@ const Index = () => {
                 onSelect={handleClarificationSelect}
                 onDismiss={closeClarification}
               />
+            )}
+
+            {/* Voice confirmation bar - shown after voice parsing, before search */}
+            {showConfirmationBar && pendingConfirmationPrefs && (
+              <div className="mt-4">
+                <VoiceConfirmationBar
+                  preferences={pendingConfirmationPrefs}
+                  onConfirm={handleConfirmSearch}
+                  onUpdateField={handleUpdateConfirmationField}
+                  onDismiss={dismissConfirmationBar}
+                />
+              </div>
             )}
           </>
         )}

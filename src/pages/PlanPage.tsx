@@ -31,6 +31,7 @@ const PlanPage = () => {
     lastSearchedCuisine,
     lastSearchedActivity,
     searchMode,
+    planNarrative,
     setRestaurants,
     setActivities,
     setRestaurantIdx: setRestaurantIndex,
@@ -425,6 +426,21 @@ const PlanPage = () => {
 
       {/* Content */}
       <div className="container max-w-2xl py-6 space-y-6">
+        {/* Plan Narrative Banner */}
+        {planNarrative && (
+          <div 
+            className="rounded-2xl px-4 py-3 text-sm font-medium text-center"
+            style={{
+              background: 'var(--card-bg, hsl(var(--card)))',
+              border: '1px solid hsl(var(--primary) / 0.3)',
+              color: 'var(--chip-text, hsl(var(--primary)))',
+              boxShadow: '0 0 12px hsl(var(--primary) / 0.1)',
+            }}
+          >
+            🕐 {planNarrative}
+          </div>
+        )}
+        
         {/* Plan Card */}
         <PlanCard
           restaurant={plan.restaurant}

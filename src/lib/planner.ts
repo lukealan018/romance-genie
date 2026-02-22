@@ -53,9 +53,11 @@ interface BuildPlanParams {
   noveltyLevel?: "safe" | "adventurous" | "wild";
   userInteractionPlaceIds?: string[];
   contextualHints?: {
-    indoorPreference?: number; // -1 to 1 scale
+    indoorPreference?: number;
     energyLevel?: 'low' | 'medium' | 'high';
   };
+  planIntent?: string | null;
+  mood?: string;
 }
 
 // Calculate distance between two points in miles using Haversine formula
@@ -134,7 +136,9 @@ function scorePlaces(
   contextualHints?: {
     indoorPreference?: number;
     energyLevel?: 'low' | 'medium' | 'high';
-  }
+  },
+  planIntent?: string | null,
+  mood?: string,
 ): Place[] {
   if (places.length === 0) return [];
   
@@ -249,13 +253,38 @@ function scorePlaces(
     // Random jitter for rotation (prevents same venues always ranking #1)
     const randomJitter = (Math.random() - 0.5); // range: -0.5 to 0.5
     
+    // === DATE-WORTHINESS SCORING (Phase 5) ===
+    let dateWorthinessBoost = 0;
+    if (type === 'restaurant' && (planIntent === 'dinner_and_show' || planIntent === 'dinner_and_activity' || mood === 'romantic')) {
+      const nameLower = place.name.toLowerCase();
+      const priceLvl = place.priceLevel?.toLowerCase() || '';
+      
+      // Boost for date-worthy ambiance keywords
+      const ambianceKeywords = ['steakhouse', 'bistro', 'tapas', 'rooftop', 'lounge', 'wine bar', 'trattoria', 'brasserie', 'omakase', 'fine dining', 'tasting'];
+      if (ambianceKeywords.some(kw => nameLower.includes(kw))) {
+        dateWorthinessBoost += 0.20;
+      }
+      
+      // Boost for moderate+ price level
+      if (priceLvl === 'moderate' || priceLvl === 'upscale') {
+        dateWorthinessBoost += 0.15;
+      }
+      
+      // Penalize counter-service / fast-casual names
+      const penaltyKeywords = ['deli', 'market', 'express', 'drive-thru', 'drive thru', 'counter', 'grill'];
+      if (penaltyKeywords.some(kw => nameLower.includes(kw))) {
+        dateWorthinessBoost -= 0.25;
+      }
+      
+      // Penalize budget price when it's a show night
+      if (priceLvl === 'budget' && planIntent === 'dinner_and_show') {
+        dateWorthinessBoost -= 0.20;
+      }
+    }
+    
     // Adjust scoring weights based on intent (TIERED LEARNING)
     let score = 0;
     if (intent === 'surprise') {
-      // Surprise mode: HIGH randomness, LIGHT learning
-      // - Quality floor applied (penalty above)
-      // - Novelty + random jitter for rotation
-      // - Minimal learned preference influence (15%)
       score = 
         0.30 * noveltyBoost +
         0.25 * ratingNorm +
@@ -263,18 +292,18 @@ function scorePlaces(
         0.10 * contextualBoost +
         0.10 * personalFit +
         0.05 * proximityNorm +
-        0.20 * randomJitter +       // Rotation jitter — shuffles top venues
-        qualityPenalty;
+        0.20 * randomJitter +
+        qualityPenalty +
+        dateWorthinessBoost;
     } else if (intent === 'specific') {
-      // Manual Pick mode: LOW randomness, HEAVY learning (no jitter)
       score = 
         0.35 * learnedBoost +
         0.25 * personalFit +
         0.20 * ratingNorm +
         0.10 * proximityNorm +
-        0.10 * contextualBoost;
+        0.10 * contextualBoost +
+        dateWorthinessBoost;
     } else {
-      // Flexible mode (Voice): MEDIUM randomness, MEDIUM learning
       score = 
         0.25 * personalFit +
         0.25 * learnedBoost +
@@ -282,7 +311,8 @@ function scorePlaces(
         0.15 * contextualBoost +
         0.10 * proximityNorm +
         0.05 * noveltyBoost +
-        0.10 * randomJitter;        // Smaller rotation jitter for voice
+        0.10 * randomJitter +
+        dateWorthinessBoost;
     }
     
     return { place, score, distance };
@@ -313,12 +343,15 @@ export function buildPlan({
   userInteractionPlaceIds,
   contextualHints,
   searchMode = 'both',
+  planIntent,
+  mood,
 }: BuildPlanParams & { searchMode?: SearchMode }): PlanResult {
   // Only score restaurants if mode includes them
   const scoredRestaurants = (searchMode === 'both' || searchMode === 'restaurant_only')
     ? scorePlaces(
         restaurants, lat, lng, radius, preferences, 'restaurant', 
-        learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds, contextualHints
+        learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds, contextualHints,
+        planIntent, mood
       )
     : [];
 
@@ -326,7 +359,8 @@ export function buildPlan({
   const scoredActivities = (searchMode === 'both' || searchMode === 'activity_only')
     ? scorePlaces(
         activities, lat, lng, radius, preferences, 'activity', 
-        learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds, contextualHints
+        learnedPreferences, intent, noveltyLevel, userInteractionPlaceIds, contextualHints,
+        planIntent, mood
       )
     : [];
 
@@ -418,3 +452,137 @@ export function buildPlanFromIndices(
 
 // Export scorePlaces for use in Index.tsx
 export { scorePlaces };
+
+// === PHASE 4: Plan Sequencing Constants ===
+const DINNER_DURATION = 90; // minutes
+const TRAVEL_TIME = 15; // minutes
+const DESSERT_DURATION = 45; // minutes
+
+interface SequencedPlanResult extends PlanResult {
+  sequence: "dinner_first" | "show_first";
+  planNarrative: string | null;
+  timing: {
+    dinnerStart: string | null;
+    dinnerEnd: string | null;
+    travelTime: number;
+    activityStart: string | null;
+    activityEnd: string | null;
+  } | null;
+}
+
+function formatTime(minutes: number): string {
+  const h = Math.floor(minutes / 60) % 24;
+  const m = minutes % 60;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const displayH = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return `${displayH}:${m.toString().padStart(2, '0')} ${ampm}`;
+}
+
+export function buildSequencedPlan(
+  params: BuildPlanParams & { searchMode?: SearchMode; scheduledTime?: string }
+): SequencedPlanResult {
+  const { scheduledTime, planIntent } = params;
+  
+  // If not a dinner_and_show intent, fall back to regular buildPlan
+  if (planIntent !== 'dinner_and_show' || !scheduledTime) {
+    const result = buildPlan(params);
+    return {
+      ...result,
+      sequence: "dinner_first",
+      planNarrative: null,
+      timing: null,
+    };
+  }
+
+  // Parse scheduled time to minutes
+  const [h, m] = scheduledTime.split(':').map(Number);
+  const scheduledMinutes = h * 60 + (m || 0);
+  
+  // DINNER_AND_SHOW: Pick activity FIRST (the show), then fit dinner before it
+  const searchMode = params.searchMode || 'both';
+  
+  const scoredActivities = scorePlaces(
+    params.activities, params.lat, params.lng, params.radius, params.preferences, 'activity',
+    params.learnedPreferences, params.intent, params.noveltyLevel, params.userInteractionPlaceIds,
+    params.contextualHints, planIntent, params.mood
+  );
+  
+  const scoredRestaurants = scorePlaces(
+    params.restaurants, params.lat, params.lng, params.radius, params.preferences, 'restaurant',
+    params.learnedPreferences, params.intent, params.noveltyLevel, params.userInteractionPlaceIds,
+    params.contextualHints, planIntent, params.mood
+  );
+  
+  if (scoredActivities.length === 0 || scoredRestaurants.length === 0) {
+    // Not enough data for sequencing, fall back
+    const result = buildPlan(params);
+    return { ...result, sequence: "dinner_first", planNarrative: null, timing: null };
+  }
+  
+  // Pick the top activity (the show)
+  const activity = scoredActivities[0];
+  
+  // Determine activity start time — use eventStartMinutes if available, else scheduledTime
+  const activityStartMinutes = (activity as any).eventStartMinutes || scheduledMinutes;
+  
+  // Compute latest dinner start: show time - dinner duration - travel time
+  const latestDinnerStart = activityStartMinutes - DINNER_DURATION - TRAVEL_TIME;
+  
+  // Try dinner-first sequence
+  if (latestDinnerStart >= 11 * 60) { // Don't suggest dinner before 11 AM
+    // Pick restaurant closest to activity venue from top candidates
+    const MAX_MILES_FROM_VENUE = 5;
+    const nearbyRestaurants = scoredRestaurants.filter(r => 
+      calculateDistance(r.lat, r.lng, activity.lat, activity.lng) <= MAX_MILES_FROM_VENUE
+    );
+    
+    const restaurant = nearbyRestaurants.length > 0 ? nearbyRestaurants[0] : scoredRestaurants[0];
+    const distBetween = calculateDistance(restaurant.lat, restaurant.lng, activity.lat, activity.lng);
+    const estimatedTravel = Math.max(TRAVEL_TIME, Math.round(distBetween * 4)); // ~4 min per mile rough estimate
+    
+    const dinnerEndMinutes = latestDinnerStart + DINNER_DURATION;
+    
+    return {
+      restaurant,
+      activity,
+      distances: {
+        toRestaurant: calculateDistance(params.lat, params.lng, restaurant.lat, restaurant.lng),
+        toActivity: calculateDistance(params.lat, params.lng, activity.lat, activity.lng),
+        betweenPlaces: distBetween,
+      },
+      sequence: "dinner_first",
+      planNarrative: `Dinner at ${formatTime(latestDinnerStart)}, ${estimatedTravel} min drive, show starts at ${formatTime(activityStartMinutes)}`,
+      timing: {
+        dinnerStart: formatTime(latestDinnerStart),
+        dinnerEnd: formatTime(dinnerEndMinutes),
+        travelTime: estimatedTravel,
+        activityStart: formatTime(activityStartMinutes),
+        activityEnd: formatTime(activityStartMinutes + 120), // Assume 2h show
+      },
+    };
+  }
+  
+  // Dinner-first doesn't fit — try show-first, dessert/cocktails after
+  const dessertStart = activityStartMinutes + 120; // After 2h show
+  const restaurant = scoredRestaurants[0];
+  const distBetween = calculateDistance(restaurant.lat, restaurant.lng, activity.lat, activity.lng);
+  
+  return {
+    restaurant,
+    activity,
+    distances: {
+      toRestaurant: calculateDistance(params.lat, params.lng, restaurant.lat, restaurant.lng),
+      toActivity: calculateDistance(params.lat, params.lng, activity.lat, activity.lng),
+      betweenPlaces: distBetween,
+    },
+    sequence: "show_first",
+    planNarrative: `Show at ${formatTime(activityStartMinutes)}, then dessert/cocktails at ${formatTime(dessertStart)}`,
+    timing: {
+      dinnerStart: formatTime(dessertStart),
+      dinnerEnd: formatTime(dessertStart + DESSERT_DURATION),
+      travelTime: TRAVEL_TIME,
+      activityStart: formatTime(activityStartMinutes),
+      activityEnd: formatTime(activityStartMinutes + 120),
+    },
+  };
+}

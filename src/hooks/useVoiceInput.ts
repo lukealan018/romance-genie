@@ -40,6 +40,22 @@ export interface VoicePreferences {
   searchDateAmbiguous?: boolean;
   searchDateOptions?: any[];
   venueType?: string;
+  // Phase 1: New structured PlanRequest fields
+  planIntent?: "dinner_and_show" | "dinner_and_activity" | "restaurant_only" | "activity_only" | "quick_bite" | null;
+  budgetSignal?: "cheap" | "moderate" | "upscale" | null;
+  budgetConstraints?: {
+    excludeFastFood: boolean;
+    chainHandling: "soft" | "hard" | "none";
+    maxBudgetDollars: number | null;
+  };
+  confidence?: {
+    mode: number;
+    location: number;
+    datetime: number;
+    activity: number;
+    budget: number;
+    overall: number;
+  };
 }
 
 interface CurrentWeather {
@@ -268,6 +284,11 @@ async function interpretVoiceInput(
       searchDateAmbiguous: data.searchDateAmbiguous,
       searchDateOptions: data.searchDateOptions || [],
       venueType: data.venueType,
+      // Phase 1: New PlanRequest fields
+      planIntent: data.planIntent || null,
+      budgetSignal: data.budgetSignal || null,
+      budgetConstraints: data.budgetConstraints || { excludeFastFood: false, chainHandling: 'none', maxBudgetDollars: null },
+      confidence: data.confidence || { mode: 0.5, location: 0.5, datetime: 0.5, activity: 0.5, budget: 0.5, overall: 0.5 },
     };
 
     onPreferencesExtracted(preferences);

@@ -161,6 +161,10 @@ serve(async (req) => {
     // === DATE PARAMETERS FOR EVENT FILTERING ===
     const searchDate = validateString(body.searchDate, 10) || undefined;
     const findNextAvailable = body.findNextAvailable === true;
+    
+    // === TIME-WINDOW FILTER PARAMETERS (Phase 3) ===
+    const scheduledTime = validateString(body.scheduledTime, 5) || undefined; // "HH:mm"
+    const timeWindowMinutes = validateNumber(body.timeWindowMinutes, 180); // default 3 hours
 
     if (isNaN(lat) || isNaN(lng) || isNaN(radiusMiles) || (!keyword && queryBundles.length === 0)) {
       return new Response(
@@ -453,6 +457,34 @@ serve(async (req) => {
       const beforeFilter = items.length;
       items = items.filter((item: any) => item.source === 'ticketmaster' || item.source === 'eventbrite');
       console.log(`🎫 Live Events mode: filtered ${beforeFilter} → ${items.length} (Ticketmaster/Eventbrite only)`);
+    }
+    
+    // === TIME-WINDOW FILTER FOR EVENTS (Phase 3) ===
+    if (scheduledTime) {
+      const parseTimeToMinutes = (timeStr: string): number => {
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + (m || 0);
+      };
+      
+      const scheduledMinutes = parseTimeToMinutes(scheduledTime);
+      const windowMinutes = isNaN(timeWindowMinutes) ? 180 : timeWindowMinutes;
+      const beforeTimeFilter = items.length;
+      
+      items = items.map((item: any) => {
+        // Only time-filter ticketed events — venues pass through
+        if ((item.source === 'ticketmaster' || item.source === 'eventbrite') && item.eventTime) {
+          const eventMinutes = parseTimeToMinutes(item.eventTime);
+          item.eventStartMinutes = eventMinutes;
+          
+          // Keep if event starts within [scheduledMinutes, scheduledMinutes + windowMinutes]
+          if (eventMinutes < scheduledMinutes || eventMinutes > scheduledMinutes + windowMinutes) {
+            return null; // Outside time window
+          }
+        }
+        return item;
+      }).filter(Boolean);
+      
+      console.log(`⏰ Time-window filter (${scheduledTime} ± ${windowMinutes}min): ${beforeTimeFilter} → ${items.length}`);
     }
     
     // === INTENT-BASED SORTING ===

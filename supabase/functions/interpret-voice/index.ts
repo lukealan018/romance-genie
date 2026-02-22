@@ -541,8 +541,50 @@ Return JSON with this structure:
   "searchDate": "YYYY-MM-DD or null",
   "searchTime": "HH:mm or null",
   "searchDateAmbiguous": false,
-  "searchDateOptions": []
+  "searchDateOptions": [],
+  "planIntent": "dinner_and_show|dinner_and_activity|restaurant_only|activity_only|quick_bite|null",
+  "budgetSignal": "cheap|moderate|upscale|null",
+  "budgetConstraints": { "excludeFastFood": false, "chainHandling": "none|soft|hard", "maxBudgetDollars": null },
+  "confidence": { "mode": 0.0, "location": 0.0, "datetime": 0.0, "activity": 0.0, "budget": 0.0, "overall": 0.0 }
 }
+
+PLAN INTENT DETECTION (NEW):
+Detect the user's overall plan intent:
+- "dinner_and_show": user wants dinner + ticketed event (concert, comedy, theater, show, musical, performance)
+- "dinner_and_activity": user wants dinner + non-ticketed activity (bowling, arcade, escape room, bar, etc.)
+- "restaurant_only": user only wants a restaurant
+- "activity_only": user only wants an activity
+- "quick_bite": user wants fast/casual food (grab and go, quick, fast, counter service)
+- null: can't determine
+
+BUDGET SIGNAL DETECTION (NEW):
+Extract budget intent from natural language:
+- "cheap": cheap, affordable, budget, hole in the wall, under $20, inexpensive
+- "moderate": mid-range, reasonable, usual, normal, decent, under $50
+- "upscale": nice, fancy, fine dining, splurge, treat ourselves, upscale, luxury
+- null: no budget signal detected
+
+BUDGET CONSTRAINTS (NEW):
+- excludeFastFood: true if user says "no fast food", "sit down", "real restaurant", "not a chain"
+- chainHandling: "hard" if "no chains", "soft" if "prefer local" or "no big chains", "none" otherwise
+- maxBudgetDollars: extract numeric budget (e.g., "under $50" → 50, "less than 30 bucks" → 30)
+
+CONFIDENCE SCORES (NEW):
+Rate your confidence (0.0-1.0) in each extracted field:
+- mode: how confident you are about the detected mode
+- location: how confident about the location (1.0 if explicit, 0.3 if inferred, 0.0 if none)
+- datetime: how confident about date/time (1.0 if explicit "Friday at 7pm", 0.5 if partial "this weekend", 0.0 if none)
+- activity: how confident about the activity type
+- budget: how confident about the budget signal
+- overall: geometric mean of the above
+
+PLAN INTENT EXAMPLES:
+- "Dinner and a concert Friday at 7" → planIntent: "dinner_and_show", searchDate: Friday, searchTime: "19:00", activityQueryBundles: ["concert","live music"]
+- "Cheap tacos, no chains" → planIntent: "restaurant_only", budgetSignal: "cheap", budgetConstraints: { excludeFastFood: true, chainHandling: "hard", maxBudgetDollars: null }
+- "Nice place under 50 bucks" → planIntent: "restaurant_only", budgetSignal: "moderate", budgetConstraints: { maxBudgetDollars: 50 }
+- "Dinner and bowling" → planIntent: "dinner_and_activity"
+- "Quick bite before the movie" → planIntent: "quick_bite"
+- "Steakhouse and comedy show Saturday" → planIntent: "dinner_and_show", activityQueryBundles: ["comedy show","comedy club","stand up comedy"]
 
 QUERY BUNDLE EXAMPLES:
 - "steak dinner" → restaurantQueryBundles: ["steakhouse","prime steakhouse","chophouse","dry aged steak","grill"], negativeKeywords: ["churrascaria","rodizio"]
@@ -634,6 +676,10 @@ CRITICAL EXAMPLES for MODE DETECTION:
     if (!result.occasion) result.occasion = null;
     if (!result.groupContext) result.groupContext = null;
     if (result.weatherWarning === undefined) result.weatherWarning = null;
+    if (!result.planIntent) result.planIntent = null;
+    if (!result.budgetSignal) result.budgetSignal = null;
+    if (!result.budgetConstraints) result.budgetConstraints = { excludeFastFood: false, chainHandling: 'none', maxBudgetDollars: null };
+    if (!result.confidence) result.confidence = { mode: 0.5, location: 0.5, datetime: 0.5, activity: 0.5, budget: 0.5, overall: 0.5 };
     
     console.log('=== VOICE INTERPRETATION ===');
     console.log('Original transcript:', transcript);
@@ -663,6 +709,10 @@ CRITICAL EXAMPLES for MODE DETECTION:
     console.log('Occasion:', result.occasion);
     console.log('Group context:', result.groupContext);
     console.log('Weather warning:', result.weatherWarning);
+    console.log('Plan intent:', result.planIntent);
+    console.log('Budget signal:', result.budgetSignal);
+    console.log('Budget constraints:', result.budgetConstraints);
+    console.log('Confidence:', result.confidence);
     console.log('===========================');
 
     return new Response(JSON.stringify(result), {
