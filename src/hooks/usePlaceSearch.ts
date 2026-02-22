@@ -404,27 +404,18 @@ export const usePlaceSearch = (
       }
       
       // Score and shuffle for variety
+      const prefs = userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
+        ? userPreferences 
+        : undefined;
       const scoredRestaurants = scorePlaces(
-        restaurants, 
-        searchLat, 
-        searchLng, 
-        radius, 
-        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-          ? userPreferences 
-          : undefined,
-        'restaurant',
-        learnedPrefs
+        restaurants, searchLat, searchLng, radius, prefs, 'restaurant',
+        learnedPrefs, undefined, undefined, undefined, undefined,
+        undefined, undefined  // planIntent/mood not available in manual path yet
       );
       const scoredActivities = scorePlaces(
-        finalActivities, 
-        searchLat, 
-        searchLng, 
-        usedRadius,
-        userPreferences.cuisines.length > 0 || userPreferences.activities.length > 0 
-          ? userPreferences 
-          : undefined,
-        'activity',
-        learnedPrefs
+        finalActivities, searchLat, searchLng, usedRadius, prefs, 'activity',
+        learnedPrefs, undefined, undefined, undefined, undefined,
+        undefined, undefined
       );
       
       // Shuffle results for variety (keeps top 5, shuffles rest)
