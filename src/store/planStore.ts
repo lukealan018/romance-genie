@@ -96,6 +96,9 @@ interface PlanState {
   lastSearchMode: SearchMode | null;
   lastSearchDate: Date | null;
   
+  // Plan narrative from sequenced plan
+  planNarrative: string | null;
+  
   // Actions
   setLocation: (lat: number | null, lng: number | null) => void;
   setFilters: (filters: { radius?: number; cuisine?: string; activityCategory?: string; priceLevel?: string; locationMode?: "gps" | "zip"; zipCode?: string; venueType?: VenueType }) => void;
@@ -220,6 +223,8 @@ export const usePlanStore = create<PlanState>((set, get) => ({
   
   lastSearchMode: null,
   lastSearchDate: null,
+  
+  planNarrative: null,
   
   // Legacy compatibility getters (computed from mode-specific buckets)
   get restaurants() {

@@ -3,7 +3,7 @@ import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
-import { buildPlan, scorePlaces } from "@/lib/planner";
+import { buildPlan, buildSequencedPlan, scorePlaces } from "@/lib/planner";
 import { getLearnedPreferences, getContextualSuggestions } from "@/lib/learning";
 import { usePlanStore } from "@/store/planStore";
 import type { DateOption } from "@/components/DateChoiceDialog";
@@ -76,6 +76,10 @@ export const useVoiceSearch = ({
   const [showClarification, setShowClarification] = useState(false);
   const [clarificationOptions, setClarificationOptions] = useState<string[]>([]);
   const [pendingClarificationData, setPendingClarificationData] = useState<any>(null);
+
+  // State for voice confirmation bar (Phase 6)
+  const [showConfirmationBar, setShowConfirmationBar] = useState(false);
+  const [pendingConfirmationPrefs, setPendingConfirmationPrefs] = useState<any>(null);
 
   // Core search logic - extracted for reuse
   // VOICE SEARCH COMPLETELY OVERRIDES PROFILE - builds params ONLY from voice intent
@@ -441,25 +445,62 @@ export const useVoiceSearch = ({
         'cheesecake factory', 'california pizza kitchen',
       ];
 
-      // Search activities only if mode allows
-      const activitiesPromise = (voiceMode === 'both' || voiceMode === 'activity_only')
-        ? supabase.functions.invoke('activities-search', {
+      // === PHASE 2: TICKETED EVENTS FIRST ROUTING ===
+      const SHOW_KEYWORDS = ['concert', 'comedy', 'theater', 'show', 'live music', 'musical', 'performance', 'stand up'];
+      const isShowIntent = preferences.planIntent === 'dinner_and_show' || 
+        (preferences.activityQueryBundles || []).some((b: string) => SHOW_KEYWORDS.some(kw => b.toLowerCase().includes(kw)));
+      
+      let activitiesPromise: Promise<any>;
+      if ((voiceMode === 'both' || voiceMode === 'activity_only') && isShowIntent) {
+        // Try live events first
+        console.log('🎭 Show intent detected — trying live events first');
+        activitiesPromise = supabase.functions.invoke('activities-search', {
+          body: { 
+            lat: activityLat, lng: activityLng, radiusMiles: searchRadius, 
+            keyword: activityKeyword, targetCity: activityCity,
+            seed: randomSeed, forceFresh: true, voiceTriggered: true,
+            excludePlaceIds: excludeActivityIds,
+            queryBundles: activityBundles, negativeKeywords: activityNegativeKeywords,
+            liveEventsOnly: true,
+            searchDate: preferences.searchDate || undefined,
+            scheduledTime: preferences.searchTime || undefined,
+            timeWindowMinutes: 180,
+          }
+        }).then(async (res) => {
+          if (!res.error && res.data?.items?.length > 0) {
+            console.log(`🎫 Live events found: ${res.data.items.length}`);
+            return res;
+          }
+          // Fallback to all activities
+          console.log('🔄 No live events, falling back to all activities');
+          return supabase.functions.invoke('activities-search', {
             body: { 
-              lat: activityLat, 
-              lng: activityLng, 
-              radiusMiles: searchRadius, 
-              keyword: activityKeyword,
-              targetCity: activityCity,
-              seed: randomSeed,
-              forceFresh: true,
-              voiceTriggered: true,
+              lat: activityLat, lng: activityLng, radiusMiles: searchRadius, 
+              keyword: activityKeyword, targetCity: activityCity,
+              seed: randomSeed, forceFresh: true, voiceTriggered: true,
               excludePlaceIds: excludeActivityIds,
-              // Intent routing: pass bundles and negatives from voice interpretation
-              queryBundles: activityBundles,
-              negativeKeywords: activityNegativeKeywords,
+              queryBundles: activityBundles, negativeKeywords: activityNegativeKeywords,
+              searchDate: preferences.searchDate || undefined,
+              scheduledTime: preferences.searchTime || undefined,
             }
-          })
-        : Promise.resolve({ data: { items: [] }, error: null });
+          });
+        });
+      } else {
+        // Standard activity search
+        activitiesPromise = (voiceMode === 'both' || voiceMode === 'activity_only')
+          ? supabase.functions.invoke('activities-search', {
+              body: { 
+                lat: activityLat, lng: activityLng, radiusMiles: searchRadius, 
+                keyword: activityKeyword, targetCity: activityCity,
+                seed: randomSeed, forceFresh: true, voiceTriggered: true,
+                excludePlaceIds: excludeActivityIds,
+                queryBundles: activityBundles, negativeKeywords: activityNegativeKeywords,
+                searchDate: preferences.searchDate || undefined,
+                scheduledTime: preferences.searchTime || undefined,
+              }
+            })
+          : Promise.resolve({ data: { items: [] }, error: null });
+      }
 
       const [restaurantsResponse, activitiesResponse] = await Promise.all([
         restaurantsPromise,
@@ -586,15 +627,18 @@ export const useVoiceSearch = ({
       
       console.log('✅ [VoiceSearch] Store updated successfully');
 
-      // VOICE SEARCH: Build plan without profile preferences
-      const initialPlan = buildPlan({
+      // VOICE SEARCH: Build plan — use sequenced plan for dinner_and_show intent
+      const isSequencedIntent = preferences.planIntent === 'dinner_and_show';
+      const planBuilder = isSequencedIntent ? buildSequencedPlan : buildPlan;
+      
+      const initialPlan = planBuilder({
         lat: planLat,
         lng: planLng,
-        radius: searchRadius,  // Use voice-determined radius
+        radius: searchRadius,
         restaurants: sortedRestaurants,
         activities: sortedActivities,
-        preferences: undefined,  // NO profile preferences - voice overrides
-        learnedPreferences: learnedPrefs,  // Learned prefs for scoring only
+        preferences: undefined,
+        learnedPreferences: learnedPrefs,
         intent: preferences.intent,
         noveltyLevel: preferences.noveltyLevel,
         userInteractionPlaceIds,
@@ -607,7 +651,15 @@ export const useVoiceSearch = ({
             : 'medium',
         },
         searchMode: voiceMode,
+        planIntent: preferences.planIntent,
+        mood: preferences.mood,
+        ...(isSequencedIntent && preferences.searchTime ? { scheduledTime: preferences.searchTime } : {}),
       });
+      
+      // Store planNarrative if present (from sequenced plan)
+      if ('planNarrative' in initialPlan && (initialPlan as any).planNarrative) {
+        usePlanStore.setState({ planNarrative: (initialPlan as any).planNarrative });
+      }
 
       const selectedRestaurantIndex = initialPlan.restaurant 
         ? sortedRestaurants.findIndex(r => r.id === initialPlan.restaurant?.id)
@@ -658,95 +710,95 @@ export const useVoiceSearch = ({
     getExcludePlaceIds, getExcludeActivityIds
   ]);
 
-  const handlePreferencesExtracted = useCallback(async (preferences: any) => {
-    console.log('=== VOICE PREFERENCES EXTRACTION START (PROFILE OVERRIDE MODE) ===');
-    console.log('Raw preferences:', preferences);
-    
-    // === CLARIFICATION CHECK ===
-    // If voice AI says intent is ambiguous, show clarification chips instead of searching
-    if (preferences.needsClarification && preferences.clarificationOptions?.length > 0) {
-      console.log('🤔 Clarification needed, showing chips:', preferences.clarificationOptions);
-      setClarificationOptions(preferences.clarificationOptions);
-      setPendingClarificationData(preferences);
-      setShowClarification(true);
-      return; // Don't search yet - wait for chip selection
-    }
-    
-    // Smart exclusion clearing: Only clear when location changes SIGNIFICANTLY (>5 miles)
+  // Executes the full search pipeline after confirmation
+  const executeConfirmedSearch = useCallback(async (preferences: any) => {
+    // Smart exclusion clearing
     const storeState = usePlanStore.getState();
-    const currentExclusions = storeState.excludePlaceIds.length + storeState.excludeActivityIds.length;
-    console.log('📊 Current exclusion count:', currentExclusions);
+    console.log('📊 Current exclusion count:', storeState.excludePlaceIds.length + storeState.excludeActivityIds.length);
     
-    // Don't auto-clear exclusions on location detection - let them persist within session
-    // Exclusions will auto-expire after 30 min of inactivity (handled in store getters)
-    // This ensures "steakhouse + bar" search excludes places from prior "steakhouse only" search
-    
-    // VOICE SEARCH: Clear ALL previous results and signatures to force completely fresh search
     usePlanStore.getState().clearAllResults();
     clearResults();
     setLastSearched('', '');
     setLastSearchLocation(null, null);
     
-    // Reset filters to prevent profile data from leaking
-    // Only set venueType from voice if detected
+    // Reset filters
     if (preferences.venueType === 'coffee') {
-      setFilters({ 
-        venueType: 'coffee',
-        cuisine: undefined,  // Clear profile cuisine
-        activityCategory: undefined,  // Clear profile activity
-        priceLevel: null  // Clear profile price level
-      });
+      setFilters({ venueType: 'coffee', cuisine: undefined, activityCategory: undefined, priceLevel: null });
       console.log('☕ Coffee shop mode detected from voice');
     } else {
-      // Clear profile-based filters
-      setFilters({ 
-        venueType: 'any',
-        cuisine: undefined,
-        activityCategory: undefined,
-        priceLevel: null
-      });
+      setFilters({ venueType: 'any', cuisine: undefined, activityCategory: undefined, priceLevel: null });
     }
     
     // Handle date extraction
     if (preferences.searchDate && !preferences.searchDateAmbiguous) {
-      // Clear date - set it immediately and proceed
       try {
         const parsedDate = parseISO(preferences.searchDate);
         const time = preferences.searchTime || '19:00';
         setSearchDate(parsedDate, time);
-        
-        toast({
-          title: "Date set",
-          description: `Searching for ${format(parsedDate, 'EEEE, MMMM d')}`,
-        });
+        toast({ title: "Date set", description: `Searching for ${format(parsedDate, 'EEEE, MMMM d')}` });
       } catch (err) {
         console.error('Failed to parse date:', err);
       }
-      
-      // Proceed with search
       await executeSearch(preferences);
-      
     } else if (preferences.searchDateAmbiguous && preferences.searchDateOptions?.length > 0) {
-      // Ambiguous date - PAUSE and show dialog
       console.log('📅 Ambiguous date detected, showing choice dialog');
       setDateChoiceOptions(preferences.searchDateOptions);
       setPendingSearchData(preferences);
       setShowDateChoice(true);
-      // Don't proceed with search yet - wait for user selection
       return;
-      
     } else {
-      // No date mentioned - proceed with today (backward compatible)
       await executeSearch(preferences);
     }
     
-    // Update tracking state after voice search
+    // Update tracking state
     const voiceMode = searchMode || preferences.mode || 'both';
     usePlanStore.setState({ 
       lastSearchMode: voiceMode,
       lastSearchDate: preferences.searchDate ? parseISO(preferences.searchDate) : null
     });
-  }, [executeSearch, setSearchDate, clearResults, setLastSearched, setLastSearchLocation, searchMode]);
+  }, [executeSearch, setSearchDate, clearResults, setLastSearched, setLastSearchLocation, searchMode, setFilters]);
+
+  const handlePreferencesExtracted = useCallback(async (preferences: any) => {
+    console.log('=== VOICE PREFERENCES EXTRACTION START (PROFILE OVERRIDE MODE) ===');
+    console.log('Raw preferences:', preferences);
+    
+    // === CLARIFICATION CHECK ===
+    if (preferences.needsClarification && preferences.clarificationOptions?.length > 0) {
+      console.log('🤔 Clarification needed, showing chips:', preferences.clarificationOptions);
+      setClarificationOptions(preferences.clarificationOptions);
+      setPendingClarificationData(preferences);
+      setShowClarification(true);
+      return;
+    }
+    
+    // === CONFIRMATION BAR (Phase 6) ===
+    // Show confirmation bar to let user review/tweak before searching
+    console.log('📋 Showing voice confirmation bar');
+    setPendingConfirmationPrefs(preferences);
+    setShowConfirmationBar(true);
+    // Don't search yet — wait for confirmation bar "Go" or auto-proceed
+  }, []);
+
+  // Handler for confirmation bar "Go" button / auto-proceed
+  const handleConfirmSearch = useCallback(async () => {
+    setShowConfirmationBar(false);
+    if (pendingConfirmationPrefs) {
+      await executeConfirmedSearch(pendingConfirmationPrefs);
+      setPendingConfirmationPrefs(null);
+    }
+  }, [pendingConfirmationPrefs, executeConfirmedSearch]);
+
+  // Handler for updating a field from the confirmation bar
+  const handleUpdateConfirmationField = useCallback((field: string, value: string) => {
+    if (pendingConfirmationPrefs) {
+      setPendingConfirmationPrefs({ ...pendingConfirmationPrefs, [field]: value });
+    }
+  }, [pendingConfirmationPrefs]);
+
+  const dismissConfirmationBar = useCallback(() => {
+    setShowConfirmationBar(false);
+    setPendingConfirmationPrefs(null);
+  }, []);
 
   // Handler for when user selects a date from the ambiguity dialog
   const handleDateChoice = useCallback(async (date: string, time: string) => {
@@ -860,5 +912,11 @@ export const useVoiceSearch = ({
     clarificationOptions,
     handleClarificationSelect,
     closeClarification,
+    // Confirmation bar state (Phase 6)
+    showConfirmationBar,
+    pendingConfirmationPrefs,
+    handleConfirmSearch,
+    handleUpdateConfirmationField,
+    dismissConfirmationBar,
   };
 };
