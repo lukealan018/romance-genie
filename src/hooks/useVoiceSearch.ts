@@ -334,9 +334,18 @@ export const useVoiceSearch = ({
     
     try {
       // Price level ONLY from voice intent, not profile
-      // Price level from voice: check both restaurantRequest.priceLevel and top-level priceLevel
-      const restaurantPriceLevel = preferences.restaurantRequest?.priceLevel || preferences.priceLevel || null;
-      console.log('💰 Voice price level:', restaurantPriceLevel);
+      // Price level from voice: check restaurantRequest.priceLevel, top-level priceLevel, AND budgetSignal
+      // budgetSignal is the AI's interpretation of "nice", "fancy", "cheap" etc.
+      const budgetSignalToPrice: Record<string, string> = {
+        'cheap': 'budget',
+        'moderate': 'moderate',
+        'upscale': 'upscale',
+      };
+      const restaurantPriceLevel = preferences.restaurantRequest?.priceLevel 
+        || preferences.priceLevel 
+        || (preferences.budgetSignal ? budgetSignalToPrice[preferences.budgetSignal] : null)
+        || null;
+      console.log('💰 Voice price level:', restaurantPriceLevel, '(budgetSignal:', preferences.budgetSignal, ')');
       
       // VOICE SEARCH: Do NOT use profile preferences for filtering
       // Learned preferences are ONLY used for scoring/ranking, never as hard filters

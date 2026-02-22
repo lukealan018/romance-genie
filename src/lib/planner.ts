@@ -270,10 +270,17 @@ function scorePlaces(
         dateWorthinessBoost += 0.15;
       }
       
-      // Penalize counter-service / fast-casual names
-      const penaltyKeywords = ['deli', 'market', 'express', 'drive-thru', 'drive thru', 'counter', 'grill'];
+      // Penalize counter-service / fast-casual / lunch-oriented names
+      const penaltyKeywords = [
+        'deli', 'market', 'express', 'drive-thru', 'drive thru', 'counter', 
+        'sandwich', 'sub', 'subs', 'wrap', 'wraps', 'bagel', 'donut', 'doughnut',
+        'smoothie', 'juice', 'salad', 'bowl', 'poke', 'acai',
+        'cafe', 'café', 'coffee', 'bakery', 'pastry', 'boba', 'bubble tea',
+        'fast', 'quick', 'grab', 'to go', 'takeout', 'take out',
+      ];
       if (penaltyKeywords.some(kw => nameLower.includes(kw))) {
-        dateWorthinessBoost -= 0.25;
+        // Extra-heavy penalty: these are clearly not dinner-date venues
+        dateWorthinessBoost -= 0.40;
       }
       
       // Penalize budget price when it's a show night
