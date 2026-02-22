@@ -1,74 +1,43 @@
+## Cleanup and Polish Pass
 
+After all the calendar/availability changes, there are a few small gaps to tidy up.
 
-## Fix Availability Check Timing Logic
+### 1. ConflictWarningCard -- missing labels for new conflict types
 
-### Problem Summary
-The current `check-availability` edge function has four timing bugs:
+The updated `check-availability` function now emits `activity_closed` and `activity_closing` conflict types, but `ConflictWarningCard` only maps four types in its `conflictTypeLabels`. The new types fall through to the generic "Note" label.
 
-1. **Multiple periods per day** -- `.find()` grabs the first matching period (e.g. lunch) when the user may be scheduling during a second period (e.g. dinner)
-2. **Next-day closing** -- A venue closing at "0100" produces 60 minutes, which looks earlier than a 7 PM start, causing false warnings
-3. **No opening-time check** -- Only closing time is validated; scheduling before a venue opens produces no warning
-4. **No activity closing-time check** -- Activity opening is checked but closing is ignored, so a 90-min activity at a venue closing in 30 min passes silently
+**Fix:** Add the two missing labels to `conflictTypeLabels` in `src/components/ConflictWarningCard.tsx`:
 
-### Solution
+- `activity_closed` -> "Activity Closed"
+- `activity_closing` -> "Activity Hours"
 
-Replace the restaurant and activity period-matching logic with a shared helper that handles all four cases. All changes are in one file: `supabase/functions/check-availability/index.ts`.
+### 2. EditScheduledPlanSheet -- `notes` field exists in state but is never rendered
+
+The sheet tracks a `notes` state variable and computes dirty state from it, but there is no `<Textarea>` in the JSX for the user to actually edit notes. The original plan called for optional notes.
+
+**Fix:** Add a Notes textarea between the confirmation numbers section and the Save button in `src/components/EditScheduledPlanSheet.tsx`.
+
+### 3. EditScheduledPlanSheet -- `excludePlanId` not used by edge function
+
+The sheet sends `excludePlanId` in the request body, but `check-availability` never reads it -- the date-proximity query doesn't filter it out, so editing a plan always flags itself as a nearby conflict.
+
+**Fix:** In `supabase/functions/check-availability/index.ts`, read `excludePlanId` from the request body and add `.neq('id', excludePlanId)` to the nearby-plans query (when present).
+
+### 4. Remove stale `console.log` statements
+
+`Calendar.tsx` has debug `console.log` calls on lines 137, 140, 147, 156, 159, 166 for restaurant/activity click handlers. These should be removed for cleanliness.
 
 ---
 
-### Detailed Changes
+### Summary of files
 
-#### 1. Add helper: `findMatchingPeriod(periods, dayOfWeek, scheduledMinutes)`
 
-Instead of `.find(p => p.open.day === dayOfWeek)` (grabs only the first period), this helper:
-- Filters ALL periods for the given day
-- For each period, parses open/close times to minutes
-- Handles next-day closing: if `closeMinutes < openMinutes`, treat close as `closeMinutes + 1440` (next day)
-- Returns the period whose open-close range contains `scheduledMinutes`, or `null` if none match
+| File                                             | Change                                                           |
+| ------------------------------------------------ | ---------------------------------------------------------------- |
+| `src/components/ConflictWarningCard.tsx`         | Add `activity_closed` and `activity_closing` to label map        |
+| `src/components/EditScheduledPlanSheet.tsx`      | Add Notes textarea to the form                                   |
+| `supabase/functions/check-availability/index.ts` | Read `excludePlanId` and filter it from the date-proximity query |
+| `src/pages/Calendar.tsx`                         | Remove debug `console.log` lines                                 |
 
-#### 2. Add helper: `formatTime(minutesSinceMidnight)`
 
-Returns a human-readable string like `"7:00 PM"` for conflict messages.
-
-#### 3. Restaurant validation (replaces lines 64-100)
-
-Using the matched period (or lack thereof):
-
-- **No periods for this day at all** -- severity `error`, status `closed`, message "Restaurant is closed on this day."
-- **No period contains the scheduled time** -- severity `error`, status `closed`, message "Restaurant isn't open at [time]. Opens at [nearest open] and [next period if any]." Suggest the nearest valid opening time.
-- **Period found but dinner (90 min) extends past closing** -- severity `warning`, status `limited`, suggest an earlier start time so dinner fits. Handle next-day close correctly (e.g. close at 1 AM = 1500 minutes, so 11 PM dinner is fine).
-
-#### 4. Activity validation (replaces lines 102-125)
-
-Estimated activity start = `scheduledMinutes + 105` (90 min dinner + 15 min travel). Using the matched period for that start time:
-
-- **No periods for this day** -- severity `warning`, "Activity appears closed on this day."
-- **Activity start is before opening** -- severity `info`, suggest starting dinner earlier or choosing later time (existing behavior, kept).
-- **New: Activity (90 min default) extends past closing** -- severity `warning`, status `limited`, message "Activity closes at [time]. Your 90-min activity may be cut short." Suggest an earlier dinner time.
-- Handle next-day closing the same way as restaurant.
-
-#### 5. Date proximity check -- no changes (already correct)
-
-### Constants
-
-```text
-DINNER_DURATION = 90      (minutes)
-TRAVEL_TIME = 15          (minutes)
-ACTIVITY_DURATION = 90    (minutes)
-MINUTES_IN_DAY = 1440
-```
-
-### Edge Cases Handled
-
-- Venue open 11:00-14:00 and 17:00-23:00: scheduling at 18:00 correctly matches the dinner period, not lunch
-- Venue closing at 01:00 (next day): "0100" becomes 1500 minutes when open time is e.g. 1080 (18:00), so 19:00 dinner ending at 20:30 passes correctly
-- Scheduling at 15:00 when venue opens at 17:00: returns `closed` with suggestion "Opens at 5:00 PM"
-- Activity closing at 22:00 with estimated start at 21:15: warns that 90-min activity won't fit
-
-### Files Modified
-
-| File | Change |
-|------|--------|
-| `supabase/functions/check-availability/index.ts` | Rewrite period matching + add opening/closing validation for both restaurant and activity |
-
-No database changes, no new edge functions, no client-side changes needed -- the response shape (`status`, `conflicts[]`, `restaurantHours`, `activityHours`) stays identical.
+All four are small, self-contained tweaks -- no new dependencies, no DB changes, no breaking changes.
