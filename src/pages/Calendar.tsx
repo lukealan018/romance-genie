@@ -21,6 +21,14 @@ const parseDateString = (dateStr: string): Date => {
   return new Date(year, month - 1, day);
 };
 
+// Format 24h time string (HH:mm) to 12h (e.g. "7:00 PM")
+const formatTime12h = (time24: string): string => {
+  const [h, m] = time24.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+};
+
 export default function Calendar() {
   const navigate = useNavigate();
   const { scheduledPlans, isLoading, fetchScheduledPlans, deleteScheduledPlan } = useScheduledPlansStore();
@@ -239,7 +247,7 @@ export default function Calendar() {
                           </div>
                           <div className="flex items-center gap-2 text-lg font-medium">
                             <Clock className="w-5 h-5" />
-                            {plan.scheduled_time}
+                            {formatTime12h(plan.scheduled_time)}
                           </div>
                         </div>
                         <div className="flex gap-2">
