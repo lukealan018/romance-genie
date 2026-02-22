@@ -100,6 +100,26 @@ export function isBobaVenue(name: string): boolean {
   return BOBA_EXCLUSION_PATTERNS.test(name);
 }
 
+// Institutional / educational venues — NOT bookable fun activities
+export const INSTITUTIONAL_KEYWORDS: string[] = [
+  'training program', 'training center', 'training centre',
+  'culinary training', 'culinary school', 'culinary institute', 'culinary academy',
+  'vocational', 'trade school', 'technical school', 'tech school',
+  'job training', 'workforce', 'career center', 'career centre',
+  'community college', 'adult education', 'continuing education',
+  'certification program', 'apprenticeship',
+  'rehabilitation', 'rehab center', 'rehab centre',
+  'nonprofit', 'non-profit', 'foundation',
+  'outreach', 'social services', 'community center', 'community centre',
+  'youth center', 'youth centre', 'senior center', 'senior centre',
+  'shelter', 'food bank', 'food pantry',
+];
+
+export function isInstitutionalVenue(name: string): boolean {
+  const nameLower = name.toLowerCase();
+  return INSTITUTIONAL_KEYWORDS.some(kw => nameLower.includes(kw));
+}
+
 // Production/management companies (not real venues)
 // IMPORTANT: Do NOT add generic words here — use NON_VENUE_BUSINESS_REGEX for smarter matching
 export const NON_VENUE_KEYWORDS: string[] = [
