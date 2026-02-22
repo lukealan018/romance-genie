@@ -612,6 +612,7 @@ export const usePlanStore = create<PlanState>((set, get) => ({
     lastSearchDate: null,
     searchDate: null,
     searchTime: null,
+    planNarrative: null,
   }),
 }));
 

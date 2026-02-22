@@ -56,6 +56,7 @@ function getModeLabel(mode: string | null | undefined, planIntent: string | null
 export function VoiceConfirmationBar({ preferences, onConfirm, onUpdateField, onDismiss }: ConfirmationBarProps) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [progress, setProgress] = useState(0);
+  const [resetKey, setResetKey] = useState(0);
 
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -72,13 +73,14 @@ export function VoiceConfirmationBar({ preferences, onConfirm, onUpdateField, on
     };
   }, [resetTimer]);
 
-  // Progress animation
+  // Progress animation — restarts when resetKey changes
   useEffect(() => {
+    setProgress(0);
     const interval = setInterval(() => {
       setProgress(p => Math.min(p + 100 / (AUTO_PROCEED_MS / 50), 100));
     }, 50);
     return () => clearInterval(interval);
-  }, []);
+  }, [resetKey]);
 
   const handleChipTap = (field: string) => {
     // Cycle to next value
@@ -94,7 +96,7 @@ export function VoiceConfirmationBar({ preferences, onConfirm, onUpdateField, on
       onUpdateField("mood", next);
     }
     resetTimer();
-    setProgress(0);
+    setResetKey(k => k + 1);
   };
 
   const location = preferences.restaurantRequest?.location || 
