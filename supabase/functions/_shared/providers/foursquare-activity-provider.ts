@@ -5,6 +5,7 @@ import {
   RESTAURANT_KEYWORDS,
   isRetailPlaceByFoursquare,
   isNonVenueBusiness,
+  isInstitutionalVenue,
 } from '../place-filters.ts';
 
 const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY')?.trim();
@@ -196,6 +197,12 @@ export const foursquareActivityProvider: ActivityProvider = {
         // === NON-VENUE BUSINESS FILTERING ===
         if (isNonVenueBusiness(nameLower)) {
           console.log(`🟦 Foursquare: Filtering out non-venue business "${place.name}"`);
+          return null;
+        }
+        
+        // === INSTITUTIONAL / TRAINING PROGRAM FILTERING ===
+        if (isInstitutionalVenue(nameLower)) {
+          console.log(`🏫 Foursquare: Filtering out institutional venue "${place.name}"`);
           return null;
         }
         

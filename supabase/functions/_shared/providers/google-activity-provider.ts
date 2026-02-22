@@ -8,6 +8,7 @@ import {
   shouldExcludeAsTraditionalGolf,
   isEntertainmentGolf,
   isNonVenueBusiness,
+  isInstitutionalVenue,
   isCasualChain,
   isFastFoodChain,
 } from '../place-filters.ts';
@@ -447,6 +448,18 @@ export const googleActivityProvider: ActivityProvider = {
         // Hard-block restaurants by primaryType (belt-and-suspenders with API-level filter)
         if (EXCLUDED_RESTAURANT_PRIMARY_TYPES.includes(primaryType)) {
           console.log(`🚫 Google Activity: Excluding "${name}" — primaryType=${primaryType}`);
+          return false;
+        }
+
+        // Block institutional/training venues (not bookable fun activities)
+        if (isInstitutionalVenue(name)) {
+          console.log(`🏫 Google Activity: Excluding institutional venue "${name}"`);
+          return false;
+        }
+
+        // Block non-venue businesses (production companies, agencies, etc.)
+        if (isNonVenueBusiness(name)) {
+          console.log(`🏢 Google Activity: Excluding non-venue business "${name}"`);
           return false;
         }
 
