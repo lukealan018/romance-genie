@@ -1035,7 +1035,7 @@ export const usePlaceSearch = (
     const activityOptions = [
       // Unique, hidden gem activities - NOT mainstream!
       "speakeasy", "rooftop bar", "jazz lounge", "tiki bar", "whiskey bar",
-      "axe throwing", "paint and sip", "pottery class", "cooking class", 
+      "axe throwing", "paint and sip", "pottery class", 
       "wine tasting", "escape room", "comedy club", "karaoke",
       "art gallery", "theater", "hookah lounge", "pool hall",
       "food hall", "arcade bar", "board game cafe", "trivia night"
