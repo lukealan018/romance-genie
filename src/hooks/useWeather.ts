@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { usePlanStore } from "@/store/planStore";
 
 const geoOptions: PositionOptions = {
   enableHighAccuracy: true,  // Required for iOS to prompt properly
@@ -50,8 +51,9 @@ export const useWeather = (userId: string | null) => {
   };
 
   // Fetch weather based on user's profile ZIP code
-  const fetchProfileWeather = useCallback(async () => {
-    if (!userId) return;
+  // Returns geocoded coords if successful (for syncing to planStore)
+  const fetchProfileWeather = useCallback(async (): Promise<{ lat: number; lng: number } | null> => {
+    if (!userId) return null;
     
     setLoadingProfileWeather(true);
     try {
@@ -65,7 +67,7 @@ export const useWeather = (userId: string | null) => {
       if (profileError) throw profileError;
       if (!profile?.home_zip) {
         console.log('No home ZIP code in profile');
-        return;
+        return null;
       }
 
       // Geocode the ZIP code to get coordinates
@@ -77,7 +79,7 @@ export const useWeather = (userId: string | null) => {
       const geoData = geoResponse?.data;
       if (!geoData?.lat || !geoData?.lng) {
         console.error('Failed to geocode ZIP code');
-        return;
+        return null;
       }
 
       // Fetch weather for the coordinates
@@ -94,8 +96,11 @@ export const useWeather = (userId: string | null) => {
         icon: weatherData?.icon,
         cityName: geoData.city || undefined
       });
+      
+      return { lat: geoData.lat, lng: geoData.lng };
     } catch (error) {
       console.error('Error fetching profile weather:', error);
+      return null;
     } finally {
       setLoadingProfileWeather(false);
     }
@@ -152,6 +157,9 @@ export const useWeather = (userId: string | null) => {
               cityName: geocodeResponse?.city || "Current Location"
             });
             setLocationSource('gps');
+            // Sync GPS coords to planStore so searches use current location
+            usePlanStore.getState().setLocation(latitude, longitude);
+            usePlanStore.getState().setFilters({ locationMode: 'gps' });
             resolve(true);
           } catch (error) {
             console.error('Error fetching GPS weather:', error);
@@ -174,8 +182,9 @@ export const useWeather = (userId: string | null) => {
     // Fallback to home location if GPS failed
     if (!gpsSuccess) {
       try {
-        await fetchProfileWeather();
+        const coords = await fetchProfileWeather();
         setLocationSource('home');
+        // Note: don't override planStore here on fallback — useAuthAndProfile already sets it
       } catch (error) {
         console.error('Failed to fetch home weather:', error);
       }
@@ -239,6 +248,9 @@ export const useWeather = (userId: string | null) => {
             cityName: geocodeResponse?.city || "Current Location"
           });
           setLocationSource('gps');
+          // Sync GPS coords to planStore so searches use current location
+          usePlanStore.getState().setLocation(latitude, longitude);
+          usePlanStore.getState().setFilters({ locationMode: 'gps' });
           toast({
             title: "Location Updated",
             description: `Showing weather for ${geocodeResponse?.city || "your current location"}`,
@@ -282,8 +294,13 @@ export const useWeather = (userId: string | null) => {
   const switchToHome = useCallback(async () => {
     setLoadingProfileWeather(true);
     try {
-      await fetchProfileWeather();
+      const coords = await fetchProfileWeather();
       setLocationSource('home');
+      // Sync home coords to planStore so searches use home location
+      if (coords) {
+        usePlanStore.getState().setLocation(coords.lat, coords.lng);
+        usePlanStore.getState().setFilters({ locationMode: 'zip' });
+      }
       toast({
         title: "Location Updated",
         description: "Showing weather for your home location",
