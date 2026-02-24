@@ -36,7 +36,7 @@ export interface SearchOptions {
   limit?: number;
   targetCity?: string;
   noveltyMode?: 'popular' | 'balanced' | 'hidden_gems';
-  venueType?: 'any' | 'coffee' | 'brunch';
+  venueType?: 'any' | 'coffee' | 'brunch' | 'dinner_anchor';
   searchTime?: string; // HH:mm format for dinner-time exclusion
 }
 

@@ -9,6 +9,13 @@ import {
 import { getRestaurantSuggestions } from "../_shared/places-service.ts";
 import { buildBookingInsights } from "../_shared/booking-insights.ts";
 import { FEATURE_FLAGS } from "../_shared/feature-flags.ts";
+import {
+  dinnerAnchorScore,
+  getTopDinnerAnchorReasons,
+  isDinnerAnchorCandidate,
+  isEveningSearchWindow,
+  isExplicitCasualRequest,
+} from "../_shared/dinner-anchor.ts";
 import type { BookingInsights } from "../_shared/booking-types.ts";
 
 const corsHeaders = {
@@ -56,6 +63,11 @@ interface DebugMetadata {
   qualityFilteredCount: number;
   totalFromProviders: number;
   finalCount: number;
+  dinnerAnchor?: {
+    enabled: boolean;
+    filteredCount: number;
+    topReasons: Array<{ reason: string; count: number }>;
+  };
 }
 
 // Response item type with optional booking insights
@@ -74,6 +86,7 @@ interface PlaceSearchResultItem {
   isNewDiscovery: boolean;
   isLocalFavorite: boolean;
   hasPremiumData?: boolean;
+  dinnerAnchorScore?: number;
   bookingInsights?: BookingInsights; // Optional - only when feature enabled
 }
 
@@ -116,7 +129,7 @@ serve(async (req) => {
 
   try {
     // Parse request parameters
-    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean, venueType: 'any' | 'coffee' | 'brunch', searchTime: string | undefined, surpriseMe: boolean, excludePlaceIds: string[], debug: boolean, queryBundles: string[], negativeKeywords: string[];
+    let lat: number, lng: number, radiusMiles: number, cuisine: string, priceLevel: string | undefined, targetCity: string | undefined, noveltyMode: NoveltyMode, seed: number | undefined, forceFresh: boolean, venueType: 'any' | 'coffee' | 'brunch' | 'dinner_anchor', searchTime: string | undefined, surpriseMe: boolean, excludePlaceIds: string[], debug: boolean, queryBundles: string[], negativeKeywords: string[], searchMode: 'both' | 'restaurant_only' | 'activity_only';
 
     if (req.method === 'POST') {
       const body = await req.json();
@@ -130,7 +143,14 @@ serve(async (req) => {
       noveltyMode = validateNoveltyMode(body.noveltyMode);
       seed = body.seed !== undefined ? validateNumber(body.seed) : undefined;
       forceFresh = body.forceFresh === true;
-      venueType = body.venueType === 'coffee' ? 'coffee' : body.venueType === 'brunch' ? 'brunch' : 'any';
+      venueType = body.venueType === 'coffee'
+        ? 'coffee'
+        : body.venueType === 'brunch'
+        ? 'brunch'
+        : body.venueType === 'dinner_anchor'
+        ? 'dinner_anchor'
+        : 'any';
+      searchMode = body.searchMode === 'restaurant_only' || body.searchMode === 'activity_only' ? body.searchMode : 'both';
       searchTime = validateString(body.searchTime, 20) || undefined;
       surpriseMe = body.surpriseMe === true;
       excludePlaceIds = Array.isArray(body.excludePlaceIds) 
@@ -154,7 +174,16 @@ serve(async (req) => {
       noveltyMode = validateNoveltyMode(url.searchParams.get('noveltyMode'));
       seed = url.searchParams.get('seed') ? validateNumber(url.searchParams.get('seed')) : undefined;
       forceFresh = url.searchParams.get('forceFresh') === 'true';
-      venueType = url.searchParams.get('venueType') === 'coffee' ? 'coffee' : url.searchParams.get('venueType') === 'brunch' ? 'brunch' : 'any';
+      venueType = url.searchParams.get('venueType') === 'coffee'
+        ? 'coffee'
+        : url.searchParams.get('venueType') === 'brunch'
+        ? 'brunch'
+        : url.searchParams.get('venueType') === 'dinner_anchor'
+        ? 'dinner_anchor'
+        : 'any';
+      searchMode = url.searchParams.get('searchMode') === 'restaurant_only' || url.searchParams.get('searchMode') === 'activity_only'
+        ? (url.searchParams.get('searchMode') as 'restaurant_only' | 'activity_only')
+        : 'both';
       searchTime = validateString(url.searchParams.get('searchTime'), 20) || undefined;
       surpriseMe = url.searchParams.get('surpriseMe') === 'true';
       excludePlaceIds = [];
@@ -185,6 +214,7 @@ serve(async (req) => {
       seed: seed || 'none',
       forceFresh,
       venueType,
+      searchMode,
       searchTime: searchTime || 'none',
       surpriseMe,
       excludePlaceIds: excludePlaceIds.length,
@@ -297,6 +327,11 @@ serve(async (req) => {
 
     // Apply existing scoring and filtering logic
     const radiusMilesNum = radiusMiles;
+
+    const dinnerAnchorEnabled = searchMode === 'both' && (venueType === 'dinner_anchor' || isEveningSearchWindow(searchTime));
+    const explicitCasualRequest = isExplicitCasualRequest(cuisine, queryBundles);
+    const dinnerAnchorReasonCounts: Record<string, number> = {};
+    const dinnerAnchorFilteredCount = { value: 0 };
     
     // Create Set for O(1) exclusion lookups
     const excludeSet = new Set(excludePlaceIds);
@@ -306,6 +341,7 @@ serve(async (req) => {
       previouslyShown: 0,
       distanceExceeded: 0,
       outsideTargetCity: 0,
+      dinnerAnchor: 0,
     };
     
     const totalFromProviders = providerResults.length;
@@ -330,6 +366,19 @@ serve(async (req) => {
           const inTargetCity = isInTargetCity(item.addressComponents, targetCity);
           if (!inTargetCity && item.distance && item.distance > 5) {
             excludedCountsByReason.outsideTargetCity++;
+            return false;
+          }
+        }
+
+        // Dinner Anchor Mode (both mode + evening window): stricter sit-down quality floor
+        if (dinnerAnchorEnabled) {
+          const candidate = isDinnerAnchorCandidate(item, { explicitCasualRequest });
+          if (!candidate.keep) {
+            excludedCountsByReason.dinnerAnchor++;
+            dinnerAnchorFilteredCount.value++;
+            candidate.reasons.forEach((reason) => {
+              dinnerAnchorReasonCounts[reason] = (dinnerAnchorReasonCounts[reason] || 0) + 1;
+            });
             return false;
           }
         }
@@ -371,6 +420,10 @@ serve(async (req) => {
             })
           : undefined;
         
+        const venueDinnerAnchorScore = dinnerAnchorEnabled
+          ? dinnerAnchorScore(item, explicitCasualRequest)
+          : 0;
+
         const result: PlaceSearchResultItem = {
           id: item.id,
           name: item.name,
@@ -386,6 +439,7 @@ serve(async (req) => {
           isNewDiscovery: isNewDiscovery(placeData),
           isLocalFavorite: isLocalFavorite(placeData),
           hasPremiumData: item.hasPremiumData,
+          ...(dinnerAnchorEnabled && { dinnerAnchorScore: venueDinnerAnchorScore }),
           // Only include bookingInsights when defined (removes undefined from output)
           ...(bookingInsights && { bookingInsights })
         };
@@ -394,6 +448,15 @@ serve(async (req) => {
       })
       // DATE NIGHT QUALITY BIAS: Prioritize quality for a concierge experience
       .sort((a, b) => {
+        // Dinner Anchor mode: prioritize dinner-anchor score first
+        if (dinnerAnchorEnabled) {
+          const aAnchor = a.dinnerAnchorScore || 0;
+          const bAnchor = b.dinnerAnchorScore || 0;
+          if (Math.abs(bAnchor - aAnchor) > 0.1) {
+            return bAnchor - aAnchor;
+          }
+        }
+
         // Quality floor: penalize venues with very few reviews (except hidden_gems mode)
         const aHasEnoughReviews = a.totalRatings >= 30 || noveltyMode === 'hidden_gems';
         const bHasEnoughReviews = b.totalRatings >= 30 || noveltyMode === 'hidden_gems';
@@ -452,11 +515,20 @@ serve(async (req) => {
       console.log(`📅 Booking insights: ${recommendedCount}/${items.length} recommend reservations`);
     }
 
+    const dinnerAnchorTopReasons = getTopDinnerAnchorReasons(dinnerAnchorReasonCounts, 5);
+    if (dinnerAnchorEnabled) {
+      console.log('🍽️ Dinner Anchor active:', {
+        filteredCount: dinnerAnchorFilteredCount.value,
+        topReasons: dinnerAnchorTopReasons,
+        explicitCasualRequest,
+      });
+    }
+
     const totalExcluded = Object.values(excludedCountsByReason).reduce((a, b) => a + b, 0);
     console.log(`✅ Returning ${items.length} scored restaurants (forceFresh: ${forceFresh}, excluded: ${totalExcluded})`);
 
     // Generate request signature for debugging
-    const signature = generateRequestSignature({ lat, lng, radiusMiles, cuisine, priceLevel, noveltyMode, venueType });
+    const signature = generateRequestSignature({ lat, lng, radiusMiles, cuisine, priceLevel, noveltyMode, venueType, searchMode });
 
     // Build debug metadata if requested
     const debugMetadata: DebugMetadata | undefined = debug ? {
@@ -466,6 +538,11 @@ serve(async (req) => {
       qualityFilteredCount: 0, // Quality filtering happens in places-service
       totalFromProviders,
       finalCount: items.length,
+      dinnerAnchor: {
+        enabled: dinnerAnchorEnabled,
+        filteredCount: dinnerAnchorFilteredCount.value,
+        topReasons: dinnerAnchorTopReasons,
+      },
     } : undefined;
 
     return new Response(

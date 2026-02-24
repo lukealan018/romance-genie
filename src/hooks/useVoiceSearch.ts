@@ -421,6 +421,7 @@ export const useVoiceSearch = ({
               priceLevel: restaurantPriceLevel,
               targetCity: restaurantCity,
               venueType: venueType,
+              searchMode: voiceMode,
               searchTime: preferences.searchTime || undefined,
               seed: randomSeed,
               forceFresh: true,
