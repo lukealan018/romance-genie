@@ -448,7 +448,7 @@ export const useVoiceSearch = ({
         'wine tasting', 'axe throwing', 'art gallery', 'live music venue',
         'paint and sip', 'pottery class', 'brewery taproom', 'pool hall',
         'mini golf', 'hookah lounge', 'piano bar', 'trivia night',
-        'cooking class', 'escape room', 'laser tag', 'go kart',
+        'escape room', 'laser tag', 'go kart',
         'food hall', 'night market', 'outdoor cinema', 'improv theater',
       ];
       const ACTIVITY_POOL_ACTIVITY_ONLY = [
