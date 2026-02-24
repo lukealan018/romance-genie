@@ -311,6 +311,7 @@ export const usePlaceSearch = (
               seed: variationSeed,
               forceFresh: forceFresh || userTriggered,
               venueType: venueType || 'any',
+              searchMode: currentMode,
               searchTime: searchTime || undefined
             }
           })
@@ -554,6 +555,7 @@ export const usePlaceSearch = (
             cuisine,
             priceLevel: priceLevel || undefined,
             seed: randomSeed,
+            searchMode: searchMode || 'both',
             forceFresh: true
           }
         });
@@ -753,6 +755,7 @@ export const usePlaceSearch = (
               cuisine, 
               priceLevel: priceLevel || undefined,
               seed: randomSeed,
+              searchMode: currentMode,
               forceFresh: true  // ALWAYS force fresh on reroll
             }
           })
@@ -1085,6 +1088,7 @@ export const usePlaceSearch = (
               radiusMiles: surpriseRadius,  // Fixed 5mi radius
               cuisine: isCoffeeMode ? '' : selectedCuisine,  // No cuisine for coffee search
               venueType: isCoffeeMode ? 'coffee' : 'any',    // Pass coffee mode
+              searchMode: currentMode,
               noveltyMode: 'hidden_gems',  // FORCE hidden gems mode!
               seed: randomSeed,
               forceFresh: true,

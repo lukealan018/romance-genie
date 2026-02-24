@@ -525,7 +525,7 @@ Return JSON with this structure:
   "clarificationOptions": [],
   "generalLocation": "city or area name or null",
   "mode": "both|restaurant_only|activity_only",
-  "venueType": "any|coffee",
+  "venueType": "any|coffee|dinner_anchor",
   "useCurrentLocation": false,
   "energyLevel": "low|medium|high",
   "mood": "string",
@@ -563,6 +563,11 @@ Extract budget intent from natural language:
 - "moderate": mid-range, reasonable, usual, normal, decent, under $50
 - "upscale": nice, fancy, fine dining, splurge, treat ourselves, upscale, luxury
 - null: no budget signal detected
+
+DINNER ANCHOR DEFAULT RULE (CRITICAL):
+If transcript implies "full night out" + evening timing ("this evening"/"tonight") + "fun" with NO budget words,
+set mode="both", budgetSignal="moderate", restaurantRequest.priceLevel="moderate", venueType="dinner_anchor".
+If user says "cheap"/"quick"/"casual", override to budget behavior (budgetSignal="cheap", restaurantRequest.priceLevel="budget").
 
 BUDGET CONSTRAINTS (NEW):
 - excludeFastFood: true if user says "no fast food", "sit down", "real restaurant", "not a chain"
@@ -681,6 +686,33 @@ CRITICAL EXAMPLES for MODE DETECTION:
     if (!result.budgetConstraints) result.budgetConstraints = { excludeFastFood: false, chainHandling: 'none', maxBudgetDollars: null };
     if (!result.confidence) result.confidence = { mode: 0.5, location: 0.5, datetime: 0.5, activity: 0.5, budget: 0.5, overall: 0.5 };
     
+    // Rule-based defaulting for full night out + evening + fun (without explicit budget)
+    const transcriptLower = transcript.toLowerCase();
+    const hasFullNightOutSignal = /full\s*night\s*out|night\s*out|go\s*out/.test(transcriptLower);
+    const hasEveningSignal = /this\s+evening|tonight|evening/.test(transcriptLower);
+    const hasFunSignal = /\bfun\b|something\s+fun/.test(transcriptLower);
+    const hasBudgetWords = /cheap|quick|casual|budget|affordable|inexpensive|upscale|fancy|luxury|moderate|mid[-\s]?range/.test(transcriptLower);
+    const hasCheapOverride = /cheap|quick|casual|budget|affordable|inexpensive/.test(transcriptLower);
+
+    if (hasFullNightOutSignal && hasEveningSignal && hasFunSignal && !hasBudgetWords) {
+      result.mode = 'both';
+      result.budgetSignal = 'moderate';
+      result.venueType = 'dinner_anchor';
+      if (!result.restaurantRequest) result.restaurantRequest = { type: 'restaurant', location: null, priceLevel: 'moderate' };
+      if (!result.restaurantRequest.priceLevel) result.restaurantRequest.priceLevel = 'moderate';
+      console.log('🍽️ Applied Dinner Anchor default: mode=both, budget=moderate, venueType=dinner_anchor');
+    }
+
+    if (hasCheapOverride) {
+      result.budgetSignal = 'cheap';
+      if (!result.restaurantRequest) result.restaurantRequest = { type: 'restaurant', location: null, priceLevel: 'budget' };
+      result.restaurantRequest.priceLevel = 'budget';
+      if (result.venueType === 'dinner_anchor') {
+        result.venueType = 'any';
+      }
+      console.log('💸 Applied cheap/quick/casual override: budget=cheap');
+    }
+
     console.log('=== VOICE INTERPRETATION ===');
     console.log('Original transcript:', transcript);
     console.log('Mode:', result.mode);
