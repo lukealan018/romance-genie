@@ -346,12 +346,18 @@ export const useVoiceSearch = ({
         const transcript = preferences.transcript.toLowerCase();
         const UPSCALE_KEYWORDS = ['nice', 'fancy', 'upscale', 'fine dining', 'elegant', 'classy', 'high end', 'high-end', 'luxury', 'premium', 'bougie', 'boujee'];
         const BUDGET_KEYWORDS = ['cheap', 'affordable', 'budget', 'inexpensive', 'dollar menu'];
+        // Evening/tonight context: if user says "this evening", "tonight", "dinner" without
+        // specifying a budget, bias toward moderate+ to avoid casual/breakfast spots
+        const EVENING_KEYWORDS = ['evening', 'tonight', 'dinner', 'this evening', 'date night', 'nice dinner'];
         if (UPSCALE_KEYWORDS.some(kw => transcript.includes(kw))) {
           effectiveBudgetSignal = 'upscale';
           console.log('🎯 Frontend detected upscale intent from transcript');
         } else if (BUDGET_KEYWORDS.some(kw => transcript.includes(kw))) {
           effectiveBudgetSignal = 'cheap';
           console.log('🎯 Frontend detected budget intent from transcript');
+        } else if (EVENING_KEYWORDS.some(kw => transcript.includes(kw))) {
+          effectiveBudgetSignal = 'moderate';
+          console.log('🎯 Frontend detected evening/dinner context - defaulting to moderate+');
         }
       }
       
@@ -415,6 +421,7 @@ export const useVoiceSearch = ({
               priceLevel: restaurantPriceLevel,
               targetCity: restaurantCity,
               venueType: venueType,
+              searchTime: preferences.searchTime || undefined,
               seed: randomSeed,
               forceFresh: true,
               voiceTriggered: true,
