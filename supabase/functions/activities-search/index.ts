@@ -240,7 +240,12 @@ serve(async (req) => {
       bundleResults.forEach((result, i) => {
         if (result.status === 'fulfilled') {
           console.log(`   ✅ Bundle "${queryBundles[i]}": ${result.value.items.length} results`);
-          allItems.push(...result.value.items);
+          // Tag each item with the bundle that found it for diversity capping
+          const taggedItems = result.value.items.map((item: any) => ({
+            ...item,
+            _searchBundle: queryBundles[i],
+          }));
+          allItems.push(...taggedItems);
           for (const [key, val] of Object.entries(result.value.providerStats)) {
             providerStats[key] = (providerStats[key] || 0) + val;
           }
@@ -518,6 +523,33 @@ serve(async (req) => {
       items = interleaveByProvider(items);
     }
     
+    // === CATEGORY DIVERSITY CAP ===
+    // Prevent any single source-keyword combo from dominating results.
+    // Max 3 results per category (based on the query bundle that found them).
+    if (queryBundles.length > 1) {
+      const byCategory: Record<string, any[]> = {};
+      const uncategorized: any[] = [];
+      
+      items.forEach((item: any) => {
+        const cat = item._searchBundle || item.category || item.source || 'unknown';
+        if (!byCategory[cat]) byCategory[cat] = [];
+        byCategory[cat].push(item);
+      });
+      
+      const diverseItems: any[] = [];
+      const maxPerCategory = Math.max(3, Math.ceil(20 / Object.keys(byCategory).length));
+      
+      for (const [cat, catItems] of Object.entries(byCategory)) {
+        if (catItems.length > maxPerCategory) {
+          console.log(`✂️ Diversity cap: "${cat}" trimmed from ${catItems.length} to ${maxPerCategory}`);
+        }
+        diverseItems.push(...catItems.slice(0, maxPerCategory));
+      }
+      
+      items = diverseItems;
+      console.log(`🎨 Category diversity: ${Object.keys(byCategory).length} categories, ${items.length} total items`);
+    }
+    
     // SURPRISE ME MODE: Don't shuffle - keep in intent-sorted order
     if (surpriseMe) {
       console.log(`✨ Surprise Me mode: keeping top ${Math.min(15, items.length)} in intent-sorted order`);
@@ -544,7 +576,7 @@ serve(async (req) => {
     
     // Remove internal fields before returning
     const cleanedItems = items.map((item: any) => {
-      const { addressComponents, distance, types, geometry, uniquenessScore, dateScore, ...cleanItem } = item;
+      const { addressComponents, distance, types, geometry, uniquenessScore, dateScore, _searchBundle, ...cleanItem } = item;
       return cleanItem;
     });
 

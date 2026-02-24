@@ -437,16 +437,38 @@ export const useVoiceSearch = ({
       // IMPORTANT: For vague "both" mode, use SPECIFIC activity-type bundles (not generic "nightlife")
       // to avoid bar-restaurant hybrids like Yard House appearing as activities.
       let activityKeyword = searchActivity || 'entertainment';
-      const DEFAULT_ACTIVITY_BUNDLES_BOTH_MODE = [
+      
+      // === ACTIVITY BUNDLE ROTATION SYSTEM ===
+      // Large pool of activity categories — each search randomly picks 8 to prevent
+      // any single category (like escape rooms) from dominating every search.
+      const ACTIVITY_POOL_BOTH_MODE = [
         'cocktail bar', 'speakeasy', 'jazz lounge', 'rooftop bar',
-        'comedy club', 'bowling', 'escape room', 'arcade',
-        'karaoke', 'wine tasting', 'axe throwing', 'art gallery',
+        'comedy club', 'bowling', 'arcade', 'karaoke',
+        'wine tasting', 'axe throwing', 'art gallery', 'live music venue',
+        'paint and sip', 'pottery class', 'brewery taproom', 'pool hall',
+        'mini golf', 'hookah lounge', 'piano bar', 'trivia night',
+        'cooking class', 'escape room', 'laser tag', 'go kart',
+        'food hall', 'night market', 'outdoor cinema', 'improv theater',
       ];
-      const DEFAULT_ACTIVITY_BUNDLES_ACTIVITY_ONLY = [
+      const ACTIVITY_POOL_ACTIVITY_ONLY = [
         'cocktail lounge', 'speakeasy', 'jazz bar', 'rooftop bar',
-        'comedy club', 'bowling alley', 'escape room', 'arcade bar',
-        'karaoke bar', 'live music venue', 'wine bar', 'brewery',
+        'comedy club', 'bowling alley', 'arcade bar', 'karaoke bar',
+        'live music venue', 'wine bar', 'brewery', 'axe throwing',
+        'paint and sip', 'pottery studio', 'pool hall', 'mini golf',
+        'hookah lounge', 'piano bar', 'trivia night', 'cooking class',
+        'escape room', 'laser tag', 'go kart', 'food hall',
+        'night market', 'outdoor cinema', 'improv theater', 'distillery',
       ];
+      
+      // Randomly select 8 bundles from the pool for variety each search
+      const pickRandomBundles = (pool: string[], count: number): string[] => {
+        const shuffled = [...pool].sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, count);
+      };
+      
+      const DEFAULT_ACTIVITY_BUNDLES_BOTH_MODE = pickRandomBundles(ACTIVITY_POOL_BOTH_MODE, 8);
+      const DEFAULT_ACTIVITY_BUNDLES_ACTIVITY_ONLY = pickRandomBundles(ACTIVITY_POOL_ACTIVITY_ONLY, 8);
+      console.log('🎰 Randomly selected activity bundles:', voiceMode === 'both' ? DEFAULT_ACTIVITY_BUNDLES_BOTH_MODE : DEFAULT_ACTIVITY_BUNDLES_ACTIVITY_ONLY);
       // FIX 2: Detect vague/generic activity bundles from AI and replace with concrete ones.
       // The AI sometimes returns bundles like ["fun things to do", "nightlife", "entertainment"]
       // which produce terrible results. Replace them with the good default bundles.
