@@ -185,6 +185,13 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
   };
 
   const handleSchedule = async () => {
+    // Early auth gate — don't waste API calls if not logged in
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData?.session) {
+      toast.error("Please log in to schedule plans");
+      return;
+    }
+
     const finalDate = parsedDateTime?.date || manualDate;
     const finalTime = parsedDateTime?.time || manualTime;
 
@@ -300,6 +307,8 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
         
         toast.success(`✓ Plan scheduled for ${formattedDate} at ${formattedTime}`);
         onOpenChange(false);
+      } else {
+        toast.error("Failed to save your plan. Please make sure you're logged in.");
       }
     } catch (error) {
       console.error('Error scheduling plan:', error);
