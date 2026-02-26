@@ -1,68 +1,37 @@
 
 
-## Cleanup and Polish Pass -- Post Voice Sequencing
+# Fix: Plan Scheduling Fails Silently
 
-Five issues found across the recently changed files. All are small, targeted fixes.
+## Problem
+When you try to schedule a plan, the save silently fails with no feedback. Two issues:
 
----
+1. **No auth check before attempting to save** -- The `handleSchedule` function doesn't verify you're logged in before doing all the work (fetching weather, place details, etc.), then the store's `addScheduledPlan` fails silently at the auth check and returns `null`.
 
-### 1. Stale closure: `searchMode` missing from `executeSearch` deps
+2. **No error feedback when save returns null** -- After `addScheduledPlan` returns `null`, the code just skips the success toast but never shows an error, so you see nothing happen.
 
-**File:** `src/hooks/useVoiceSearch.ts`
+## Changes
 
-`executeSearch` reads `searchMode` (line 106) but does not include it in its `useCallback` dependency array (lines 704-711). This means if the user changes mode between triggering voice and the search executing, it could use the old mode value.
+### 1. Add early auth gate in `handleSchedule` (`src/components/ScheduleVoiceDialog.tsx`)
+- At the top of `handleSchedule`, check `supabase.auth.getSession()`.
+- If no session, show a toast: "Please log in to schedule plans" and return early before doing any API calls.
 
-**Fix:** Add `searchMode` to the dependency array of `executeSearch`.
+### 2. Add error feedback when `addScheduledPlan` returns null (`src/components/ScheduleVoiceDialog.tsx`)
+- After `const scheduledPlan = await addScheduledPlan(...)`, add an `else` block:
+  ```
+  if (scheduledPlan) {
+    // existing success toast...
+  } else {
+    toast.error("Failed to save your plan. Please make sure you're logged in.");
+  }
+  ```
 
----
+### 3. Add error logging in `addScheduledPlan` (`src/store/scheduledPlansStore.ts`)
+- In the catch block, surface the actual error message so it's diagnosable:
+  ```
+  toast.error("Could not save plan: " + (error?.message || "Unknown error"));
+  ```
+  (Import toast from sonner in the store file.)
 
-### 2. `scorePlaces` calls missing `planIntent` and `mood`
-
-**File:** `src/hooks/useVoiceSearch.ts` (lines 581-604)
-
-The two direct `scorePlaces` calls that sort restaurants and activities before storing them in the plan store do not pass `planIntent` or `mood`. This means the date-worthiness scoring from Phase 5 is not applied to the stored/sorted results -- only the later `buildPlan`/`buildSequencedPlan` call applies it. Since the store's sorted order determines what appears when swiping, this is a gap.
-
-**Fix:** Pass `preferences.planIntent` and `preferences.mood` as the last two arguments to both `scorePlaces` calls (lines 581-592 and 593-604).
-
----
-
-### 3. `planNarrative` not cleared in `resetPlan()`
-
-**File:** `src/store/planStore.ts`
-
-`resetPlan()` resets all result buckets and search state but does not clear `planNarrative`. A stale narrative (e.g., "Dinner at 5:30 PM, 15 min drive, show starts at 8:00 PM") will persist on PlanPage after a new non-sequenced search.
-
-**Fix:** Add `planNarrative: null` to `resetPlan()`.
-
----
-
-### 4. VoiceConfirmationBar progress animation not resetting on chip tap
-
-**File:** `src/components/VoiceConfirmationBar.tsx`
-
-When the user taps a chip (budget/vibe), `resetTimer` is called which resets the auto-proceed timeout and sets `progress` to 0. However, the `useEffect` that runs the progress interval (lines 76-81) has an empty dependency array, so it keeps running from its initial state and immediately starts re-incrementing. The progress bar jumps back to where it was.
-
-**Fix:** Add a `resetKey` counter state. Increment it in `handleChipTap`. Use `resetKey` as a dependency in the progress interval `useEffect` so the interval restarts from 0.
-
----
-
-### 5. Type mismatch: `priceLevel: null` in `setFilters`
-
-**File:** `src/hooks/useVoiceSearch.ts` (line 726)
-
-`setFilters({ ... priceLevel: null })` passes `null`, but the store's `priceLevel` field is typed as `string`. This won't cause a runtime crash but is a type inconsistency.
-
-**Fix:** Change to `priceLevel: ''` (empty string, matching the store's initial value).
-
----
-
-### Summary
-
-| File | Change |
-|------|--------|
-| `src/hooks/useVoiceSearch.ts` | Add `searchMode` to `executeSearch` deps; pass `planIntent`/`mood` to `scorePlaces` calls; fix `priceLevel: null` to `''` |
-| `src/store/planStore.ts` | Add `planNarrative: null` to `resetPlan()` |
-| `src/components/VoiceConfirmationBar.tsx` | Fix progress bar reset on chip tap using a `resetKey` counter |
-
-All five fixes are small and self-contained. No new dependencies, no database changes.
-
+## Technical Details
+- **Files modified:** `src/components/ScheduleVoiceDialog.tsx`, `src/store/scheduledPlansStore.ts`
+- The root cause is likely that you're not logged in (console shows guest mode). The fix ensures you get clear feedback either way and prevents wasted API calls when unauthenticated.
