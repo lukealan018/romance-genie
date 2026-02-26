@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface ScheduledPlan {
   id: string;
@@ -111,8 +112,9 @@ export const useScheduledPlansStore = create<ScheduledPlansState>((set, get) => 
       }
 
       return newPlan as ScheduledPlan;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding scheduled plan:', error);
+      toast.error("Could not save plan: " + (error?.message || "Unknown error"));
       return null;
     }
   },
