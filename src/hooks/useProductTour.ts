@@ -6,6 +6,7 @@ export interface TourStep {
   title: string;
   description: string;
   position: "bottom" | "top";
+  action: "click" | "observe";
 }
 
 const TOUR_STEPS: TourStep[] = [
@@ -14,18 +15,21 @@ const TOUR_STEPS: TourStep[] = [
     title: "Pick a vibe to get started",
     description: "Tap 'Full Night Out' to plan dinner + an activity in one go.",
     position: "bottom",
+    action: "click",
   },
   {
     target: "voice-input",
-    title: "Tell us what you want",
-    description: "Try saying: 'Find me an upscale steakhouse with a speakeasy after'",
+    title: "Your voice, your night",
+    description: "Use this mic to describe your perfect night — we'll find the best matches.",
     position: "bottom",
+    action: "observe",
   },
   {
     target: "surprise-me",
     title: "Or let us handle it",
-    description: "Tap Surprise Me and we'll curate the perfect night for you.",
+    description: "Or skip the details — tap Surprise Me and we'll handle everything.",
     position: "top",
+    action: "observe",
   },
 ];
 
