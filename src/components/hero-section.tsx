@@ -65,6 +65,7 @@ const SurpriseMeButton = ({
       <button
         onClick={handleClick}
         disabled={loading}
+        data-tour="surprise-me"
         className="relative inline-flex items-center justify-center gap-2 font-medium py-2.5 px-5 rounded-[12px] transition-all duration-200 disabled:opacity-50"
         style={{
           background: 'var(--btn-secondary-bg)',
@@ -292,6 +293,7 @@ export const HeroSection = ({
             <button
               onClick={onVoiceInput}
               disabled={loading}
+              data-tour="voice-input"
               className="relative w-full font-medium py-5 px-6 rounded-[16px] transition-all duration-300 overflow-hidden"
               style={{
                 background: isListening 
