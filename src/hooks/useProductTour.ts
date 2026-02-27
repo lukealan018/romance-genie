@@ -20,7 +20,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     target: "voice-input",
     title: "Your voice, your night",
-    description: "Use this mic to describe your perfect night — we'll find the best matches.",
+    description: "Tap the mic and say something like 'Italian dinner and live jazz' — we'll find the best matches.",
     position: "bottom",
     action: "observe",
   },
