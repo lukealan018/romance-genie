@@ -10,6 +10,8 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
+import ResetPassword from "./pages/ResetPassword";
+import UpdatePassword from "./pages/UpdatePassword";
 import OnboardingWrapper from "./pages/OnboardingWrapper";
 import Profile from "./pages/Profile";
 import PlanPage from "./pages/PlanPage";
@@ -36,6 +38,8 @@ const App = () => (
                 <Route path="/onboarding" element={<OnboardingWrapper />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/update-password" element={<UpdatePassword />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/plan" element={<PlanPage />} />
                 <Route path="/history" element={<History />} />
