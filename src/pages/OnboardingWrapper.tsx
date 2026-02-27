@@ -10,7 +10,6 @@ export default function OnboardingWrapper() {
   const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
-    // Fetch current user email
     const fetchUser = async () => {
       const { data: authData } = await supabase.auth.getUser();
       const user = authData?.user;
@@ -27,36 +26,26 @@ export default function OnboardingWrapper() {
     try {
       const { data: authData } = await supabase.auth.getUser();
       const user = authData?.user;
-      if (!user) {
-        throw new Error("No user found");
-      }
+      if (!user) throw new Error("No user found");
 
-      const profileData = {
-        nickname: profile.name,
-        home_zip: profile.zipCode,
-        profile_picture_url: profile.profilePicture || null,
-        voice_notes: profile.voicePreferences?.notes || null,
-        cuisines: profile.voicePreferences?.cuisines || [],
-        activities: profile.voicePreferences?.activities || [],
-        energy_level: profile.voicePreferences?.energyLevel || null,
-        price_range: profile.voicePreferences?.budget || null,
-        default_radius_mi: 5, // default
-      };
-
-      const { error } = await supabase.functions.invoke('profile', {
-        body: profileData,
+      const { error } = await supabase.functions.invoke("profile", {
+        body: {
+          nickname: profile.name,
+          home_zip: profile.zipCode,
+          default_radius_mi: 5,
+        },
       });
 
       if (error) throw error;
 
       toast({
-        title: "Profile created! 🎉",
+        title: "You're all set! 🎉",
         description: "Your night, figured out",
       });
 
-      navigate('/');
+      navigate("/");
     } catch (error) {
-      console.error('Error saving profile:', error);
+      console.error("Error saving profile:", error);
       toast({
         title: "Error saving profile",
         description: "Please try again",
