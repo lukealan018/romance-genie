@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { TourStep } from "@/hooks/useProductTour";
 
@@ -18,7 +18,6 @@ interface SpotlightRect {
 
 export const ProductTour = ({ steps, currentStep, onAdvance, onSkip }: ProductTourProps) => {
   const [rect, setRect] = useState<SpotlightRect | null>(null);
-  const listenerRef = useRef<(() => void) | null>(null);
   const step = steps[currentStep];
 
   const measureTarget = useCallback(() => {
@@ -57,32 +56,7 @@ export const ProductTour = ({ steps, currentStep, onAdvance, onSkip }: ProductTo
     };
   }, [measureTarget, currentStep, step.target]);
 
-  // Listen for clicks on the target element to advance
-  useEffect(() => {
-    // Clean up previous listener
-    if (listenerRef.current) {
-      listenerRef.current();
-      listenerRef.current = null;
-    }
-
-    const el = document.querySelector(`[data-tour="${step.target}"]`) as HTMLElement | null;
-    if (!el) return;
-
-    const handler = () => {
-      // Delay so the real click action fires first
-      setTimeout(onAdvance, 300);
-    };
-
-    el.addEventListener("click", handler, { once: true });
-    listenerRef.current = () => el.removeEventListener("click", handler);
-
-    return () => {
-      if (listenerRef.current) {
-        listenerRef.current();
-        listenerRef.current = null;
-      }
-    };
-  }, [step.target, onAdvance, currentStep]);
+  // No longer needed — spotlight zone handles click + advance
 
   if (!rect) return null;
 
@@ -137,6 +111,27 @@ export const ProductTour = ({ steps, currentStep, onAdvance, onSkip }: ProductTo
             mask="url(#tour-mask)"
           />
         </svg>
+
+        {/* Clickable spotlight zone — passes click to target + advances tour */}
+        <div
+          className="absolute cursor-pointer"
+          style={{
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+            borderRadius: 16,
+            zIndex: 10003,
+            pointerEvents: "auto",
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            // Click the real element first, then advance after a short delay
+            const el = document.querySelector(`[data-tour="${step.target}"]`) as HTMLElement | null;
+            if (el) el.click();
+            setTimeout(onAdvance, 300);
+          }}
+        />
 
         {/* Glow ring around spotlight */}
         <div
