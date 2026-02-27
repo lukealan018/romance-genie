@@ -3,17 +3,24 @@ import { useNavigate } from "react-router-dom";
 import { OnboardingFlow, OnboardingData } from "@/components/OnboardingFlow";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { isPreviewEnvironment } from "@/lib/dev-utils";
 
 export default function OnboardingWrapper() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userEmail, setUserEmail] = useState("");
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
       const { data: authData } = await supabase.auth.getUser();
       const user = authData?.user;
       if (!user) {
+        if (isPreviewEnvironment()) {
+          console.log('[GUEST MODE] No session — allowing onboarding in preview');
+          setIsGuest(true);
+          return;
+        }
         navigate("/login");
         return;
       }
@@ -24,6 +31,13 @@ export default function OnboardingWrapper() {
 
   const handleComplete = async (profile: OnboardingData) => {
     try {
+      // In guest/preview mode, skip saving and go home
+      if (isGuest) {
+        toast({ title: "You're all set! 🎉", description: "Your night, figured out" });
+        navigate("/");
+        return;
+      }
+
       const { data: authData } = await supabase.auth.getUser();
       const user = authData?.user;
       if (!user) throw new Error("No user found");
@@ -38,11 +52,7 @@ export default function OnboardingWrapper() {
 
       if (error) throw error;
 
-      toast({
-        title: "You're all set! 🎉",
-        description: "Your night, figured out",
-      });
-
+      toast({ title: "You're all set! 🎉", description: "Your night, figured out" });
       navigate("/");
     } catch (error) {
       console.error("Error saving profile:", error);
