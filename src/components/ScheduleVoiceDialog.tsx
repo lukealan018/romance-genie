@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Mic, Calendar, Clock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useScheduledPlansStore } from "@/store/scheduledPlansStore";
-import { ConflictWarningCard } from "./ConflictWarningCard";
+import { VoiceRecordingSection } from "./schedule/VoiceRecordingSection";
+import { AmbiguousDateOptions } from "./schedule/AmbiguousDateOptions";
+import { ManualDateTimePicker } from "./schedule/ManualDateTimePicker";
 
 interface ScheduleVoiceDialogProps {
   open: boolean;
@@ -118,7 +116,6 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
       const { data: authData } = await supabase.auth.getUser();
       const user = authData?.user;
       
-      // Fetch place details only for venues that exist
       const fetchPromises: Promise<any>[] = [];
       if (planDetails.restaurant?.id) {
         fetchPromises.push(
@@ -137,7 +134,6 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
 
       const results = await Promise.all(fetchPromises);
       
-      // Map results based on what was fetched - with safe defaults
       let restaurantResult: any = { data: {} };
       let activityResult: any = { data: {} };
       let resultIndex = 0;
@@ -150,7 +146,6 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
         activityResult = results[resultIndex] || { data: {} };
       }
 
-      // Store hours in state for later use in handleSchedule - with null safety
       const restaurantOpeningHours = restaurantResult?.data?.opening_hours ?? null;
       const activityOpeningHours = activityResult?.data?.opening_hours ?? null;
       
@@ -185,7 +180,6 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
   };
 
   const handleSchedule = async () => {
-    // Early auth gate — don't waste API calls if not logged in
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData?.session) {
       toast.error("Please log in to schedule plans");
@@ -200,7 +194,6 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
       return;
     }
 
-    // Mode-aware validation
     const needsRestaurant = searchMode === 'both' || searchMode === 'restaurant_only';
     const needsActivity = searchMode === 'both' || searchMode === 'activity_only';
     
@@ -215,10 +208,8 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
 
     setIsProcessing(true);
     try {
-      // Fetch weather forecast and venue details (if not already cached from availability check)
       const fetchPromises: Promise<any>[] = [];
       
-      // Only fetch weather if we have a venue with coordinates
       const weatherVenue = planDetails.restaurant || planDetails.activity;
       if (weatherVenue?.lat && weatherVenue?.lng) {
         fetchPromises.push(
@@ -232,7 +223,6 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
         );
       }
 
-      // Only fetch place details for venues that exist and don't have cached hours
       if (planDetails.restaurant && !restaurantHours) {
         fetchPromises.push(
           supabase.functions.invoke('place-details', {
@@ -250,7 +240,6 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
 
       const results = await Promise.all(fetchPromises);
       
-      // Extract results by type
       let weatherData = null;
       let restaurantResult: any = { data: { website: null } };
       let activityResult: any = { data: { website: null } };
@@ -261,12 +250,10 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
         } else if (result?.type === 'activity') {
           activityResult = result;
         } else if (result?.data && !result?.data?.error) {
-          // Weather result (first one without type)
           weatherData = result.data;
         }
       }
 
-      // Build scheduled plan with mode-aware data
       const scheduledPlan = await addScheduledPlan({
         scheduled_date: finalDate,
         scheduled_time: finalTime,
@@ -294,12 +281,10 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
       });
 
       if (scheduledPlan) {
-        // Parse date parts to avoid timezone issues
         const [year, month, day] = finalDate.split('-').map(Number);
         const dateForDisplay = new Date(year, month - 1, day);
         const formattedDate = dateForDisplay.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
         
-        // Format time for display (convert 24h to 12h if needed)
         const [hours, minutes] = finalTime.split(':').map(Number);
         const ampm = hours >= 12 ? 'PM' : 'AM';
         const displayHours = hours % 12 || 12;
@@ -318,6 +303,10 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
     }
   };
 
+  const currentDate = parsedDateTime?.date || manualDate;
+  const currentTime = parsedDateTime?.time || manualTime;
+  const conflicts = availabilityData?.conflicts || [];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-8 sm:p-10">
@@ -330,115 +319,42 @@ export function ScheduleVoiceDialog({ open, onOpenChange, planDetails, searchMod
 
         <div className="space-y-8">
           {!parsedDateTime && !showManualPicker && (
-            <div className="space-y-6">
-              <Button
-                size="lg"
-                onClick={startVoiceRecording}
-                disabled={isListening || isProcessing}
-                className="w-full py-6 text-lg"
-              >
-                {isListening ? <Mic className="w-4 h-4 mr-2 animate-pulse" /> : <Mic className="w-4 h-4 mr-2" />}
-                {isListening ? 'Listening...' : isProcessing ? 'Processing...' : 'Schedule with Voice 🎤'}
-              </Button>
-              {transcript && <p className="text-sm text-muted-foreground text-center">"{transcript}"</p>}
-              
-              {/* Divider */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-background text-muted-foreground">or enter manually</span>
-                </div>
-              </div>
-              
-              <Button size="lg" variant="outline" onClick={() => setShowManualPicker(true)} className="w-full py-6 text-lg">
-                <Calendar className="w-4 h-4 mr-2" /> Manual Entry
-              </Button>
-            </div>
+            <VoiceRecordingSection
+              isListening={isListening}
+              isProcessing={isProcessing}
+              transcript={transcript}
+              onStartVoice={startVoiceRecording}
+              onShowManualPicker={() => setShowManualPicker(true)}
+            />
           )}
 
           {parsedDateTime?.ambiguous && (
-            <div className="space-y-3">
-              <Label>Did you mean?</Label>
-              {parsedDateTime.options.map((option: any, idx: number) => (
-                <Button
-                  key={idx}
-                  variant="outline"
-                  className="w-full"
-                  onClick={async () => {
-                    await checkAvailability(option.date, option.time);
-                    setParsedDateTime({ date: option.date, time: option.time, ambiguous: false });
-                  }}
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
+            <AmbiguousDateOptions
+              options={parsedDateTime.options}
+              onSelect={async (date, time) => {
+                await checkAvailability(date, time);
+                setParsedDateTime({ date, time, ambiguous: false });
+              }}
+            />
           )}
 
           {(parsedDateTime?.date || showManualPicker) && !parsedDateTime?.ambiguous && (
-            <div className="space-y-8">
-              <div className="space-y-3">
-                <Label className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Date
-                </Label>
-                <Input
-                  type="date"
-                  value={parsedDateTime?.date || manualDate}
-                  onChange={(e) => setManualDate(e.target.value)}
-                  className="h-14 text-base"
-                />
-              </div>
-              <div className="space-y-3">
-                <Label className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Time
-                </Label>
-                <Input
-                  type="time"
-                  value={parsedDateTime?.time || manualTime}
-                  onChange={(e) => setManualTime(e.target.value)}
-                  className="h-14 text-base"
-                />
-              </div>
-
-              {availabilityData?.conflicts && availabilityData.conflicts.length > 0 && (
-                <div className="space-y-2">
-                  {availabilityData.conflicts.map((conflict: any, idx: number) => (
-                    <ConflictWarningCard key={idx} conflict={conflict} />
-                  ))}
-                </div>
-              )}
-
-              <div className="space-y-4 pt-4 border-t border-border">
-                <p className="text-sm font-medium">Confirmation Numbers (Optional)</p>
-                {(searchMode === 'both' || searchMode === 'restaurant_only') && planDetails.restaurant && (
-                  <Input
-                    placeholder="Restaurant confirmation"
-                    value={confirmationNumbers.restaurant}
-                    onChange={(e) => setConfirmationNumbers(prev => ({ ...prev, restaurant: e.target.value }))}
-                    className="h-12"
-                  />
-                )}
-                {(searchMode === 'both' || searchMode === 'activity_only') && planDetails.activity && (
-                  <Input
-                    placeholder="Activity confirmation"
-                    value={confirmationNumbers.activity}
-                    onChange={(e) => setConfirmationNumbers(prev => ({ ...prev, activity: e.target.value }))}
-                    className="h-12"
-                  />
-                )}
-              </div>
-
-              <Button size="lg" onClick={handleSchedule} disabled={isProcessing} className="w-full py-6 text-lg mt-8">
-                {isProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Clock className="w-4 h-4 mr-2" />}
-                {searchMode === 'restaurant_only' && "Schedule Dinner"}
-                {searchMode === 'activity_only' && "Schedule Activity"}
-                {(!searchMode || searchMode === 'both') && "Schedule Plan"}
-              </Button>
-            </div>
+            <ManualDateTimePicker
+              date={currentDate}
+              time={currentTime}
+              onDateChange={setManualDate}
+              onTimeChange={setManualTime}
+              conflicts={conflicts}
+              confirmationNumbers={confirmationNumbers}
+              onConfirmationChange={(field, value) =>
+                setConfirmationNumbers(prev => ({ ...prev, [field]: value }))
+              }
+              searchMode={searchMode}
+              hasRestaurant={!!planDetails.restaurant}
+              hasActivity={!!planDetails.activity}
+              isProcessing={isProcessing}
+              onSchedule={handleSchedule}
+            />
           )}
         </div>
       </DialogContent>
