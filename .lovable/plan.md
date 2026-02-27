@@ -1,41 +1,35 @@
 
-
-# Fix: Product Tour Step 2+ Not Highlighting
+# Fix: Product Tour Steps 2 and 3 Should Be "Look, Don't Click"
 
 ## Problem
-When the user clicks "Full Night Out" (Step 1), the page swaps components:
-- `ModeSelection` unmounts (contains the Step 1 target)
-- `HeroSection` mounts with staggered framer-motion animations (voice button has a 400ms delay)
+The tour highlights the voice button (Step 2) and says "Tell us what you want," but clicking it instantly advances to Step 3 (Surprise Me). The user never actually gets to try voice input. It feels like the tour is rushing them through without letting them engage.
 
-The tour's `measureTarget` runs after 350ms, but the `[data-tour="voice-input"]` element either hasn't mounted yet or hasn't animated into its final position. Result: `rect` stays `null` and no spotlight renders.
+## Solution
+Change the tour so only Step 1 requires clicking the target element (since it changes the page). Steps 2 and 3 become "observe and learn" steps with a **"Next" / "Got it" button** in the tooltip instead.
 
-## Fix
+### Changes to `src/components/ProductTour.tsx`
 
-### 1. Update `ProductTour.tsx` - Add polling for target element
+1. **Add an `action` field to `TourStep`** (optional, defaults to `"observe"`):
+   - `"click"` -- clicking the spotlight triggers the real element and advances (current Step 1 behavior)
+   - `"observe"` -- spotlight is non-interactive; a "Next" button in the tooltip advances the tour
 
-Replace the single 350ms timeout with a polling mechanism that retries until the target element is found (up to ~2 seconds). This handles the page transition gracefully regardless of animation timing.
+2. **Update the spotlight zone**: Only render the clickable zone when `step.action === "click"`. For `"observe"` steps, the spotlight is just visual (no pointer events).
 
-```text
-Instead of:
-  setTimeout(measureTarget, 350)
+3. **Add a "Next" / "Got it" button** to the tooltip for observe steps, styled as a theme-accent pill next to the "Skip tour" button.
 
-Use:
-  Poll every 200ms for up to 2s until the element is found
-  Once found, measure and stop polling
-```
+### Changes to `src/hooks/useProductTour.ts`
 
-### 2. Update `ProductTour.tsx` - Re-measure when rect is null
+4. **Add `action` to each step definition**:
+   - Step 1 (mode-full-night): `action: "click"` -- user taps it, page transitions, tour advances
+   - Step 2 (voice-input): `action: "observe"` -- highlights voice button, shows "Next" to continue
+   - Step 3 (surprise-me): `action: "observe"` -- highlights Surprise Me, shows "Got it!" to finish
 
-Add a secondary effect that keeps trying to measure if `rect` is still null after the initial attempt. This acts as a safety net for slow renders.
+5. **Update step descriptions** to feel more natural:
+   - Step 2: "Use this mic to describe your perfect night -- we'll find the best matches."
+   - Step 3: "Or skip the details -- tap Surprise Me and we'll handle everything."
 
-## Technical Details
-
-**File: `src/components/ProductTour.tsx`**
-
-Replace the measurement effect with a polling approach:
-- Use an interval (every 200ms) that calls `measureTarget`
-- Clear the interval once a valid rect is obtained or after ~2s max
-- Keep the existing resize/scroll listeners for repositioning after the element is found
-
-This is a small, surgical fix -- only the timing logic in `ProductTour.tsx` changes. No other files need modification.
-
+## Result
+- Step 1: User clicks "Full Night Out" (page changes, tour advances)
+- Step 2: Tour highlights voice button, explains it, user reads and clicks "Next"
+- Step 3: Tour highlights Surprise Me, explains it, user clicks "Got it!" and tour ends
+- After the tour, the user is on the main page and can choose either option on their own
