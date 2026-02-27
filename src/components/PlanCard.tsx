@@ -56,6 +56,7 @@ export const PlanCard = ({
         if (!session) return;
 
         const { data: profile } = await supabase.functions.invoke('profile', {
+          method: 'GET',
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
 
