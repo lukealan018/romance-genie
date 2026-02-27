@@ -1,63 +1,70 @@
 
-# Slim Down and Restyle the Onboarding Flow
+# Redo Login: Email/Password + Google Sign-In
 
-## The Idea
-You nailed it -- most users just want to try the product. Collect only what's essential (name + ZIP), then get them in. The existing `ProfileCompletionPrompt` component already handles nudging users to complete their profile (photo, voice preferences) after they've seen their first recommendation. That progressive profiling system stays in place.
+Replace the magic link login with a clean email/password auth flow plus one-tap Google OAuth, all styled to the Romance Genie design system.
 
-## New Flow: 2 Steps (down from 4)
+## What Changes
 
-**Step 1 -- Welcome + Name**
-- Romantic branded header ("Your night, figured out")
-- Single name input
-- Theme-aware styling (sapphire glow, pink glow, or matte depending on active theme)
+### 1. Rewrite `src/pages/Login.tsx`
+Replace the magic link flow with a **tabbed login/signup** experience:
+- **Sign In tab**: Email + password fields, "Forgot password?" link, submit button
+- **Sign Up tab**: Email + password + confirm password fields, submit button
+- **Google Sign-In**: "Continue with Google" button below the form (works in both tabs)
+- Uses `supabase.auth.signInWithPassword()` for login
+- Uses `supabase.auth.signUp()` for registration (with `emailRedirectTo` for verification)
+- Uses `lovable.auth.signInWithOAuth("google", ...)` for Google (managed by Lovable Cloud)
+- All styled with Romance Genie design system: dark panels, theme-aware glow, `btn-theme-primary`, no hardcoded colors
 
-**Step 2 -- ZIP Code**
-- Location input with friendly copy
-- Validates 5-digit ZIP
-- "Let's Go" button that saves and drops them straight into the app
+### 2. Configure Google OAuth
+- Call the Configure Social Login tool to generate the `src/integrations/lovable/` module for managed Google OAuth
+- Import and use `lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin })`
 
-**Removed from onboarding:**
-- Profile picture step (moved to post-first-search via ProfileCompletionPrompt)
-- Voice preferences step (moved to post-first-search via ProfileCompletionPrompt)
+### 3. Create `src/pages/ResetPassword.tsx` (new file)
+- "Forgot password" page that calls `supabase.auth.resetPasswordForEmail()`
+- Shows a confirmation message after sending
+- Styled to match the login page
 
-## Visual Overhaul
+### 4. Create `src/pages/UpdatePassword.tsx` (new file)
+- The page users land on after clicking the password reset link
+- Checks for `type=recovery` in URL hash
+- Form to enter new password + confirm
+- Calls `supabase.auth.updateUser({ password })`
+- Redirects to home after success
 
-The entire onboarding currently uses hardcoded `purple-500`, `slate-800`, etc. that don't respond to the theme system. Every element will be restyled to use the Romance Genie design system:
+### 5. Update `src/App.tsx`
+- Add routes: `/reset-password` and `/update-password`
+- Import the new page components
 
-- Panel backgrounds use theme CSS variables (`hsl(var(--card))`) with backdrop blur and glowing borders (`border-[hsl(var(--accent))]`)
-- Buttons use the `btn-theme-secondary` class or theme-aware gradients instead of hardcoded purple-to-pink
-- Progress bar accent uses `hsl(var(--primary))` gradient
-- Text uses theme-tinted colors (`text-foreground`, `text-muted-foreground`) instead of `text-white` / `text-slate-300`
-- Icon circles use `hsl(var(--accent))` glow
-- All corners use `var(--radius-lg)` for consistency
+### 6. Update `src/pages/AuthCallback.tsx`
+- Keep the PKCE/token exchange logic (still needed for email verification and password reset redirects)
+- Update copy from "magic link" references to generic "Verifying your account..."
+- Restyle to use Romance Genie design system (currently uses hardcoded `slate-*` colors)
 
-## Files Changed
+### 7. Update `src/hooks/useAuthAndProfile.ts`
+- Change `navigate('/login')` references — no logic changes needed, just ensure the redirect target is still `/login`
+- No functional changes required since auth session handling is provider-agnostic
 
-**`src/components/OnboardingFlow.tsx`** -- Major rewrite
-- Remove steps 3 (photo) and 4 (voice preferences)
-- Remove `useVoiceInput` import and all voice-related state
-- Update `totalSteps` from 4 to 2
-- Restyle both remaining steps to use theme-aware CSS variables
-- Update progress bar to use theme accent colors
-- Simplify `OnboardingData` interface (remove `profilePicture` and `voicePreferences` fields)
-- Copy becomes more romantic/premium ("Your night, figured out" instead of generic "Welcome")
+### 8. Update profile edge function validation
+- The `profile` edge function currently requires `cuisines` and `activities` as arrays in the POST body
+- Make these optional (default to empty arrays) so the slim onboarding flow (which only sends `nickname` + `home_zip`) doesn't fail
 
-**`src/pages/OnboardingWrapper.tsx`** -- Simplify data mapping
-- Remove references to `profilePicture` and `voicePreferences` from the `handleComplete` callback
-- Only send `nickname` and `home_zip` to the profile edge function
+### 9. Delete dead code
+- `src/pages/ProfileSetup.tsx` — 800-line dead file, not routed anywhere
 
-## Files NOT Changed
-- `ProfileCompletionPrompt.tsx` -- already handles photo + voice nudging post-first-search
-- Theme system, edge functions, database -- no changes needed
+## Files Summary
 
-## What Users Experience
-1. Sign up / log in
-2. See a sleek, glowing 2-step onboarding (name, then ZIP) -- takes about 15 seconds
-3. Land on the home screen immediately
-4. After their first "Surprise Me" or manual search, the ProfileCompletionPrompt appears asking if they want to add photo + voice prefs for better recommendations
+| File | Action |
+|------|--------|
+| `src/pages/Login.tsx` | Rewrite (email/password + Google) |
+| `src/pages/ResetPassword.tsx` | Create (forgot password form) |
+| `src/pages/UpdatePassword.tsx` | Create (set new password after reset) |
+| `src/pages/AuthCallback.tsx` | Restyle + update copy |
+| `src/App.tsx` | Add 2 new routes |
+| `supabase/functions/profile/index.ts` | Make cuisines/activities optional |
+| `src/pages/ProfileSetup.tsx` | Delete (dead code) |
 
-## Technical Details
-- `OnboardingData` interface simplified to `{ name: string; zipCode: string }`
-- `OnboardingWrapper` sends only `{ nickname, home_zip, default_radius_mi: 5 }` to the profile function
-- All `bg-slate-*`, `text-purple-*`, `border-purple-*` classes replaced with theme-responsive equivalents
-- Framer Motion slide transitions kept for polish
+## What Stays the Same
+- The auth session handling in `useAuthAndProfile.ts` (provider-agnostic)
+- The onboarding flow (just simplified in previous step)
+- All existing edge functions and database schema
+- The `ProfileCompletionPrompt` for progressive profiling
