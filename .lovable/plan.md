@@ -1,37 +1,63 @@
 
+# Slim Down and Restyle the Onboarding Flow
 
-# Fix: Plan Scheduling Fails Silently
+## The Idea
+You nailed it -- most users just want to try the product. Collect only what's essential (name + ZIP), then get them in. The existing `ProfileCompletionPrompt` component already handles nudging users to complete their profile (photo, voice preferences) after they've seen their first recommendation. That progressive profiling system stays in place.
 
-## Problem
-When you try to schedule a plan, the save silently fails with no feedback. Two issues:
+## New Flow: 2 Steps (down from 4)
 
-1. **No auth check before attempting to save** -- The `handleSchedule` function doesn't verify you're logged in before doing all the work (fetching weather, place details, etc.), then the store's `addScheduledPlan` fails silently at the auth check and returns `null`.
+**Step 1 -- Welcome + Name**
+- Romantic branded header ("Your night, figured out")
+- Single name input
+- Theme-aware styling (sapphire glow, pink glow, or matte depending on active theme)
 
-2. **No error feedback when save returns null** -- After `addScheduledPlan` returns `null`, the code just skips the success toast but never shows an error, so you see nothing happen.
+**Step 2 -- ZIP Code**
+- Location input with friendly copy
+- Validates 5-digit ZIP
+- "Let's Go" button that saves and drops them straight into the app
 
-## Changes
+**Removed from onboarding:**
+- Profile picture step (moved to post-first-search via ProfileCompletionPrompt)
+- Voice preferences step (moved to post-first-search via ProfileCompletionPrompt)
 
-### 1. Add early auth gate in `handleSchedule` (`src/components/ScheduleVoiceDialog.tsx`)
-- At the top of `handleSchedule`, check `supabase.auth.getSession()`.
-- If no session, show a toast: "Please log in to schedule plans" and return early before doing any API calls.
+## Visual Overhaul
 
-### 2. Add error feedback when `addScheduledPlan` returns null (`src/components/ScheduleVoiceDialog.tsx`)
-- After `const scheduledPlan = await addScheduledPlan(...)`, add an `else` block:
-  ```
-  if (scheduledPlan) {
-    // existing success toast...
-  } else {
-    toast.error("Failed to save your plan. Please make sure you're logged in.");
-  }
-  ```
+The entire onboarding currently uses hardcoded `purple-500`, `slate-800`, etc. that don't respond to the theme system. Every element will be restyled to use the Romance Genie design system:
 
-### 3. Add error logging in `addScheduledPlan` (`src/store/scheduledPlansStore.ts`)
-- In the catch block, surface the actual error message so it's diagnosable:
-  ```
-  toast.error("Could not save plan: " + (error?.message || "Unknown error"));
-  ```
-  (Import toast from sonner in the store file.)
+- Panel backgrounds use theme CSS variables (`hsl(var(--card))`) with backdrop blur and glowing borders (`border-[hsl(var(--accent))]`)
+- Buttons use the `btn-theme-secondary` class or theme-aware gradients instead of hardcoded purple-to-pink
+- Progress bar accent uses `hsl(var(--primary))` gradient
+- Text uses theme-tinted colors (`text-foreground`, `text-muted-foreground`) instead of `text-white` / `text-slate-300`
+- Icon circles use `hsl(var(--accent))` glow
+- All corners use `var(--radius-lg)` for consistency
+
+## Files Changed
+
+**`src/components/OnboardingFlow.tsx`** -- Major rewrite
+- Remove steps 3 (photo) and 4 (voice preferences)
+- Remove `useVoiceInput` import and all voice-related state
+- Update `totalSteps` from 4 to 2
+- Restyle both remaining steps to use theme-aware CSS variables
+- Update progress bar to use theme accent colors
+- Simplify `OnboardingData` interface (remove `profilePicture` and `voicePreferences` fields)
+- Copy becomes more romantic/premium ("Your night, figured out" instead of generic "Welcome")
+
+**`src/pages/OnboardingWrapper.tsx`** -- Simplify data mapping
+- Remove references to `profilePicture` and `voicePreferences` from the `handleComplete` callback
+- Only send `nickname` and `home_zip` to the profile edge function
+
+## Files NOT Changed
+- `ProfileCompletionPrompt.tsx` -- already handles photo + voice nudging post-first-search
+- Theme system, edge functions, database -- no changes needed
+
+## What Users Experience
+1. Sign up / log in
+2. See a sleek, glowing 2-step onboarding (name, then ZIP) -- takes about 15 seconds
+3. Land on the home screen immediately
+4. After their first "Surprise Me" or manual search, the ProfileCompletionPrompt appears asking if they want to add photo + voice prefs for better recommendations
 
 ## Technical Details
-- **Files modified:** `src/components/ScheduleVoiceDialog.tsx`, `src/store/scheduledPlansStore.ts`
-- The root cause is likely that you're not logged in (console shows guest mode). The fix ensures you get clear feedback either way and prevents wasted API calls when unauthenticated.
+- `OnboardingData` interface simplified to `{ name: string; zipCode: string }`
+- `OnboardingWrapper` sends only `{ nickname, home_zip, default_radius_mi: 5 }` to the profile function
+- All `bg-slate-*`, `text-purple-*`, `border-purple-*` classes replaced with theme-responsive equivalents
+- Framer Motion slide transitions kept for polish
