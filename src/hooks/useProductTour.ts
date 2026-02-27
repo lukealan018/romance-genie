@@ -34,9 +34,10 @@ export const useProductTour = (hasSeenTour: boolean | null, userId: string | nul
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    // Only show tour for authenticated users who haven't seen it
-    if (hasSeenTour === false && userId && userId !== "guest-preview-user") {
-      // Small delay so the page renders first
+    // Show tour for guests (preview) or authenticated users who haven't seen it
+    const isGuest = userId === "guest-preview-user";
+    const shouldShow = isGuest || (hasSeenTour === false && userId);
+    if (shouldShow) {
       const timer = setTimeout(() => setShowTour(true), 800);
       return () => clearTimeout(timer);
     }
