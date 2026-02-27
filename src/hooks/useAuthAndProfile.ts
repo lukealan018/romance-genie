@@ -22,6 +22,7 @@ interface ProfileData {
 export const useAuthAndProfile = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
+  const [hasSeenTour, setHasSeenTour] = useState<boolean | null>(null);
   const [nickname, setNickname] = useState<string>("");
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
   const [profileData, setProfileData] = useState<ProfileData>({});
@@ -88,7 +89,7 @@ export const useAuthAndProfile = () => {
 
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('*')
+          .select('*, has_seen_tour')
           .eq('user_id', session.user.id)
           .maybeSingle();
 
@@ -119,6 +120,7 @@ export const useAuthAndProfile = () => {
         }
 
         setNickname(profile.nickname || '');
+        setHasSeenTour((profile as any).has_seen_tour ?? null);
         
         if (profile.home_zip) {
           try {
@@ -254,6 +256,7 @@ export const useAuthAndProfile = () => {
     nickname,
     isCheckingOnboarding,
     profileData,
+    hasSeenTour,
     fetchProfile,
     saveLocationSettings
   };

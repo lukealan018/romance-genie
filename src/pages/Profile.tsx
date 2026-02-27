@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -387,7 +387,32 @@ const Profile = () => {
           <ThemeSelector />
         </div>
 
-        {/* Card 7: Your Taste Profile */}
+        {/* Card 7: Replay Tour */}
+        <div className="card-luxury fade-slide-in" style={{ animationDelay: "0.24s" }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-luxury-heading mb-1">Product Tour</h2>
+              <p className="text-luxury-subtitle">Re-learn how to use the app</p>
+            </div>
+            <button
+              onClick={async () => {
+                if (!userId) return;
+                await supabase
+                  .from("profiles")
+                  .update({ has_seen_tour: false } as any)
+                  .eq("user_id", userId);
+                toast({ title: "Tour reset", description: "Navigating home to replay the tour" });
+                navigate("/");
+              }}
+              className="chip-luxury flex items-center gap-2 px-4 py-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Replay
+            </button>
+          </div>
+        </div>
+
+        {/* Card 8: Your Taste Profile */}
         <div className="fade-slide-in" style={{ animationDelay: "0.27s" }}>
           <TasteProfile />
         </div>

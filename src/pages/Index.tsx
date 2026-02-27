@@ -17,6 +17,8 @@ import { DateChoiceDialog } from "@/components/DateChoiceDialog";
 import { NextAvailableDateDialog } from "@/components/NextAvailableDateDialog";
 import { ClarificationChips } from "@/components/ClarificationChips";
 import { VoiceConfirmationBar } from "@/components/VoiceConfirmationBar";
+import { ProductTour } from "@/components/ProductTour";
+import { useProductTour } from "@/hooks/useProductTour";
 
 import { toast } from "@/hooks/use-toast";
 import { usePlanStore } from "@/store/planStore";
@@ -41,6 +43,7 @@ const Index = () => {
 
   // Custom hooks
   const auth = useAuthAndProfile();
+  const tour = useProductTour(auth.hasSeenTour, auth.userId);
   const weather = useWeather(auth.userId);
   const { shouldShowPrompt, markFirstRecommendationSeen, markCompletionPromptSeen } = useProfileCompletionPrompt();
   const search = usePlaceSearch(auth.userId, auth.saveLocationSettings, markFirstRecommendationSeen);
@@ -356,6 +359,16 @@ const Index = () => {
             }
           }}
         />
+
+        {/* Product Tour Overlay */}
+        {tour.showTour && (
+          <ProductTour
+            steps={tour.steps}
+            currentStep={tour.currentStep}
+            onAdvance={tour.advanceStep}
+            onSkip={tour.skipTour}
+          />
+        )}
       </div>
     </div>
   );

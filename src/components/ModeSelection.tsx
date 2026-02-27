@@ -60,6 +60,7 @@ export const ModeSelection = ({ selectedMode, onModeSelect }: ModeSelectionProps
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => onModeSelect(mode.id)}
+              data-tour={mode.id === "both" ? "mode-full-night" : undefined}
               className="card-glass relative overflow-hidden p-6 text-left"
               style={{
                 background: isSelected 

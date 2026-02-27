@@ -147,6 +147,7 @@ export type Database = {
           dislikes: string[] | null
           energy_level: string | null
           experience_level: string | null
+          has_seen_tour: boolean | null
           home_zip: string | null
           nickname: string | null
           notification_email_enabled: boolean | null
@@ -175,6 +176,7 @@ export type Database = {
           dislikes?: string[] | null
           energy_level?: string | null
           experience_level?: string | null
+          has_seen_tour?: boolean | null
           home_zip?: string | null
           nickname?: string | null
           notification_email_enabled?: boolean | null
@@ -203,6 +205,7 @@ export type Database = {
           dislikes?: string[] | null
           energy_level?: string | null
           experience_level?: string | null
+          has_seen_tour?: boolean | null
           home_zip?: string | null
           nickname?: string | null
           notification_email_enabled?: boolean | null
