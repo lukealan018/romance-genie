@@ -95,9 +95,16 @@ serve(async (req) => {
         );
       }
 
-      if (!Array.isArray(cuisines) || !Array.isArray(activities)) {
+      if (cuisines !== null && cuisines !== undefined && !Array.isArray(cuisines)) {
         return new Response(
-          JSON.stringify({ error: 'cuisines and activities must be arrays' }),
+          JSON.stringify({ error: 'cuisines must be an array or null' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (activities !== null && activities !== undefined && !Array.isArray(activities)) {
+        return new Response(
+          JSON.stringify({ error: 'activities must be an array or null' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -114,8 +121,8 @@ serve(async (req) => {
         nickname,
         home_zip,
         default_radius_mi,
-        cuisines,
-        activities,
+        cuisines: cuisines || [],
+        activities: activities || [],
         dietary: dietary || null,
         price_range: price_range || null,
         dislikes: dislikes || null,
