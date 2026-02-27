@@ -112,26 +112,27 @@ export const ProductTour = ({ steps, currentStep, onAdvance, onSkip }: ProductTo
           />
         </svg>
 
-        {/* Clickable spotlight zone — passes click to target + advances tour */}
-        <div
-          className="absolute cursor-pointer"
-          style={{
-            top: rect.top,
-            left: rect.left,
-            width: rect.width,
-            height: rect.height,
-            borderRadius: 16,
-            zIndex: 10003,
-            pointerEvents: "auto",
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            // Click the real element first, then advance after a short delay
-            const el = document.querySelector(`[data-tour="${step.target}"]`) as HTMLElement | null;
-            if (el) el.click();
-            setTimeout(onAdvance, 300);
-          }}
-        />
+        {/* Clickable spotlight zone — only for "click" action steps */}
+        {step.action === "click" && (
+          <div
+            className="absolute cursor-pointer"
+            style={{
+              top: rect.top,
+              left: rect.left,
+              width: rect.width,
+              height: rect.height,
+              borderRadius: 16,
+              zIndex: 10003,
+              pointerEvents: "auto",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              const el = document.querySelector(`[data-tour="${step.target}"]`) as HTMLElement | null;
+              if (el) el.click();
+              setTimeout(onAdvance, 300);
+            }}
+          />
+        )}
 
         {/* Glow ring around spotlight */}
         <div
@@ -211,20 +212,39 @@ export const ProductTour = ({ steps, currentStep, onAdvance, onSkip }: ProductTo
                   ))}
                 </div>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSkip();
-                  }}
-                  className="text-xs font-medium px-3 py-1.5 rounded-full transition-all"
-                  style={{
-                    color: "var(--supporting-text-color)",
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                  }}
-                >
-                  Skip tour
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSkip();
+                    }}
+                    className="text-xs font-medium px-3 py-1.5 rounded-full transition-all"
+                    style={{
+                      color: "var(--supporting-text-color)",
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                    }}
+                  >
+                    Skip tour
+                  </button>
+
+                  {step.action === "observe" && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAdvance();
+                      }}
+                      className="text-xs font-semibold px-4 py-1.5 rounded-full transition-all"
+                      style={{
+                        color: "white",
+                        background: "var(--theme-accent)",
+                        boxShadow: "0 0 12px var(--glow-primary)",
+                      }}
+                    >
+                      {currentStep === steps.length - 1 ? "Got it!" : "Next"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
