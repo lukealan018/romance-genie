@@ -73,9 +73,9 @@ serve(async (req) => {
       const body = await req.json().catch(() => ({}));
       const { nickname, home_zip, default_radius_mi, cuisines, activities, dietary, price_range, dislikes, party_size, vibe, planning_style, preferred_date, preferred_time, theme_preference, experience_level } = body || {};
 
-      if (!nickname || !home_zip || !default_radius_mi) {
+      if (!nickname || !home_zip) {
         return new Response(
-          JSON.stringify({ error: 'nickname, home_zip, and default_radius_mi are required' }),
+          JSON.stringify({ error: 'nickname and home_zip are required' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -88,7 +88,7 @@ serve(async (req) => {
         );
       }
 
-      if (typeof default_radius_mi !== 'number' || default_radius_mi <= 0) {
+      if (default_radius_mi !== null && default_radius_mi !== undefined && (typeof default_radius_mi !== 'number' || default_radius_mi <= 0)) {
         return new Response(
           JSON.stringify({ error: 'default_radius_mi must be a positive number' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -120,7 +120,7 @@ serve(async (req) => {
         user_id: userId, // Always use the authenticated user ID
         nickname,
         home_zip,
-        default_radius_mi,
+        default_radius_mi: default_radius_mi || 5,
         cuisines: cuisines || [],
         activities: activities || [],
         dietary: dietary || null,
