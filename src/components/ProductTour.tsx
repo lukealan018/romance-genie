@@ -34,21 +34,28 @@ export const ProductTour = ({ steps, currentStep, onAdvance, onSkip }: ProductTo
     });
   }, [step.target]);
 
-  // Measure on step change + scroll/resize
+  // Measure on step change + scroll/resize — poll until element appears
   useEffect(() => {
-    // Wait a tick for DOM to settle after mode change
-    const timer = setTimeout(() => {
-      measureTarget();
-    }, 350);
+    setRect(null);
+    const startTime = Date.now();
+    const poll = setInterval(() => {
+      const el = document.querySelector(`[data-tour="${step.target}"]`);
+      if (el) {
+        measureTarget();
+        clearInterval(poll);
+      } else if (Date.now() - startTime > 2000) {
+        clearInterval(poll);
+      }
+    }, 200);
 
     window.addEventListener("resize", measureTarget);
     window.addEventListener("scroll", measureTarget, true);
     return () => {
-      clearTimeout(timer);
+      clearInterval(poll);
       window.removeEventListener("resize", measureTarget);
       window.removeEventListener("scroll", measureTarget, true);
     };
-  }, [measureTarget, currentStep]);
+  }, [measureTarget, currentStep, step.target]);
 
   // Listen for clicks on the target element to advance
   useEffect(() => {
