@@ -27,7 +27,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     target: "surprise-me",
     title: "Or let us handle it",
-    description: "Or skip the details — tap Surprise Me and we'll handle everything.",
+    description: "Tap Surprise Me and we'll handle everything.",
     position: "top",
     action: "observe",
   },
