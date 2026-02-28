@@ -223,22 +223,33 @@ export const foursquareActivityProvider: ActivityProvider = {
           }
         }
         
-        // === Filter out restaurants by category ID ===
+        // === INTENT-AWARE BYPASS ===
+        // If venue name matches the search keyword, it's clearly relevant — don't filter as restaurant.
+        const keywordLower = options.keyword.toLowerCase();
+        const intentWords = keywordLower.split(/[\s,]+/).filter((w: string) => 
+          w.length >= 3 && !['bar', 'club', 'lounge', 'live', 'the', 'and', 'near'].includes(w)
+        );
+        const nameMatchesIntent = intentWords.length > 0 && intentWords.some((w: string) => nameLower.includes(w));
+        
+        // === Filter out restaurants by category ID (unless name matches intent) ===
         const hasRestaurantCategory = categoryIds.some((id: string) => {
-          // Check if any category starts with 13 (food/restaurant parent category)
           return id?.startsWith('13') || restaurantCategoryIds.has(id);
         });
         
-        if (hasRestaurantCategory) {
+        if (hasRestaurantCategory && !nameMatchesIntent) {
           console.log(`🟦 Foursquare: Filtering out restaurant "${place.name}" with categories: ${categoryIds.join(', ')}`);
           return null;
         }
         
-        // === Filter out by name keywords (restaurants/fast food) - using centralized list ===
+        // === Filter out by name keywords (restaurants/fast food) - unless name matches intent ===
         const isRestaurantByName = RESTAURANT_KEYWORDS.some(kw => nameLower.includes(kw));
-        if (isRestaurantByName) {
+        if (isRestaurantByName && !nameMatchesIntent) {
           console.log(`🟦 Foursquare: Filtering out restaurant by name "${place.name}"`);
           return null;
+        }
+        
+        if (nameMatchesIntent) {
+          console.log(`✅ Foursquare: Keeping "${place.name}" - name matches search intent "${keywordLower}"`);
         }
         
         // Normalize rating from Foursquare's 10-point scale to 5-point scale
