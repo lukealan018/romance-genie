@@ -525,7 +525,14 @@ export const useVoiceSearch = ({
       }
       let activitiesPromise: Promise<any>;
       // Movies aren't ticketed events on Ticketmaster — skip liveEventsOnly for movie intent
-      const isLiveShowIntent = isShowIntent && !isMovieIntent;
+      // Music searches should include venues (bars, clubs) not just ticketed events
+      const MUSIC_KEYWORDS = ['live music', 'jazz', 'music', 'band', 'dj'];
+      const isMusicVenueIntent = MUSIC_KEYWORDS.some(kw =>
+        (preferences.activityRequest?.type || '').toLowerCase().includes(kw) ||
+        (preferences.activityQueryBundles || []).some((b: string) => b.toLowerCase().includes(kw)) ||
+        (preferences.transcript || '').toLowerCase().includes(kw)
+      );
+      const isLiveShowIntent = isShowIntent && !isMovieIntent && !isMusicVenueIntent;
       if ((voiceMode === 'both' || voiceMode === 'activity_only') && isLiveShowIntent) {
         // Try live events first
         console.log('🎭 Show intent detected — trying live events first');
