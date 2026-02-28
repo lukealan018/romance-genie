@@ -207,6 +207,16 @@ export const PlanCard = ({
             userPreferences={userPreferences}
           />
         )}
+
+        {/* Bottom Start Fresh — visible when scrolled past top one */}
+        {searchMode === 'both' && restaurant && activity && (
+          <div className="flex justify-center pt-2">
+            <Button onClick={onReroll} variant="outline" size="sm" disabled={loading} className="gap-2">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Start Fresh
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
