@@ -157,6 +157,18 @@ const venueFilters: Record<string, { allowlist: string[]; excludeTypes: string[]
   }
 };
 
+function matchesSearchIntent(searchKeyword: string, placeName: string): boolean {
+  const keyword = String(searchKeyword ?? '').toLowerCase();
+  const name = String(placeName ?? '').toLowerCase();
+
+  // Extract core intent words (strip generic nightlife terms)
+  const intentWords = keyword.split(/[\s,]+/).filter(w =>
+    w.length >= 3 && !['bar', 'club', 'lounge', 'live', 'the', 'and', 'near'].includes(w)
+  );
+
+  return intentWords.length > 0 && intentWords.some(w => name.includes(w));
+}
+
 function shouldExcludeActivity(placeTypes: string[], searchKeyword: string, placeName: string = ''): boolean {
   const keyword = searchKeyword.toLowerCase();
   const name = placeName.toLowerCase();
@@ -193,11 +205,7 @@ function shouldExcludeActivity(placeTypes: string[], searchKeyword: string, plac
   // === INTENT-AWARE BYPASS ===
   // If the venue name contains the search keyword, it's clearly relevant to the user's intent.
   // E.g. searching "jazz" → "Jazz Kitchen" or "Campus JAX" should NOT be filtered as a restaurant.
-  // Extract core intent words from the search keyword (strip generic terms).
-  const intentWords = keyword.split(/[\s,]+/).filter(w => 
-    w.length >= 3 && !['bar', 'club', 'lounge', 'live', 'the', 'and', 'near'].includes(w)
-  );
-  const nameMatchesIntent = intentWords.length > 0 && intentWords.some(w => name.includes(w));
+  const nameMatchesIntent = matchesSearchIntent(searchKeyword, placeName);
   
   // === PASS 1: Exclude pure restaurants from activities (unless they're bars or match intent) ===
   if (isPrimarilyRestaurant(placeTypes) && !nameMatchesIntent) {
@@ -456,11 +464,16 @@ export const googleActivityProvider: ActivityProvider = {
         const types = place.types || [];
         const name = place.displayName?.text || '';
         const primaryType = place.primaryType || '';
+        const nameMatchesIntent = matchesSearchIntent(options.keyword, name);
 
-        // Hard-block restaurants by primaryType (belt-and-suspenders with API-level filter)
-        if (EXCLUDED_RESTAURANT_PRIMARY_TYPES.includes(primaryType)) {
+        // Hard-block restaurants by primaryType unless venue name clearly matches user intent
+        if (EXCLUDED_RESTAURANT_PRIMARY_TYPES.includes(primaryType) && !nameMatchesIntent) {
           console.log(`🚫 Google Activity: Excluding "${name}" — primaryType=${primaryType}`);
           return false;
+        }
+
+        if (EXCLUDED_RESTAURANT_PRIMARY_TYPES.includes(primaryType) && nameMatchesIntent) {
+          console.log(`✅ Google Activity: Keeping "${name}" despite primaryType=${primaryType} — matches search intent "${options.keyword}"`);
         }
 
         // Block institutional/training venues (not bookable fun activities)

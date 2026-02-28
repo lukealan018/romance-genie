@@ -12,6 +12,10 @@ const KEYWORD_TO_CLASSIFICATION: Record<string, string> = {
   'stand-up': 'Comedy',
   'concert': 'Music',
   'live music': 'Music',
+  'live jazz': 'Music',
+  'jazz': 'Music',
+  'jazz club': 'Music',
+  'jazz lounge': 'Music',
   'music': 'Music',
   'band': 'Music',
   'dj': 'Music',
@@ -32,6 +36,12 @@ const KEYWORD_TO_CLASSIFICATION: Record<string, string> = {
   'ballet': 'Arts & Theatre',
   'dance': 'Arts & Theatre',
 };
+
+const TICKETMASTER_INTENT_STOP_WORDS = new Set([
+  'bar', 'club', 'lounge', 'live', 'music', 'event', 'events', 'show', 'shows',
+  'activity', 'activities', 'things', 'thing', 'fun', 'entertainment', 'venue', 'venues',
+  'near', 'nearby', 'in', 'at', 'the', 'and', 'to', 'do', 'tonight'
+]);
 
 interface TicketmasterEvent {
   id: string;
@@ -161,6 +171,31 @@ function getClassificationForKeyword(keyword: string): string | null {
   return null;
 }
 
+function getIntentTerms(keyword: string): string[] {
+  return keyword
+    .toLowerCase()
+    .split(/[\s,/-]+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 3 && !TICKETMASTER_INTENT_STOP_WORDS.has(part));
+}
+
+function isEventRelevantToIntent(event: TicketmasterEvent, intentTerms: string[]): boolean {
+  if (intentTerms.length === 0) return true;
+
+  const haystack = [
+    event.name,
+    event.classifications?.[0]?.segment?.name,
+    event.classifications?.[0]?.genre?.name,
+    event.classifications?.[0]?.subGenre?.name,
+    event._embedded?.venues?.[0]?.name,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return intentTerms.some((term) => haystack.includes(term));
+}
+
 export const ticketmasterProvider: ActivityProvider = {
   providerName: "ticketmaster",
   
@@ -250,10 +285,16 @@ export const ticketmasterProvider: ActivityProvider = {
       const events = data._embedded?.events || [];
       console.log(`[Ticketmaster] Found ${events.length} events`);
       
-      // Map and filter valid events
+      // Map and filter valid/relevant events
       const activities: ProviderActivity[] = [];
+      const intentTerms = getIntentTerms(keyword);
       
       for (const event of events) {
+        if (!isEventRelevantToIntent(event, intentTerms)) {
+          console.log(`[Ticketmaster] Relevance filter: excluding "${event.name}" for keyword "${keyword}"`);
+          continue;
+        }
+
         const activity = mapEventToActivity(event);
         if (activity) {
           activities.push(activity);
