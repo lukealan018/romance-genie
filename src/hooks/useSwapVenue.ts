@@ -1,12 +1,11 @@
 import { useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { buildPlanFromIndices, scorePlaces } from "@/lib/planner";
 import { usePlanStore } from "@/store/planStore";
 
 /**
  * Hook for swapping individual restaurant/activity venues within cached results.
- * Handles both cycling through cached options and fetching fresh ones when exhausted.
+ * Cycles through cached options in a loop (wrap-around).
  */
 export const useSwapVenue = (
   userId: string | null,
@@ -16,9 +15,8 @@ export const useSwapVenue = (
   const swapDebounceRef = useRef<{ restaurant: boolean; activity: boolean }>({ restaurant: false, activity: false });
 
   const {
-    lat, lng, radius, cuisine, activityCategory,
+    lat, lng, radius,
     searchMode, userPreferences,
-    setRestaurants, setActivities,
     setRestaurantIdx: setRestaurantIndex,
     setActivityIdx: setActivityIndex,
     getCurrentRestaurants, getCurrentActivities,
@@ -40,50 +38,26 @@ export const useSwapVenue = (
     const activityResults = getCurrentActivities();
     const activityIndex = getCurrentActivityIdx();
 
+    if (restaurantResults.length <= 1) {
+      toast({ title: "Only option", description: "This is the only restaurant in this area" });
+      return;
+    }
+
     if (restaurantResults[restaurantIndex]) {
       await trackInteraction(restaurantResults[restaurantIndex], 'restaurant', 'skipped');
     }
 
     if (lat === null || lng === null) return;
 
-    if (restaurantIndex + 1 < restaurantResults.length) {
-      const newIndex = restaurantIndex + 1;
-      setRestaurantIndex(newIndex);
-      
-      const newPlan = buildPlanFromIndices(
-        { lat, lng, radius, restaurants: restaurantResults, activities: activityResults, preferences: getPrefs(), searchMode: searchMode || 'both' },
-        newIndex, activityIndex
-      );
-      setPlan(newPlan);
-      if (newPlan.restaurant) await trackInteraction(newPlan.restaurant, 'restaurant', 'viewed');
-    } else {
-      console.log('🔄 Exhausted restaurant options, fetching fresh');
-      const randomSeed = Math.floor(Math.random() * 1000000);
-      const { priceLevel } = usePlanStore.getState();
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('places-search', {
-          body: { lat, lng, radiusMiles: radius, cuisine, priceLevel: priceLevel || undefined, seed: randomSeed, searchMode: searchMode || 'both', forceFresh: true }
-        });
-        
-        if (!error && data?.items?.length > 0) {
-          const sorted = scorePlaces(data.items, lat, lng, radius, getPrefs(), 'restaurant');
-          setRestaurants(sorted, null);
-          setRestaurantIndex(0);
-          const newPlan = buildPlanFromIndices(
-            { lat, lng, radius, restaurants: sorted, activities: activityResults, preferences: getPrefs(), searchMode: searchMode || 'both' },
-            0, activityIndex
-          );
-          setPlan(newPlan);
-          toast({ title: "Fresh picks!", description: "Found new restaurant options" });
-        } else {
-          toast({ title: "End of list", description: "No more options in this area", variant: "destructive" });
-        }
-      } catch (error) {
-        console.error('Error fetching fresh restaurants:', error);
-        toast({ title: "End of list", description: "Try rerolling for fresh options", variant: "destructive" });
-      }
-    }
+    const newIndex = (restaurantIndex + 1) % restaurantResults.length;
+    setRestaurantIndex(newIndex);
+
+    const newPlan = buildPlanFromIndices(
+      { lat, lng, radius, restaurants: restaurantResults, activities: activityResults, preferences: getPrefs(), searchMode: searchMode || 'both' },
+      newIndex, activityIndex
+    );
+    setPlan(newPlan);
+    if (newPlan.restaurant) await trackInteraction(newPlan.restaurant, 'restaurant', 'viewed');
   };
 
   const handleSwapActivity = async () => {
@@ -96,49 +70,26 @@ export const useSwapVenue = (
     const activityResults = getCurrentActivities();
     const activityIndex = getCurrentActivityIdx();
 
+    if (activityResults.length <= 1) {
+      toast({ title: "Only option", description: "This is the only activity in this area" });
+      return;
+    }
+
     if (activityResults[activityIndex]) {
       await trackInteraction(activityResults[activityIndex], 'activity', 'skipped');
     }
 
     if (lat === null || lng === null) return;
 
-    if (activityIndex + 1 < activityResults.length) {
-      const newIndex = activityIndex + 1;
-      setActivityIndex(newIndex);
-      
-      const newPlan = buildPlanFromIndices(
-        { lat, lng, radius, restaurants: restaurantResults, activities: activityResults, preferences: getPrefs(), searchMode: searchMode || 'both' },
-        restaurantIndex, newIndex
-      );
-      setPlan(newPlan);
-      if (newPlan.activity) await trackInteraction(newPlan.activity, 'activity', 'viewed');
-    } else {
-      console.log('🔄 Exhausted activity options, fetching fresh');
-      const randomSeed = Math.floor(Math.random() * 1000000);
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('activities-search', {
-          body: { lat, lng, radiusMiles: radius, keyword: activityCategory, seed: randomSeed, forceFresh: true }
-        });
-        
-        if (!error && data?.items?.length > 0) {
-          const sorted = scorePlaces(data.items, lat, lng, radius, getPrefs(), 'activity');
-          setActivities(sorted, null);
-          setActivityIndex(0);
-          const newPlan = buildPlanFromIndices(
-            { lat, lng, radius, restaurants: restaurantResults, activities: sorted, preferences: getPrefs(), searchMode: searchMode || 'both' },
-            restaurantIndex, 0
-          );
-          setPlan(newPlan);
-          toast({ title: "Fresh picks!", description: "Found new activity options" });
-        } else {
-          toast({ title: "End of list", description: "No more options in this area", variant: "destructive" });
-        }
-      } catch (error) {
-        console.error('Error fetching fresh activities:', error);
-        toast({ title: "End of list", description: "Try rerolling for fresh options", variant: "destructive" });
-      }
-    }
+    const newIndex = (activityIndex + 1) % activityResults.length;
+    setActivityIndex(newIndex);
+
+    const newPlan = buildPlanFromIndices(
+      { lat, lng, radius, restaurants: restaurantResults, activities: activityResults, preferences: getPrefs(), searchMode: searchMode || 'both' },
+      restaurantIndex, newIndex
+    );
+    setPlan(newPlan);
+    if (newPlan.activity) await trackInteraction(newPlan.activity, 'activity', 'viewed');
   };
 
   return { handleSwapRestaurant, handleSwapActivity };
