@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface TourStep {
-  target: string; // data-tour attribute value
+  target: string;
   title: string;
   description: string;
   position: "bottom" | "top";
@@ -38,7 +38,6 @@ export const useProductTour = (hasSeenTour: boolean | null, userId: string | nul
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    // Show tour for guests (preview) or authenticated users who haven't seen it
     const isGuest = userId === "guest-preview-user";
     const shouldShow = isGuest || (hasSeenTour === false && userId);
     if (shouldShow) {
@@ -79,5 +78,39 @@ export const useProductTour = (hasSeenTour: boolean | null, userId: string | nul
     steps: TOUR_STEPS,
     advanceStep,
     skipTour,
+  };
+};
+
+// ── Plan Page Tip (one-time, single-step) ──────────────────────
+
+const PLAN_TIP_KEY = "rg_has_seen_plan_tip";
+
+const PLAN_TIP_STEP: TourStep = {
+  target: "swap-venue",
+  title: "Not feeling it?",
+  description: "Tap 'Something Else' to swap any venue — we'll find another option nearby.",
+  position: "top",
+  action: "observe",
+};
+
+export const usePlanPageTip = () => {
+  const [showTip, setShowTip] = useState(false);
+
+  useEffect(() => {
+    const seen = localStorage.getItem(PLAN_TIP_KEY);
+    if (seen) return;
+    const timer = setTimeout(() => setShowTip(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const dismissTip = useCallback(() => {
+    setShowTip(false);
+    localStorage.setItem(PLAN_TIP_KEY, "1");
+  }, []);
+
+  return {
+    showTip,
+    tipSteps: [PLAN_TIP_STEP] as TourStep[],
+    dismissTip,
   };
 };

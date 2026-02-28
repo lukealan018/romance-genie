@@ -124,7 +124,7 @@ export const VenueCard = ({
             isLiveEvent={isEvent}
           />
         </div>
-        <Button onClick={handleSwap} variant="ghost" size="sm" disabled={loading || !canSwap}>
+        <Button data-tour="swap-venue" onClick={handleSwap} variant="ghost" size="sm" disabled={loading || !canSwap}>
           Something Else
         </Button>
       </div>
