@@ -190,31 +190,43 @@ function shouldExcludeActivity(placeTypes: string[], searchKeyword: string, plac
     return true;
   }
   
-  // === PASS 1: Exclude pure restaurants from activities (unless they're bars) ===
-  if (isPrimarilyRestaurant(placeTypes)) {
+  // === INTENT-AWARE BYPASS ===
+  // If the venue name contains the search keyword, it's clearly relevant to the user's intent.
+  // E.g. searching "jazz" → "Jazz Kitchen" or "Campus JAX" should NOT be filtered as a restaurant.
+  // Extract core intent words from the search keyword (strip generic terms).
+  const intentWords = keyword.split(/[\s,]+/).filter(w => 
+    w.length >= 3 && !['bar', 'club', 'lounge', 'live', 'the', 'and', 'near'].includes(w)
+  );
+  const nameMatchesIntent = intentWords.length > 0 && intentWords.some(w => name.includes(w));
+  
+  // === PASS 1: Exclude pure restaurants from activities (unless they're bars or match intent) ===
+  if (isPrimarilyRestaurant(placeTypes) && !nameMatchesIntent) {
     console.log(`🚫 Google Activity: Excluding "${placeName}" - primarily a restaurant`);
     return true;
   }
   
-  // Also check by name for restaurants — but allow genuine bar-primary venues through
-  // A bar that also serves food is still an "activity" venue. A restaurant with a bar is not.
+  // Also check by name for restaurants — but allow genuine bar-primary venues or intent matches through
   const isBarPrimary = placeTypes.some(t => t.toLowerCase() === 'bar' || t.toLowerCase() === 'night_club');
   const hasRestaurantType = placeTypes.some(t => t.toLowerCase() === 'restaurant');
   
-  if (isRestaurantByKeyword(name) && !isBarPrimary) {
+  if (isRestaurantByKeyword(name) && !isBarPrimary && !nameMatchesIntent) {
     console.log(`🚫 Google Activity: Excluding "${placeName}" - restaurant by name`);
     return true;
   }
   
   // If it has BOTH restaurant AND bar types, only allow through if bar is the dominant identity
-  // (i.e., it's in bar keyword mappings, not just a restaurant-chain that happens to have a bar)
-  if (hasRestaurantType && isBarPrimary) {
+  // OR if the venue name matches the user's search intent
+  if (hasRestaurantType && isBarPrimary && !nameMatchesIntent) {
     const barKeywords = ['bar', 'pub', 'lounge', 'tavern', 'speakeasy', 'brewery', 'brewpub', 'taproom', 'cocktail', 'whiskey', 'wine', 'jazz'];
     const nameHasBarKeyword = barKeywords.some(kw => name.includes(kw));
     if (!nameHasBarKeyword) {
       console.log(`🚫 Google Activity: Excluding "${placeName}" - restaurant+bar hybrid (no bar identity in name)`);
       return true;
     }
+  }
+  
+  if (nameMatchesIntent) {
+    console.log(`✅ Google Activity: Keeping "${placeName}" - name matches search intent "${keyword}"`);
   }
   
   // === PASS 2: Golf filtering using centralized logic ===
