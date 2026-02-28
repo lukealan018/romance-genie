@@ -12,6 +12,8 @@ import { buildPlanFromIndices, scorePlaces } from "@/lib/planner";
 import { usePlanStore } from "@/store/planStore";
 import { isDevModeActive } from "@/lib/dev-utils";
 import { ScheduleVoiceDialog } from "@/components/ScheduleVoiceDialog";
+import { usePlanPageTip } from "@/hooks/useProductTour";
+import { ProductTour } from "@/components/ProductTour";
 
 const PlanPage = () => {
   const navigate = useNavigate();
@@ -57,7 +59,7 @@ const PlanPage = () => {
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<any>(null);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
-
+  const { showTip, tipSteps, dismissTip } = usePlanPageTip();
   // Get user ID
   useEffect(() => {
     const getUser = async () => {
@@ -548,6 +550,15 @@ const PlanPage = () => {
         }}
         searchMode={searchMode}
       />
+
+      {showTip && (
+        <ProductTour
+          steps={tipSteps}
+          currentStep={0}
+          onAdvance={dismissTip}
+          onSkip={dismissTip}
+        />
+      )}
     </div>
   );
 };
