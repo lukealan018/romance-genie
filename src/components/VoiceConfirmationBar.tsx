@@ -54,7 +54,7 @@ function getModeLabel(mode: string | null | undefined, planIntent: string | null
 }
 
 export function VoiceConfirmationBar({ preferences, onConfirm, onUpdateField, onDismiss }: ConfirmationBarProps) {
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [progress, setProgress] = useState(0);
   const [resetKey, setResetKey] = useState(0);
 
