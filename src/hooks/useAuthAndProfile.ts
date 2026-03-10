@@ -26,7 +26,7 @@ export const useAuthAndProfile = () => {
   const [nickname, setNickname] = useState<string>("");
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
   const [profileData, setProfileData] = useState<ProfileData>({});
-  const locationSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const locationSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { setLocation, setFilters, setUserPreferences } = usePlanStore();
 

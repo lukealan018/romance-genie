@@ -9,8 +9,8 @@ export default function AuthCallback() {
   const [showRetry, setShowRetry] = useState(false);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    let retryTimerId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let retryTimerId: ReturnType<typeof setTimeout>;
 
     const handleAuthCallback = async () => {
       // FAST PATH: existing session

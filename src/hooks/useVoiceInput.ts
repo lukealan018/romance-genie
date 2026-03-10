@@ -115,7 +115,7 @@ export const useVoiceInput = ({ onPreferencesExtracted, userProfile, currentWeat
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 1;
 
-    let silenceTimer: NodeJS.Timeout | null = null;
+    let silenceTimer: ReturnType<typeof setTimeout> | null = null;
     let hasSpokenYet = false;
     const INITIAL_TIMEOUT = 15000; // 15 seconds before any speech
     const POST_SPEECH_TIMEOUT = 10000; // 10 seconds after speech detected (allows natural pauses)
